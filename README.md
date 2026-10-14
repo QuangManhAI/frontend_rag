@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scientific Literature RAG - Frontend Client
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.3-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-First, run the development server:
+Modern, high-performance web interface built with **Next.js 16 (App Router)**, **React 19**, and **Tailwind CSS v4** for exploring, querying, and interacting with the Scientific Literature RAG System.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🌟 Features
+
+- **Interactive Academic Chat**: Ask research questions and receive streaming answers grounded in over 13,000+ scientific papers.
+- **Deep Citation Inspector**: View inline citations with direct links to referenced papers, confidence metrics, and author details.
+- **Data Mining Visualizer**: Inspect PageRank authority indicators and related research topics derived from co-authorship networks.
+- **Responsive & Dark-Mode Ready**: Fully responsive user experience built with Tailwind CSS v4 and optimized Geist typography.
+
+---
+
+## 🏗️ Architecture & Component Flow
+
+```mermaid
+flowchart TD
+    User([User Browser]) <--> NextUI["Next.js 16 Client UI (App Router)"]
+    NextUI <--> APIRoute["Client API Layer / Server Actions"]
+    APIRoute <--> BackendAPI["NestJS Backend Service\n(http://localhost:3001)"]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📂 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```text
+frontend_rag/
+├── app/
+│   ├── favicon.ico       # Application icon
+│   ├── globals.css       # Tailwind CSS v4 directives & theme styles
+│   ├── layout.tsx        # Root layout with HTML metadata & font providers
+│   └── page.tsx          # Main RAG chat & exploration interface
+├── public/               # Static assets & brand vectors
+├── .gitignore            # Git ignore specification
+├── eslint.config.mjs     # ESLint configuration
+├── next.config.ts        # Next.js build and routing options
+├── package.json          # Dependencies and script definitions
+└── tsconfig.json         # TypeScript compiler options
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## ⚡ Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 1. Requirements
+- **Node.js**: v20+ (v22 LTS recommended)
+- **npm**, **pnpm**, or **yarn**
+- Running instance of the `backend_rag` service (default: `http://localhost:3001`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Environment Configuration
+Create a `.env.local` file in the `frontend_rag` directory:
 
-## Deploy on Vercel
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 3. Installation & Development
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# Install dependencies
+npm install
+
+# Run development server with Turbopack
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+
+---
+
+## 🚀 Build & Production
+
+```bash
+# Build production bundle
+npm run build
+
+# Start production server
+npm run start
+
+# Lint codebase
+npm run lint
+```
