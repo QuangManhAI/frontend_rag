@@ -45,6 +45,27 @@ const CATEGORIES = [
   { label: 'Statistics (stat.ML)', value: 'stat.ML' },
 ];
 
+/**
+ * Standardizes raw model LaTeX output delimiters so remark-math & rehype-katex
+ * render both inline and block equations reliably.
+ * Specifically converts:
+ *  - \[ ... \] and $$ ... $$ to $$ ... $$
+ *  - \( ... \) and $ ... $ to $ ... $
+ */
+function preprocessLatex(content: string): string {
+  if (!content) return '';
+
+  return content
+    // Convert display brackets \[ ... \] to $$ ... $$
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$\n${math.trim()}\n$$`)
+    // Convert inline parentheses \( ... \) to $ ... $
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`)
+    // Protect raw ( W_0 \in \mathbb{R}... ) patterns emitted by some LLMs without backslashes
+    .replace(/(^|[^\\$])\(\s*([A-Za-z0-9_\\^+\-*=<>~ ]*\\(?:in|mathbb|Delta|times|mu|sigma|theta|alpha|beta|gamma|lambda|sum|prod|leq|geq|ll|gg|approx|neq|subset)[^()]*?)\s*\)/g, 
+      (match, prefix, math) => `${prefix}$${math.trim()}$`
+    );
+}
+
 export function ChatPanel({
   messages,
   onSendMessage,
@@ -151,8 +172,8 @@ export function ChatPanel({
                   ) : (
                     <div className="prose prose-invert prose-sm max-w-none space-y-3 font-sans">
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
+                        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+                        rehypePlugins={[[rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
                         components={{
                           code({ className, children, ...props }) {
                             const text = String(children);
@@ -179,7 +200,7 @@ export function ChatPanel({
                           },
                         }}
                       >
-                        {msg.content}
+                        {preprocessLatex(msg.content)}
                       </ReactMarkdown>
                     </div>
                   )}
