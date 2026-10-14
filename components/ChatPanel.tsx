@@ -99,33 +99,72 @@ export function getPaperDisplayInfo(
   };
 }
 
-function preprocessContent(content: string): string {
+function preprocessContent(
+  content: string,
+  chunks?: GroundedChunkResult[],
+  activeChunks?: GroundedChunkResult[]
+): string {
   if (!content) return '';
 
   // 1. LaTeX math conversions
   let processed = content
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$\n${math.trim()}\n$$`)
     .replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`)
-    .replace(/(^|[^\\$])\(\s*([A-Za-z0-9_\\^+\-*=<>~ ]*\\(?:in|mathbb|Delta|times|mu|sigma|theta|alpha|beta|gamma|lambda|sum|prod|leq|geq|ll|gg|approx|neq|subset)[^()]*?)\s*\)/g, 
+    .replace(
+      /(^|[^\\$])\(\s*([A-Za-z0-9_\\^+\-*=<>~ ]*\\(?:in|mathbb|Delta|times|mu|sigma|theta|alpha|beta|gamma|lambda|sum|prod|leq|geq|ll|gg|approx|neq|subset)[^()]*?)\s*\)/g,
       (match, prefix, math) => `${prefix}$${math.trim()}$`
     );
 
-  // 2. In-text citation conversions: [Paper: {id}], [Paper ID: {id}], `[Paper: {id}]`, [arXiv: {id}], [{id}]
+  // Collect known valid IDs
+  const knownIds = new Set<string>();
+  if (chunks) chunks.forEach((c) => knownIds.add(c.paper_id.trim().toLowerCase()));
+  if (activeChunks) activeChunks.forEach((c) => knownIds.add(c.paper_id.trim().toLowerCase()));
+
+  // 2. Normalize existing cite:<id> occurrences (e.g. from prior formats)
+  processed = processed.replace(/\bcite:([a-zA-Z0-9._\/-]+)/gi, (match, id) => {
+    if (/^\d{1,4}$/.test(id)) return match;
+    return `[cite:${id}](#/citation/${id})`;
+  });
+
+  // 3. In-text citation conversions: [Paper: {id}], [Paper ID: {id}], `[Paper: {id}]`, [arXiv: {id}], [{id}]
   processed = processed.replace(
-    /`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*([^\]]+)|(\d{4}\.\d{4,5}(?:v\d+)?))\]`?/gi,
-    (fullMatch, id1, id2) => {
-      const raw = (id1 || id2 || '').trim();
-      if (!raw) return fullMatch;
+    /`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*)?([^\]\n]+)\]`?/gi,
+    (fullMatch, rawInner) => {
+      const inner = rawInner.trim();
 
-      // Handle comma/semicolon/and separated IDs inside a single bracket
-      const ids = raw
-        .split(/[,;&]|\band\b/gi)
-        .map((s: string) => s.replace(/(?:Paper(?:\s*ID)?|arXiv)\s*:?/gi, '').trim())
-        .filter((s: string) => s.length > 0 && !/^(?:citation|http)/i.test(s));
+      // STRICT FILTER: Ignore bare bibliography reference numbers like [98], [101], [1], [2]
+      if (/^\d{1,4}$/.test(inner)) {
+        return fullMatch;
+      }
 
-      if (ids.length === 0) return fullMatch;
+      // Check if explicitly prefixed with Paper: / Paper ID: / arXiv:
+      const isExplicitTag = /^(?:Paper(?:\s*ID)?|arXiv)\s*:/i.test(
+        fullMatch.replace(/^`|`$/g, '')
+      );
 
-      return ids.map((id: string) => `[cite:${id}](citation:${id})`).join(' ');
+      const isArxiv = /^\d{4}\.\d{4,5}(?:v\d+)?$/i.test(inner);
+      const isOpenReview = /^openreview_[a-zA-Z0-9_-]+$/i.test(inner);
+      const isCvf = /^cvf_[a-zA-Z0-9_-]+$/i.test(inner);
+      const isKnown = knownIds.has(inner.toLowerCase());
+
+      if (isExplicitTag || isArxiv || isOpenReview || isCvf || isKnown) {
+        // Handle comma/semicolon/and separated IDs inside a single bracket
+        const ids = inner
+          .split(/[,;&]|\band\b/gi)
+          .map((s: string) => s.replace(/^(?:Paper(?:\s*ID)?|arXiv)\s*:?/gi, '').trim())
+          .filter(
+            (s: string) =>
+              s.length > 0 &&
+              !/^\d{1,4}$/.test(s) &&
+              !/^(?:citation|http|figure|table)/i.test(s)
+          );
+
+        if (ids.length === 0) return fullMatch;
+
+        return ids.map((id: string) => `[cite:${id}](#/citation/${id})`).join(' ');
+      }
+
+      return fullMatch;
     }
   );
 
@@ -237,13 +276,21 @@ export function ChatPanel({
                   ) : (
                     <div className="prose dark:prose-invert prose-sm max-w-none space-y-3 font-sans text-[var(--ink)]">
                       <ReactMarkdown
+                        urlTransform={(url) => url}
                         remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
                         rehypePlugins={[[rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
                         components={{
                           a({ href, children, ...props }) {
-                            if (href && href.startsWith('citation:')) {
-                              const paperId = href.replace(/^citation:/, '').trim();
-                              const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 32);
+                            if (
+                              href &&
+                              (href.startsWith('citation:') ||
+                                href.startsWith('#/citation/') ||
+                                href.startsWith('#citation/'))
+                            ) {
+                              const paperId = href
+                                .replace(/^(?:citation:|#\/citation\/|#citation\/)/, '')
+                                .trim();
+                              const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 34);
                               return (
                                 <button
                                   type="button"
@@ -256,7 +303,7 @@ export function ChatPanel({
                                   className="not-prose inline-flex items-center gap-1.5 mx-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-all align-baseline cursor-pointer group shadow-2xs"
                                 >
                                   <BookOpen className="h-3 w-3 shrink-0 text-[var(--accent)] group-hover:scale-110 transition-transform" />
-                                  <span className="font-sans font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors max-w-[200px] sm:max-w-[260px] truncate">
+                                  <span className="font-sans font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors max-w-[200px] sm:max-w-[280px] truncate">
                                     {info.shortTitle}
                                   </span>
                                   <span className="font-mono text-[10px] text-[var(--muted)] group-hover:text-[var(--accent)] shrink-0">
@@ -274,9 +321,14 @@ export function ChatPanel({
                           code({ className, children, ...props }) {
                             const text = String(children);
                             const match = text.match(/`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*)?([a-zA-Z0-9._\/-]+)\]`?/i);
-                            if (match && match[1] && !/^(?:citation|http)/i.test(match[1])) {
+                            if (
+                              match &&
+                              match[1] &&
+                              !/^\d{1,4}$/.test(match[1].trim()) &&
+                              !/^(?:citation|http)/i.test(match[1])
+                            ) {
                               const paperId = match[1].trim();
-                              const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 32);
+                              const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 34);
                               return (
                                 <button
                                   type="button"
@@ -289,7 +341,7 @@ export function ChatPanel({
                                   className="not-prose inline-flex items-center gap-1.5 mx-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-all align-baseline cursor-pointer group shadow-2xs"
                                 >
                                   <BookOpen className="h-3 w-3 shrink-0 text-[var(--accent)] group-hover:scale-110 transition-transform" />
-                                  <span className="font-sans font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors max-w-[200px] sm:max-w-[260px] truncate">
+                                  <span className="font-sans font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors max-w-[200px] sm:max-w-[280px] truncate">
                                     {info.shortTitle}
                                   </span>
                                   <span className="font-mono text-[10px] text-[var(--muted)] group-hover:text-[var(--accent)] shrink-0">
@@ -306,7 +358,7 @@ export function ChatPanel({
                           },
                         }}
                       >
-                        {preprocessContent(msg.content)}
+                        {preprocessContent(msg.content, msg.grounded_chunks, activeChunks)}
                       </ReactMarkdown>
                     </div>
                   )}
@@ -317,12 +369,21 @@ export function ChatPanel({
                       new Set([
                         ...(msg.citations || []),
                         ...Array.from(
-                          msg.content.matchAll(/`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*([^\]]+)|(\d{4}\.\d{4,5}(?:v\d+)?))\]`?/gi)
+                          msg.content.matchAll(/`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*)?([^\]\n]+)\]`?/gi)
                         )
-                          .map((m) => (m[1] || m[2] || '').trim())
-                          .filter((id) => id && !/^(?:citation|http|figure|table)/i.test(id)),
+                          .map((m) => (m[1] || '').trim())
+                          .filter((id) => {
+                            if (!id || /^\d{1,4}$/.test(id)) return false;
+                            if (/^(?:citation|http|figure|table)/i.test(id)) return false;
+                            return (
+                              /^\d{4}\.\d{4,5}(?:v\d+)?$/i.test(id) ||
+                              /^openreview_/i.test(id) ||
+                              /^cvf_/i.test(id) ||
+                              (msg.grounded_chunks && msg.grounded_chunks.some((c) => c.paper_id === id))
+                            );
+                          }),
                       ])
-                    );
+                    ).filter((id) => !/^\d{1,4}$/.test(id) && !/^(?:citation|http|figure|table)/i.test(id));
 
                     return (
                       <div className="mt-3.5 space-y-2 border-t border-[var(--border)] pt-2.5 text-[11px] text-[var(--muted)]">
