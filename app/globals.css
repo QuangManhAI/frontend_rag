@@ -2,36 +2,36 @@
 @import "katex/dist/katex.min.css";
 
 /* ==========================================================================
-   Design Taste System Tokens (Anti-Slop Art Direction)
-   Ground, Surface, Ink, Muted, and Accent Tokens for Light & Dark Themes
+   Design Taste System Tokens (Anti-Slop Art Direction: Quiet Instrument / Editorial)
+   Flat grounds, crisp tone steps, no soft drop shadows on resting elements.
    ========================================================================== */
 
 :root {
-  /* Light Theme (White-oriented gallery palette) */
+  /* White-oriented Theme (Clean Paper Editorial) */
   --bg: #ffffff;
   --surface: #f8fafc;
   --surface-raised: #f1f5f9;
   --surface-active: #e2e8f0;
   --border: #e2e8f0;
-  --border-subtle: #edf2f7;
+  --border-subtle: #f1f5f9;
   
-  --ink: #0f172a;
+  --ink: #0a0f1d;
   --ink-secondary: #334155;
   --muted: #64748b;
   --faint: #94a3b8;
   
-  --accent: #2563eb;
-  --accent-light: #eff6ff;
-  --accent-border: #bfdbfe;
+  --accent: #d92b21;       /* Signal Red - Taste Skill Quiet Instrument */
+  --accent-light: #fef2f2;
+  --accent-border: #fecaca;
   --accent-ink: #ffffff;
 
   color-scheme: light;
 }
 
 .dark {
-  /* Dark Theme (Deep neutral graphite gallery palette - No mud, no neon) */
-  --bg: #0b0f17;
-  --surface: #111827;
+  /* Dark-oriented Theme (Deep Carbon Editorial) */
+  --bg: #090d16;
+  --surface: #0f172a;
   --surface-raised: #1e293b;
   --surface-active: #334155;
   --border: #1e293b;
@@ -42,9 +42,9 @@
   --muted: #94a3b8;
   --faint: #64748b;
   
-  --accent: #3b82f6;
-  --accent-light: rgba(59, 130, 246, 0.12);
-  --accent-border: rgba(59, 130, 246, 0.25);
+  --accent: #ef4444;       /* Signal Red - High Contrast on Dark Ground */
+  --accent-light: rgba(239, 68, 68, 0.12);
+  --accent-border: rgba(239, 68, 68, 0.3);
   --accent-ink: #ffffff;
 
   color-scheme: dark;
@@ -55,13 +55,17 @@ body {
   background-color: var(--bg);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.font-editorial {
+  font-family: var(--font-serif), Georgia, serif;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -74,5 +78,5 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--faint);
+  background: var(--muted);
 }

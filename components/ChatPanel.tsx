@@ -16,9 +16,8 @@ import {
   Bot,
   User,
   Clock,
-  Sparkles,
   BookOpen,
-  HelpCircle,
+  ArrowRight,
   RotateCcw,
 } from 'lucide-react';
 
@@ -38,26 +37,19 @@ const SAMPLE_QUERIES = [
 ];
 
 const CATEGORIES = [
-  { label: 'All Fields', value: '' },
+  { label: 'All Disciplines', value: '' },
   { label: 'Machine Learning (cs.LG)', value: 'cs.LG' },
   { label: 'Computer Vision (cs.CV)', value: 'cs.CV' },
   { label: 'Computation & Language (cs.CL)', value: 'cs.CL' },
   { label: 'Statistics (stat.ML)', value: 'stat.ML' },
 ];
 
-/**
- * Standardizes raw model LaTeX output delimiters so remark-math & rehype-katex
- * render both inline and block equations reliably.
- */
 function preprocessLatex(content: string): string {
   if (!content) return '';
 
   return content
-    // Convert display brackets \[ ... \] to $$ ... $$
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$\n${math.trim()}\n$$`)
-    // Convert inline parentheses \( ... \) to $ ... $
     .replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`)
-    // Protect raw ( W_0 \in \mathbb{R}... ) patterns emitted by some LLMs without backslashes
     .replace(/(^|[^\\$])\(\s*([A-Za-z0-9_\\^+\-*=<>~ ]*\\(?:in|mathbb|Delta|times|mu|sigma|theta|alpha|beta|gamma|lambda|sum|prod|leq|geq|ll|gg|approx|neq|subset)[^()]*?)\s*\)/g, 
       (match, prefix, math) => `${prefix}$${math.trim()}$`
     );
@@ -101,35 +93,33 @@ export function ChatPanel({
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--bg)] transition-colors overflow-hidden">
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-xl mx-auto px-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--surface-raised)] border border-[var(--border)] text-indigo-500 mb-4 shadow-sm">
-              <Sparkles className="h-7 w-7" />
+          <div className="flex flex-col justify-center min-h-[65vh] max-w-2xl mx-auto px-4 py-8">
+            {/* Editorial Headline Statement */}
+            <div className="space-y-3">
+              <h2 className="font-editorial text-3xl sm:text-4xl font-bold text-[var(--ink)] leading-tight tracking-tight">
+                Academic Research, Grounded.
+              </h2>
+              <p className="text-base text-[var(--muted)] leading-relaxed max-w-xl">
+                Synthesis across 913,205 peer-reviewed computer science and machine learning papers. Powered by dense LanceDB retrieval, co-authorship PageRank, and local Qwen2.5-7B inference.
+              </p>
             </div>
-            <h2 className="text-xl font-bold text-[var(--ink)] tracking-tight">
-              Explore 913,205 Scientific Papers
-            </h2>
-            <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">
-              Ask natural language questions across AI, ML, CV, and NLP. Answers are grounded in the Medallion lakehouse and accelerated with local Qwen2.5-7B on GPU with strict academic citations.
-            </p>
 
-            {/* Quick Query Pills */}
-            <div className="mt-6 w-full space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
-                Sample Research Questions
+            {/* Inquiries */}
+            <div className="mt-8 pt-6 border-t border-[var(--border)] space-y-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Selected Research Inquiries
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+              <div className="grid grid-cols-1 gap-2.5">
                 {SAMPLE_QUERIES.map((sample, i) => (
                   <button
                     key={i}
-                    onClick={() => {
-                      setInput(sample);
-                    }}
-                    className="flex items-start gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-xs text-[var(--ink-secondary)] hover:border-[var(--accent)] hover:bg-[var(--surface-raised)] transition-all text-left"
+                    onClick={() => setInput(sample)}
+                    className="group flex items-center justify-between rounded border border-[var(--border)] bg-[var(--surface)] p-3 text-xs text-[var(--ink-secondary)] hover:border-[var(--ink)] hover:text-[var(--ink)] transition-all text-left"
                   >
-                    <HelpCircle className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
-                    <span className="line-clamp-2">{sample}</span>
+                    <span>{sample}</span>
+                    <ArrowRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--accent)] shrink-0 ml-2" />
                   </button>
                 ))}
               </div>
@@ -141,31 +131,31 @@ export function ChatPanel({
             return (
               <div
                 key={msg.id}
-                className={`flex gap-3 sm:gap-4 max-w-4xl ${
+                className={`flex gap-3 max-w-3xl ${
                   isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'
                 }`}
               >
-                {/* Avatar */}
+                {/* Avatar Icon */}
                 <div
-                  className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-xl text-xs font-bold ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold ${
                     isUser
-                      ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30'
-                      : 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30'
+                      ? 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--ink)]'
+                      : 'bg-[var(--accent)] text-[var(--accent-ink)]'
                   }`}
                 >
-                  {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                  {isUser ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
                 </div>
 
                 {/* Message Bubble */}
                 <div
-                  className={`relative rounded-2xl p-4 sm:p-5 text-sm leading-relaxed max-w-2xl shadow-sm ${
+                  className={`relative rounded-lg p-4 sm:p-5 text-sm leading-relaxed max-w-2xl ${
                     isUser
-                      ? 'bg-[var(--accent)] text-[var(--accent-ink)] rounded-tr-none'
-                      : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] rounded-tl-none'
+                      ? 'bg-[var(--surface-raised)] text-[var(--ink)] border border-[var(--border)]'
+                      : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)]'
                   }`}
                 >
                   {isUser ? (
-                    <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
+                    <div className="whitespace-pre-wrap font-sans text-sm font-medium">{msg.content}</div>
                   ) : (
                     <div className="prose dark:prose-invert prose-sm max-w-none space-y-3 font-sans text-[var(--ink)]">
                       <ReactMarkdown
@@ -174,7 +164,6 @@ export function ChatPanel({
                         components={{
                           code({ className, children, ...props }) {
                             const text = String(children);
-                            // Check if this code tag is an academic citation e.g. [Paper: 2106.09685]
                             const match = text.match(/\[Paper:\s*([^\]]+)\]/);
                             if (match && match[1]) {
                               const paperId = match[1].trim();
@@ -182,7 +171,7 @@ export function ChatPanel({
                                 <button
                                   type="button"
                                   onClick={() => onCitationClick(paperId)}
-                                  className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-md font-mono text-xs font-semibold bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80 border border-[var(--accent-border)] transition-colors align-baseline"
+                                  className="inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded font-mono text-xs font-semibold bg-[var(--accent-light)] text-[var(--accent)] border border-[var(--accent-border)] hover:opacity-85 transition-opacity align-baseline"
                                 >
                                   <BookOpen className="h-3 w-3" />
                                   <span>{paperId}</span>
@@ -204,21 +193,21 @@ export function ChatPanel({
 
                   {/* Telemetry Footer */}
                   {!isUser && (
-                    <div className="mt-3.5 flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-2.5 text-[11px] text-[var(--muted)]">
+                    <div className="mt-3.5 flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-2 text-[11px] text-[var(--muted)]">
                       {msg.latency_ms && (
                         <span className="flex items-center gap-1 font-mono">
-                          <Clock className="h-3 w-3 text-cyan-500" />
+                          <Clock className="h-3 w-3 text-[var(--muted)]" />
                           {(msg.latency_ms / 1000).toFixed(2)}s
                         </span>
                       )}
                       {msg.citations && msg.citations.length > 0 && (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[var(--muted)]">Citations:</span>
+                          <span>Cited:</span>
                           {msg.citations.map((c) => (
                             <button
                               key={c}
                               onClick={() => onCitationClick(c)}
-                              className="rounded border border-[var(--border)] bg-[var(--surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--accent)] hover:bg-[var(--surface-active)] transition-colors"
+                              className="rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
                             >
                               {c}
                             </button>
@@ -235,19 +224,19 @@ export function ChatPanel({
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="flex gap-4 max-w-2xl mr-auto items-start">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-500 border border-indigo-500/30">
-              <Bot className="h-4 w-4 animate-spin" />
+          <div className="flex gap-3 max-w-xl mr-auto items-start">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[var(--accent)] text-[var(--accent-ink)]">
+              <Bot className="h-3.5 w-3.5 animate-spin" />
             </div>
-            <div className="rounded-2xl rounded-tl-none border border-[var(--border)] bg-[var(--surface)] p-4 text-xs text-[var(--muted)] space-y-2">
+            <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-3.5 text-xs text-[var(--muted)] space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-cyan-500 animate-ping" />
+                <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-ping" />
                 <span className="text-[var(--ink)] font-medium">
-                  Retrieving from LanceDB & Synthesizing with local Qwen2.5-7B (CUDA)...
+                  Retrieving Chunks & Synthesizing Answer...
                 </span>
               </div>
               <p className="text-[11px] text-[var(--muted)]">
-                Searching 913k vectors, computing PageRank authority boost, and generating grounded answer.
+                Local Qwen2.5-7B offloaded to GPU with strict academic citation constraints.
               </p>
             </div>
           </div>
@@ -257,15 +246,15 @@ export function ChatPanel({
       </div>
 
       {/* Control Bar & Input Area */}
-      <div className="border-t border-[var(--border)] bg-[var(--bg)]/90 p-4 backdrop-blur-md transition-colors">
-        <div className="max-w-4xl mx-auto space-y-3">
+      <div className="border-t border-[var(--border)] bg-[var(--bg)] p-4 transition-colors">
+        <div className="max-w-3xl mx-auto space-y-3">
           {/* Options Drawer */}
           {showOptions && (
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs">
+            <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-4 space-y-3 text-xs">
               <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
                 <span className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-indigo-500" />
-                  RAG Pipeline Parameters
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  Retrieval & Synthesis Parameters
                 </span>
                 <button
                   type="button"
@@ -288,8 +277,8 @@ export function ChatPanel({
                 {/* Top K */}
                 <div>
                   <div className="flex justify-between text-[var(--ink)] mb-1">
-                    <span>Grounded Chunks (Top K):</span>
-                    <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{options.top_k}</span>
+                    <span>Grounded Chunks:</span>
+                    <span className="font-mono text-[var(--accent)] font-bold">{options.top_k}</span>
                   </div>
                   <input
                     type="range"
@@ -300,19 +289,19 @@ export function ChatPanel({
                     onChange={(e) =>
                       setOptions({ ...options, top_k: parseInt(e.target.value) })
                     }
-                    className="w-full accent-cyan-500 cursor-pointer"
+                    className="w-full accent-[var(--accent)] cursor-pointer"
                   />
                 </div>
 
                 {/* Category Filter */}
                 <div>
-                  <label className="block text-[var(--ink)] mb-1">arXiv Category:</label>
+                  <label className="block text-[var(--ink)] mb-1">arXiv Discipline:</label>
                   <select
                     value={options.category || ''}
                     onChange={(e) =>
                       setOptions({ ...options, category: e.target.value || undefined })
                     }
-                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1 text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                    className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[var(--ink)] outline-none focus:border-[var(--accent)]"
                   >
                     {CATEGORIES.map((cat) => (
                       <option key={cat.value} value={cat.value}>
@@ -331,10 +320,10 @@ export function ChatPanel({
                     onChange={(e) =>
                       setOptions({ ...options, use_authority_boost: e.target.checked })
                     }
-                    className="rounded border-[var(--border)] bg-[var(--surface-raised)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                    className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
                   />
                   <label htmlFor="author_boost" className="text-[var(--ink)] cursor-pointer select-none">
-                    PageRank Author Boost (15%)
+                    PageRank Boost (15%)
                   </label>
                 </div>
 
@@ -347,10 +336,10 @@ export function ChatPanel({
                     onChange={(e) =>
                       setOptions({ ...options, expand_query: e.target.checked })
                     }
-                    className="rounded border-[var(--border)] bg-[var(--surface-raised)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                    className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
                   />
                   <label htmlFor="rule_expansion" className="text-[var(--ink)] cursor-pointer select-none">
-                    FP-Growth Query Expansion
+                    FP-Growth Expansion
                   </label>
                 </div>
               </div>
@@ -359,14 +348,14 @@ export function ChatPanel({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
-            <div className="relative flex-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+            <div className="relative flex-1 rounded border border-[var(--border)] bg-[var(--surface)] focus-within:border-[var(--ink)] transition-colors">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a scientific research question (e.g., 'How does LoRA optimize large models?')..."
+                placeholder="Ask a scientific research question..."
                 rows={1}
-                className="w-full resize-none bg-transparent px-4 py-3.5 text-sm text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none min-h-[48px] max-h-32 font-sans"
+                className="w-full resize-none bg-transparent px-3.5 py-3 text-sm text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none min-h-[46px] max-h-32 font-sans"
               />
             </div>
 
@@ -374,24 +363,24 @@ export function ChatPanel({
             <button
               type="button"
               onClick={() => setShowOptions(!showOptions)}
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-all ${
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded border transition-all ${
                 showOptions
                   ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
                   : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-raised)]'
               }`}
               title="Tune Pipeline Hyperparameters"
             >
-              <SlidersHorizontal className="h-5 w-5" />
+              <SlidersHorizontal className="h-4 w-4" />
             </button>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)] hover:opacity-90 disabled:bg-[var(--surface-raised)] disabled:text-[var(--muted)] text-[var(--accent-ink)] shadow-md transition-all"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--accent-ink)] transition-all"
               title="Execute RAG Query"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
             </button>
           </form>
         </div>
