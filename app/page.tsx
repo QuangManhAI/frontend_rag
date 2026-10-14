@@ -122,11 +122,31 @@ function WorkbenchContent() {
     if (found) {
       setSelectedChunk(found);
     } else {
+      const isAlex = cleanId.startsWith('openalex:');
+      const isReview = cleanId.startsWith('openreview_');
+      const isCvf = cleanId.startsWith('cvf_');
+
+      const fallbackTitle = isAlex
+        ? `OpenAlex: ${cleanId}`
+        : isReview
+        ? `OpenReview: ${cleanId.replace('openreview_', '')}`
+        : isCvf
+        ? 'CVPR Open Access Paper'
+        : `arXiv: ${cleanId}`;
+
+      const fallbackText = isAlex
+        ? `Full publication metadata and citation graph available on OpenAlex.org/works/${cleanId.replace('openalex:', '')}`
+        : isReview
+        ? `Full conference submission and reviews available on OpenReview.net/forum?id=${cleanId.replace('openreview_', '')}`
+        : isCvf
+        ? `Full paper text and supplemental material available on CVF Open Access.`
+        : `Full preprint paper and metadata available on arXiv.org/abs/${cleanId}`;
+
       setSelectedChunk({
         chunk_id: `${cleanId}_ref`,
         paper_id: cleanId,
-        title: `arXiv: ${cleanId}`,
-        text: `Full preprint paper and metadata available on arXiv.org/abs/${cleanId}`,
+        title: fallbackTitle,
+        text: fallbackText,
         similarity_score: 1.0,
         authority_score: 0.5,
         final_score: 0.9,

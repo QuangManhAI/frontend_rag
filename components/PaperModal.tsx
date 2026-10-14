@@ -12,7 +12,21 @@ interface PaperModalProps {
 export function PaperModal({ chunk, onClose }: PaperModalProps) {
   if (!chunk) return null;
 
-  const arxivUrl = `https://arxiv.org/abs/${chunk.paper_id}`;
+  let paperUrl = `https://arxiv.org/abs/${chunk.paper_id}`;
+  let sourceLabel = 'View full paper on arXiv';
+
+  if (chunk.paper_id.startsWith('openalex:')) {
+    const openalexId = chunk.paper_id.replace(/^openalex:/, '');
+    paperUrl = `https://openalex.org/${openalexId}`;
+    sourceLabel = 'View record on OpenAlex';
+  } else if (chunk.paper_id.startsWith('openreview_')) {
+    const forumId = chunk.paper_id.replace(/^openreview_/, '');
+    paperUrl = `https://openreview.net/forum?id=${forumId}`;
+    sourceLabel = 'View submission on OpenReview';
+  } else if (chunk.paper_id.startsWith('cvf_')) {
+    paperUrl = 'https://openaccess.thecvf.com/';
+    sourceLabel = 'View paper on CVF Open Access';
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
@@ -115,12 +129,12 @@ export function PaperModal({ chunk, onClose }: PaperModalProps) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
           <a
-            href={arxivUrl}
+            href={paperUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline transition-colors font-medium"
           >
-            <span>View full paper on arXiv</span>
+            <span>{sourceLabel}</span>
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
           <button

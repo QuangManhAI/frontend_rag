@@ -58,21 +58,25 @@ export function getPaperDisplayInfo(
   maxLength: number = 36
 ): PaperDisplayInfo {
   const cleanId = paperId.trim();
-  const normalizedId = cleanId.toLowerCase().replace(/^arxiv:\s*/i, '');
+  const normalizedId = cleanId
+    .toLowerCase()
+    .replace(/^(?:arxiv:|openalex:)/i, '');
 
-  // 1. Search in current message chunks
-  let found = messageChunks?.find((c) => {
-    const cId = c.paper_id.trim().toLowerCase().replace(/^arxiv:\s*/i, '');
-    return cId === normalizedId || cId.includes(normalizedId) || normalizedId.includes(cId);
+  const chunkList = [...(messageChunks || []), ...(activeChunks || [])];
+
+  // Search in chunks (matching canonical ID, ID without prefix, or substring)
+  let found = chunkList.find((c) => {
+    const cId = c.paper_id
+      .trim()
+      .toLowerCase()
+      .replace(/^(?:arxiv:|openalex:)/i, '');
+    return (
+      cId === normalizedId ||
+      cId.includes(normalizedId) ||
+      normalizedId.includes(cId) ||
+      c.paper_id.trim().toLowerCase() === cleanId.toLowerCase()
+    );
   });
-
-  // 2. Search in active/global chunks
-  if (!found && activeChunks) {
-    found = activeChunks.find((c) => {
-      const cId = c.paper_id.trim().toLowerCase().replace(/^arxiv:\s*/i, '');
-      return cId === normalizedId || cId.includes(normalizedId) || normalizedId.includes(cId);
-    });
-  }
 
   if (found && found.title && found.title.trim()) {
     const cleanTitle = found.title
@@ -92,10 +96,19 @@ export function getPaperDisplayInfo(
     };
   }
 
+  // Fallback presentation
+  const displayLabel = cleanId.startsWith('openalex:')
+    ? cleanId
+    : cleanId.startsWith('openreview_')
+    ? cleanId.replace('openreview_', 'OpenReview ')
+    : cleanId.startsWith('cvf_')
+    ? 'CVPR Paper'
+    : `Paper ${cleanId}`;
+
   return {
     paperId: cleanId,
-    shortTitle: `Paper ${cleanId}`,
-    fullTitle: `Paper ID: ${cleanId}`,
+    shortTitle: displayLabel,
+    fullTitle: `Paper: ${cleanId}`,
   };
 }
 
@@ -115,57 +128,108 @@ function preprocessContent(
       (match, prefix, math) => `${prefix}$${math.trim()}$`
     );
 
-  // Collect known valid IDs
+  const chunkList = [...(chunks || []), ...(activeChunks || [])];
   const knownIds = new Set<string>();
-  if (chunks) chunks.forEach((c) => knownIds.add(c.paper_id.trim().toLowerCase()));
-  if (activeChunks) activeChunks.forEach((c) => knownIds.add(c.paper_id.trim().toLowerCase()));
+  const indexMap = new Map<number, string>();
 
-  // 2. Normalize existing cite:<id> occurrences (e.g. from prior formats)
+  chunkList.forEach((c, idx) => {
+    const clean = c.paper_id.trim();
+    knownIds.add(clean.toLowerCase());
+    knownIds.add(clean.replace(/^(?:openalex:|arxiv:)/i, '').toLowerCase());
+    if (!indexMap.has(idx + 1)) {
+      indexMap.set(idx + 1, clean);
+    }
+  });
+
+  // 2. Normalize existing cite:<id> occurrences
   processed = processed.replace(/\bcite:([a-zA-Z0-9._\/-]+)/gi, (match, id) => {
     if (/^\d{1,4}$/.test(id)) return match;
     return `[cite:${id}](#/citation/${id})`;
   });
 
-  // 3. In-text citation conversions: [Paper: {id}], [Paper ID: {id}], `[Paper: {id}]`, [arXiv: {id}], [{id}]
+  // 3. Universal Citation Matching supporting BOTH [...] AND (...)
+  // Handles:
+  // - (Paper ID: openalex:W4409626943)
+  // - (Paper ID: 2111.07624)
+  // - (Paper ID: 2111.07624, Paper ID: 2111.07624, Paper ID: 2111.07624)
+  // - [openalex:W4409626943]
+  // - [2111.07624]
+  // - [Paper: 2111.07624]
+  // - [1], [2], (1), (2), [Source 1], (Source 1)
   processed = processed.replace(
-    /`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*)?([^\]\n]+)\]`?/gi,
-    (fullMatch, rawInner) => {
-      const inner = rawInner.trim();
-
-      // STRICT FILTER: Ignore bare bibliography reference numbers like [98], [101], [1], [2]
-      if (/^\d{1,4}$/.test(inner)) {
+    /`?([\[\(])\s*(?:(?:Paper(?:\s*ID)?|arXiv|Source)\s*:?\s*)?([^\]\)\n]+)\s*([\]\)])`?/gi,
+    (fullMatch, openChar, rawInner, closeChar) => {
+      // Must have matched delimiter pair ([ with ] or ( with ))
+      if ((openChar === '[' && closeChar !== ']') || (openChar === '(' && closeChar !== ')')) {
         return fullMatch;
       }
 
-      // Check if explicitly prefixed with Paper: / Paper ID: / arXiv:
-      const isExplicitTag = /^(?:Paper(?:\s*ID)?|arXiv)\s*:/i.test(
-        fullMatch.replace(/^`|`$/g, '')
-      );
+      const inner = rawInner.trim();
+      if (!inner) return fullMatch;
 
-      const isArxiv = /^\d{4}\.\d{4,5}(?:v\d+)?$/i.test(inner);
-      const isOpenReview = /^openreview_[a-zA-Z0-9_-]+$/i.test(inner);
-      const isCvf = /^cvf_[a-zA-Z0-9_-]+$/i.test(inner);
-      const isKnown = knownIds.has(inner.toLowerCase());
+      // Split comma/semicolon/and separated values
+      const rawTokens = inner
+        .split(/[,;&]|\band\b/gi)
+        .map((s: string) => s.replace(/^(?:Paper(?:\s*ID)?|arXiv|Source)\s*:?/gi, '').trim())
+        .filter((s: string) => s.length > 0 && !/^(?:citation|http|figure|table)/i.test(s));
 
-      if (isExplicitTag || isArxiv || isOpenReview || isCvf || isKnown) {
-        // Handle comma/semicolon/and separated IDs inside a single bracket
-        const ids = inner
-          .split(/[,;&]|\band\b/gi)
-          .map((s: string) => s.replace(/^(?:Paper(?:\s*ID)?|arXiv)\s*:?/gi, '').trim())
-          .filter(
-            (s: string) =>
-              s.length > 0 &&
-              !/^\d{1,4}$/.test(s) &&
-              !/^(?:citation|http|figure|table)/i.test(s)
+      if (rawTokens.length === 0) return fullMatch;
+
+      const resolvedIds: string[] = [];
+      const seenInBatch = new Set<string>();
+
+      for (const token of rawTokens) {
+        // A. Numeric index [1], (1), [2], etc.
+        const num = parseInt(token, 10);
+        if (!isNaN(num) && String(num) === token) {
+          if (indexMap.has(num)) {
+            const pid = indexMap.get(num)!;
+            if (!seenInBatch.has(pid)) {
+              seenInBatch.add(pid);
+              resolvedIds.push(pid);
+            }
+          }
+          continue; // Ignore non-indexed integers (e.g. 98, 101)
+        }
+
+        // B. Check if it's an explicit tag (Paper ID: / Paper: / arXiv:)
+        const isExplicitTag = /^(?:Paper(?:\s*ID)?|arXiv|Source)\s*:/i.test(
+          fullMatch.replace(/^`|`$/g, '')
+        );
+
+        // C. Check patterns
+        const isOpenAlex = /^openalex:W\d+$/i.test(token);
+        const isArxiv = /^\d{4}\.\d{4,5}(?:v\d+)?$/i.test(token);
+        const isOpenReview = /^openreview_[a-zA-Z0-9_-]+$/i.test(token);
+        const isCvf = /^cvf_[a-zA-Z0-9_-]+$/i.test(token);
+        const isKnown = knownIds.has(token.toLowerCase());
+
+        if (isExplicitTag || isOpenAlex || isArxiv || isOpenReview || isCvf || isKnown) {
+          // Normalize to canonical ID from chunks if available
+          const found = chunkList.find(
+            (c) =>
+              c.paper_id.trim().toLowerCase() === token.toLowerCase() ||
+              c.paper_id.trim().toLowerCase().includes(token.toLowerCase())
           );
+          const finalId = found ? found.paper_id.trim() : token;
 
-        if (ids.length === 0) return fullMatch;
-
-        return ids.map((id: string) => `[cite:${id}](#/citation/${id})`).join(' ');
+          if (!seenInBatch.has(finalId)) {
+            seenInBatch.add(finalId);
+            resolvedIds.push(finalId);
+          }
+        }
       }
 
-      return fullMatch;
+      if (resolvedIds.length === 0) return fullMatch;
+
+      return resolvedIds.map((id) => `[cite:${id}](#/citation/${id})`).join(' ');
     }
+  );
+
+  // 4. Collapse adjacent identical citations: [cite:X](#/citation/X) [cite:X](#/citation/X) -> [cite:X](#/citation/X)
+  processed = processed.replace(
+    /(\[cite:([^\]]+)\]\(#\/citation\/[^\)]+\))(?:\s+\1)+/gi,
+    '$1'
   );
 
   return processed;
@@ -365,24 +429,41 @@ export function ChatPanel({
 
                   {/* Telemetry Footer */}
                   {!isUser && (() => {
+                    const chunkList = [...(msg.grounded_chunks || []), ...(activeChunks || [])];
+                    const indexMap = new Map<number, string>();
+                    chunkList.forEach((c, i) => indexMap.set(i + 1, c.paper_id.trim()));
+
+                    // Universal in-text citation extraction supporting [...] and (...)
+                    const inTextCitations = Array.from(
+                      msg.content.matchAll(/`?([\[\(])\s*(?:(?:Paper(?:\s*ID)?|arXiv|Source)\s*:?\s*)?([^\]\)\n]+)\s*([\]\)])`?/gi)
+                    )
+                      .filter(([_, open, __, close]) => (open === '[' && close === ']') || (open === '(' && close === ')'))
+                      .flatMap(([_, __, rawContent]) =>
+                        rawContent
+                          .split(/[,;&]|\band\b/gi)
+                          .map((s) => s.replace(/^(?:Paper(?:\s*ID)?|arXiv|Source)\s*:?/gi, '').trim())
+                      )
+                      .map((token) => {
+                        const num = parseInt(token, 10);
+                        if (!isNaN(num) && indexMap.has(num)) {
+                          return indexMap.get(num)!;
+                        }
+                        return token;
+                      })
+                      .filter((id) => {
+                        if (!id || /^\d{1,4}$/.test(id)) return false;
+                        if (/^(?:citation|http|figure|table)/i.test(id)) return false;
+                        return (
+                          /^\d{4}\.\d{4,5}(?:v\d+)?$/i.test(id) ||
+                          /^openalex:W\d+$/i.test(id) ||
+                          /^openreview_/i.test(id) ||
+                          /^cvf_/i.test(id) ||
+                          chunkList.some((c) => c.paper_id.toLowerCase().includes(id.toLowerCase()))
+                        );
+                      });
+
                     const citationsList = Array.from(
-                      new Set([
-                        ...(msg.citations || []),
-                        ...Array.from(
-                          msg.content.matchAll(/`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*)?([^\]\n]+)\]`?/gi)
-                        )
-                          .map((m) => (m[1] || '').trim())
-                          .filter((id) => {
-                            if (!id || /^\d{1,4}$/.test(id)) return false;
-                            if (/^(?:citation|http|figure|table)/i.test(id)) return false;
-                            return (
-                              /^\d{4}\.\d{4,5}(?:v\d+)?$/i.test(id) ||
-                              /^openreview_/i.test(id) ||
-                              /^cvf_/i.test(id) ||
-                              (msg.grounded_chunks && msg.grounded_chunks.some((c) => c.paper_id === id))
-                            );
-                          }),
-                      ])
+                      new Set([...(msg.citations || []), ...inTextCitations])
                     ).filter((id) => !/^\d{1,4}$/.test(id) && !/^(?:citation|http|figure|table)/i.test(id));
 
                     return (
