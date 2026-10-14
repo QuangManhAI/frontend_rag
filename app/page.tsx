@@ -105,19 +105,32 @@ function WorkbenchContent() {
 
   // Handle citation click -> Open paper modal with matching chunk
   const handleCitationClick = (paperId: string) => {
-    const found = activeChunks.find((c) => c.paper_id === paperId);
+    const cleanId = paperId.trim();
+    const normalizedId = cleanId.toLowerCase().replace(/^arxiv:\s*/i, '');
+
+    // Search across activeChunks and all previous messages' grounded_chunks
+    const allChunks = [
+      ...activeChunks,
+      ...messages.flatMap((m) => m.grounded_chunks || []),
+    ];
+
+    const found = allChunks.find((c) => {
+      const cId = c.paper_id.trim().toLowerCase().replace(/^arxiv:\s*/i, '');
+      return cId === normalizedId || cId.includes(normalizedId) || normalizedId.includes(cId);
+    });
+
     if (found) {
       setSelectedChunk(found);
     } else {
       setSelectedChunk({
-        chunk_id: `${paperId}_ref`,
-        paper_id: paperId,
-        title: `Paper ID: ${paperId}`,
-        text: `Full metadata preview available on arXiv.`,
+        chunk_id: `${cleanId}_ref`,
+        paper_id: cleanId,
+        title: `arXiv: ${cleanId}`,
+        text: `Full preprint paper and metadata available on arXiv.org/abs/${cleanId}`,
         similarity_score: 1.0,
         authority_score: 0.5,
         final_score: 0.9,
-        citation_tag: `[Paper: ${paperId}]`,
+        citation_tag: `[Paper: ${cleanId}]`,
       });
     }
   };
@@ -135,6 +148,7 @@ function WorkbenchContent() {
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           onCitationClick={handleCitationClick}
+          activeChunks={activeChunks}
         />
 
         {/* Collapsible Grounded Chunks Inspector */}

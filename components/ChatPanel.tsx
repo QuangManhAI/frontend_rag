@@ -27,6 +27,7 @@ interface ChatPanelProps {
   isLoading: boolean;
   onCitationClick: (paperId: string) => void;
   onSelectChunk?: (chunk: GroundedChunkResult) => void;
+  activeChunks?: GroundedChunkResult[];
 }
 
 const SAMPLE_QUERIES = [
@@ -44,15 +45,91 @@ const CATEGORIES = [
   { label: 'Statistics (stat.ML)', value: 'stat.ML' },
 ];
 
-function preprocessLatex(content: string): string {
+export interface PaperDisplayInfo {
+  paperId: string;
+  shortTitle: string;
+  fullTitle: string;
+}
+
+export function getPaperDisplayInfo(
+  paperId: string,
+  messageChunks?: GroundedChunkResult[],
+  activeChunks?: GroundedChunkResult[],
+  maxLength: number = 36
+): PaperDisplayInfo {
+  const cleanId = paperId.trim();
+  const normalizedId = cleanId.toLowerCase().replace(/^arxiv:\s*/i, '');
+
+  // 1. Search in current message chunks
+  let found = messageChunks?.find((c) => {
+    const cId = c.paper_id.trim().toLowerCase().replace(/^arxiv:\s*/i, '');
+    return cId === normalizedId || cId.includes(normalizedId) || normalizedId.includes(cId);
+  });
+
+  // 2. Search in active/global chunks
+  if (!found && activeChunks) {
+    found = activeChunks.find((c) => {
+      const cId = c.paper_id.trim().toLowerCase().replace(/^arxiv:\s*/i, '');
+      return cId === normalizedId || cId.includes(normalizedId) || normalizedId.includes(cId);
+    });
+  }
+
+  if (found && found.title && found.title.trim()) {
+    const cleanTitle = found.title
+      .replace(/^title:\s*/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const shortTitle =
+      cleanTitle.length > maxLength
+        ? `${cleanTitle.slice(0, maxLength).trim()}…`
+        : cleanTitle;
+
+    return {
+      paperId: cleanId,
+      shortTitle,
+      fullTitle: cleanTitle,
+    };
+  }
+
+  return {
+    paperId: cleanId,
+    shortTitle: `Paper ${cleanId}`,
+    fullTitle: `Paper ID: ${cleanId}`,
+  };
+}
+
+function preprocessContent(content: string): string {
   if (!content) return '';
 
-  return content
+  // 1. LaTeX math conversions
+  let processed = content
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$\n${math.trim()}\n$$`)
     .replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`)
     .replace(/(^|[^\\$])\(\s*([A-Za-z0-9_\\^+\-*=<>~ ]*\\(?:in|mathbb|Delta|times|mu|sigma|theta|alpha|beta|gamma|lambda|sum|prod|leq|geq|ll|gg|approx|neq|subset)[^()]*?)\s*\)/g, 
       (match, prefix, math) => `${prefix}$${math.trim()}$`
     );
+
+  // 2. In-text citation conversions: [Paper: {id}], [Paper ID: {id}], `[Paper: {id}]`, [arXiv: {id}], [{id}]
+  processed = processed.replace(
+    /`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*([^\]]+)|(\d{4}\.\d{4,5}(?:v\d+)?))\]`?/gi,
+    (fullMatch, id1, id2) => {
+      const raw = (id1 || id2 || '').trim();
+      if (!raw) return fullMatch;
+
+      // Handle comma/semicolon/and separated IDs inside a single bracket
+      const ids = raw
+        .split(/[,;&]|\band\b/gi)
+        .map((s: string) => s.replace(/(?:Paper(?:\s*ID)?|arXiv)\s*:?/gi, '').trim())
+        .filter((s: string) => s.length > 0 && !/^(?:citation|http)/i.test(s));
+
+      if (ids.length === 0) return fullMatch;
+
+      return ids.map((id: string) => `[cite:${id}](citation:${id})`).join(' ');
+    }
+  );
+
+  return processed;
 }
 
 export function ChatPanel({
@@ -60,6 +137,7 @@ export function ChatPanel({
   onSendMessage,
   isLoading,
   onCitationClick,
+  activeChunks,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -162,19 +240,61 @@ export function ChatPanel({
                         remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
                         rehypePlugins={[[rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
                         components={{
-                          code({ className, children, ...props }) {
-                            const text = String(children);
-                            const match = text.match(/\[Paper:\s*([^\]]+)\]/);
-                            if (match && match[1]) {
-                              const paperId = match[1].trim();
+                          a({ href, children, ...props }) {
+                            if (href && href.startsWith('citation:')) {
+                              const paperId = href.replace(/^citation:/, '').trim();
+                              const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 32);
                               return (
                                 <button
                                   type="button"
-                                  onClick={() => onCitationClick(paperId)}
-                                  className="inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded font-mono text-xs font-semibold bg-[var(--accent-light)] text-[var(--accent)] border border-[var(--accent-border)] hover:opacity-85 transition-opacity align-baseline"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onCitationClick(paperId);
+                                  }}
+                                  title={`[arXiv: ${paperId}] ${info.fullTitle}`}
+                                  className="not-prose inline-flex items-center gap-1.5 mx-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-all align-baseline cursor-pointer group shadow-2xs"
                                 >
-                                  <BookOpen className="h-3 w-3" />
-                                  <span>{paperId}</span>
+                                  <BookOpen className="h-3 w-3 shrink-0 text-[var(--accent)] group-hover:scale-110 transition-transform" />
+                                  <span className="font-sans font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors max-w-[200px] sm:max-w-[260px] truncate">
+                                    {info.shortTitle}
+                                  </span>
+                                  <span className="font-mono text-[10px] text-[var(--muted)] group-hover:text-[var(--accent)] shrink-0">
+                                    [{paperId}]
+                                  </span>
+                                </button>
+                              );
+                            }
+                            return (
+                              <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                                {children}
+                              </a>
+                            );
+                          },
+                          code({ className, children, ...props }) {
+                            const text = String(children);
+                            const match = text.match(/`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*)?([a-zA-Z0-9._\/-]+)\]`?/i);
+                            if (match && match[1] && !/^(?:citation|http)/i.test(match[1])) {
+                              const paperId = match[1].trim();
+                              const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 32);
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onCitationClick(paperId);
+                                  }}
+                                  title={`[arXiv: ${paperId}] ${info.fullTitle}`}
+                                  className="not-prose inline-flex items-center gap-1.5 mx-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-all align-baseline cursor-pointer group shadow-2xs"
+                                >
+                                  <BookOpen className="h-3 w-3 shrink-0 text-[var(--accent)] group-hover:scale-110 transition-transform" />
+                                  <span className="font-sans font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors max-w-[200px] sm:max-w-[260px] truncate">
+                                    {info.shortTitle}
+                                  </span>
+                                  <span className="font-mono text-[10px] text-[var(--muted)] group-hover:text-[var(--accent)] shrink-0">
+                                    [{paperId}]
+                                  </span>
                                 </button>
                               );
                             }
@@ -186,36 +306,73 @@ export function ChatPanel({
                           },
                         }}
                       >
-                        {preprocessLatex(msg.content)}
+                        {preprocessContent(msg.content)}
                       </ReactMarkdown>
                     </div>
                   )}
 
                   {/* Telemetry Footer */}
-                  {!isUser && (
-                    <div className="mt-3.5 flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-2 text-[11px] text-[var(--muted)]">
-                      {msg.latency_ms && (
-                        <span className="flex items-center gap-1 font-mono">
-                          <Clock className="h-3 w-3 text-[var(--muted)]" />
-                          {(msg.latency_ms / 1000).toFixed(2)}s
-                        </span>
-                      )}
-                      {msg.citations && msg.citations.length > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <span>Cited:</span>
-                          {msg.citations.map((c) => (
-                            <button
-                              key={c}
-                              onClick={() => onCitationClick(c)}
-                              className="rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
-                            >
-                              {c}
-                            </button>
-                          ))}
+                  {!isUser && (() => {
+                    const citationsList = Array.from(
+                      new Set([
+                        ...(msg.citations || []),
+                        ...Array.from(
+                          msg.content.matchAll(/`?\[(?:(?:Paper(?:\s*ID)?|arXiv)\s*:?\s*([^\]]+)|(\d{4}\.\d{4,5}(?:v\d+)?))\]`?/gi)
+                        )
+                          .map((m) => (m[1] || m[2] || '').trim())
+                          .filter((id) => id && !/^(?:citation|http|figure|table)/i.test(id)),
+                      ])
+                    );
+
+                    return (
+                      <div className="mt-3.5 space-y-2 border-t border-[var(--border)] pt-2.5 text-[11px] text-[var(--muted)]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          {msg.latency_ms && (
+                            <span className="flex items-center gap-1 font-mono text-[11px]">
+                              <Clock className="h-3 w-3 text-[var(--muted)]" />
+                              {(msg.latency_ms / 1000).toFixed(2)}s inference
+                            </span>
+                          )}
+                          {msg.grounded_chunks && msg.grounded_chunks.length > 0 && (
+                            <span className="font-mono text-[10px] text-[var(--muted)]">
+                              {msg.grounded_chunks.length} chunks retrieved
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        {citationsList.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+                              <BookOpen className="h-3 w-3 text-[var(--accent)]" />
+                              Cited Sources ({citationsList.length}):
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {citationsList.map((paperId) => {
+                                const info = getPaperDisplayInfo(paperId, msg.grounded_chunks, activeChunks, 38);
+                                return (
+                                  <button
+                                    key={paperId}
+                                    type="button"
+                                    onClick={() => onCitationClick(paperId)}
+                                    title={`[arXiv: ${paperId}] ${info.fullTitle}`}
+                                    className="group inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface-raised)] px-2 py-1 text-xs text-[var(--ink)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-all cursor-pointer shadow-2xs text-left"
+                                  >
+                                    <BookOpen className="h-3 w-3 shrink-0 text-[var(--accent)] group-hover:scale-105 transition-transform" />
+                                    <span className="font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors truncate max-w-[200px] sm:max-w-[300px]">
+                                      {info.shortTitle}
+                                    </span>
+                                    <span className="font-mono text-[10px] text-[var(--muted)] group-hover:text-[var(--accent)] bg-[var(--bg)] px-1 rounded border border-[var(--border)]">
+                                      {paperId}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
