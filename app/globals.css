@@ -1,33 +1,78 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 
+/* ==========================================================================
+   Design Taste System Tokens (Anti-Slop Art Direction)
+   Ground, Surface, Ink, Muted, and Accent Tokens for Light & Dark Themes
+   ========================================================================== */
+
 :root {
-  --background: #090a0f;
-  --foreground: #f1f5f9;
+  /* Light Theme (White-oriented gallery palette) */
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --surface-raised: #f1f5f9;
+  --surface-active: #e2e8f0;
+  --border: #e2e8f0;
+  --border-subtle: #edf2f7;
+  
+  --ink: #0f172a;
+  --ink-secondary: #334155;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --accent-border: #bfdbfe;
+  --accent-ink: #ffffff;
+
+  color-scheme: light;
+}
+
+.dark {
+  /* Dark Theme (Deep neutral graphite gallery palette - No mud, no neon) */
+  --bg: #0b0f17;
+  --surface: #111827;
+  --surface-raised: #1e293b;
+  --surface-active: #334155;
+  --border: #1e293b;
+  --border-subtle: #162032;
+  
+  --ink: #f8fafc;
+  --ink-secondary: #cbd5e1;
+  --muted: #94a3b8;
+  --faint: #64748b;
+  
+  --accent: #3b82f6;
+  --accent-light: rgba(59, 130, 246, 0.12);
+  --accent-border: rgba(59, 130, 246, 0.25);
+  --accent-ink: #ffffff;
+
+  color-scheme: dark;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-geist-sans), sans-serif;
+  color: var(--ink);
+  background-color: var(--bg);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom Scrollbar for Research Panels */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.4);
-  border-radius: 3px;
+  background: var(--border);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: var(--faint);
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { Navbar } from '../components/Navbar';
 import { ChatPanel } from '../components/ChatPanel';
 import { GroundedInspector } from '../components/GroundedInspector';
@@ -13,7 +14,7 @@ import {
   RAGSynthesisResponse,
 } from '../src/types/rag';
 
-export default function Home() {
+function WorkbenchContent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeChunks, setActiveChunks] = useState<GroundedChunkResult[]>([]);
   const [selectedChunk, setSelectedChunk] = useState<GroundedChunkResult | null>(null);
@@ -108,7 +109,6 @@ export default function Home() {
     if (found) {
       setSelectedChunk(found);
     } else {
-      // Fallback: construct dummy preview with paper_id
       setSelectedChunk({
         chunk_id: `${paperId}_ref`,
         paper_id: paperId,
@@ -123,7 +123,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 font-sans">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg)] text-[var(--ink)] font-sans transition-colors">
       {/* Top Navbar */}
       <Navbar health={health} loadingHealth={loadingHealth} />
 
@@ -155,5 +155,13 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <ThemeProvider>
+      <WorkbenchContent />
+    </ThemeProvider>
   );
 }
