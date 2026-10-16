@@ -28,6 +28,9 @@ interface ChatPanelProps {
   onCitationClick: (paperId: string) => void;
   onSelectChunk?: (chunk: GroundedChunkResult) => void;
   activeChunks?: GroundedChunkResult[];
+  canSend?: boolean;
+  onClearConversation?: () => void;
+  storageNotice?: string | null;
 }
 
 const SAMPLE_QUERIES = [
@@ -65,7 +68,7 @@ export function getPaperDisplayInfo(
   const chunkList = [...(messageChunks || []), ...(activeChunks || [])];
 
   // Search in chunks (matching canonical ID, ID without prefix, or substring)
-  let found = chunkList.find((c) => {
+  const found = chunkList.find((c) => {
     const cId = c.paper_id
       .trim()
       .toLowerCase()
@@ -241,6 +244,9 @@ export function ChatPanel({
   isLoading,
   onCitationClick,
   activeChunks,
+  canSend = true,
+  onClearConversation,
+  storageNotice,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -259,7 +265,7 @@ export function ChatPanel({
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !canSend) return;
     onSendMessage(input.trim(), options);
     setInput('');
   };
@@ -547,6 +553,20 @@ export function ChatPanel({
       {/* Control Bar & Input Area */}
       <div className="border-t border-[var(--border)] bg-[var(--bg)] p-4 transition-colors">
         <div className="max-w-3xl mx-auto space-y-3">
+          <div className="flex min-h-8 items-center justify-between gap-3">
+            <p role="status" className="text-xs text-[var(--muted)]">
+              {storageNotice}
+            </p>
+            {onClearConversation && (
+              <button
+                type="button"
+                onClick={onClearConversation}
+                className="shrink-0 rounded border border-red-400/70 bg-[var(--surface)] px-3 py-2 text-xs font-medium text-red-500 transition-colors hover:border-red-500 hover:bg-red-500/10"
+              >
+                Clear conversation
+              </button>
+            )}
+          </div>
           {/* Options Drawer */}
           {showOptions && (
             <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-4 space-y-3 text-xs">
@@ -653,6 +673,7 @@ export function ChatPanel({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask a scientific research question..."
+                disabled={!canSend}
                 rows={1}
                 className="w-full resize-none bg-transparent px-3.5 py-3 text-sm text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none min-h-[46px] max-h-32 font-sans"
               />
@@ -675,7 +696,7 @@ export function ChatPanel({
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || !canSend}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--accent-ink)] transition-all"
               title="Execute RAG Query"
             >
