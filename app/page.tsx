@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { loadConversation, saveConversation, clearConversation } from '../lib/chatStorage';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { Navbar } from '../components/Navbar';
 import { ChatPanel } from '../components/ChatPanel';
@@ -22,6 +23,47 @@ function WorkbenchContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loadingHealth, setLoadingHealth] = useState(true);
+  const [conversationReady, setConversationReady] = useState(false);
+  const [storageNotice, setStorageNotice] = useState<string | null>(null);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const requestGeneration = React.useRef(0);
+
+  const persistMessages = async (nextMessages: ChatMessage[]) => {
+    try {
+      await saveConversation(nextMessages);
+    } catch (error) {
+      console.error('Failed to persist chat history:', error);
+      setStorageNotice('Chat history could not be saved locally. The conversation remains available for this session.');
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    loadConversation()
+      .then((storedMessages) => {
+        if (!mounted) return;
+        setMessages(storedMessages);
+        const latestChunks = [...storedMessages]
+          .reverse()
+          .find((message) => message.role === 'assistant' && message.grounded_chunks?.length)
+          ?.grounded_chunks;
+        setActiveChunks(latestChunks || []);
+      })
+      .catch((error) => {
+        console.error('Failed to restore chat history:', error);
+        if (mounted) {
+          setStorageNotice('Saved chat history could not be restored. You can continue in memory.');
+        }
+      })
+      .finally(() => {
+        if (mounted) setConversationReady(true);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Poll backend health status
   useEffect(() => {
@@ -53,7 +95,10 @@ function WorkbenchContent() {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const generation = requestGeneration.current;
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
+    await persistMessages(nextMessages);
     setIsLoading(true);
 
     try {
@@ -77,6 +122,7 @@ function WorkbenchContent() {
       }
 
       const data: RAGSynthesisResponse = await res.json();
+      if (requestGeneration.current !== generation) return;
 
       const assistantMsg: ChatMessage = {
         id: `assistant_${Date.now()}`,
@@ -88,18 +134,39 @@ function WorkbenchContent() {
         latency_ms: data.latency_ms,
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
+      const completeMessages = [...nextMessages, assistantMsg];
+      setMessages(completeMessages);
+      await persistMessages(completeMessages);
       setActiveChunks(data.grounded_chunks || []);
     } catch (error) {
+      if (requestGeneration.current !== generation) return;
       const errorMsg: ChatMessage = {
         id: `error_${Date.now()}`,
         role: 'assistant',
         content: `⚠️ **Error communicating with backend**: ${(error as Error).message}\n\nPlease verify that the NestJS backend is active on \`http://localhost:8000\`.`,
         timestamp: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      const failedMessages = [...nextMessages, errorMsg];
+      setMessages(failedMessages);
+      await persistMessages(failedMessages);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleClearConversation = async () => {
+    requestGeneration.current += 1;
+    setClearDialogOpen(false);
+    setMessages([]);
+    setActiveChunks([]);
+    setSelectedChunk(null);
+    setIsLoading(false);
+
+    try {
+      await clearConversation();
+    } catch (error) {
+      console.error('Failed to clear chat history:', error);
+      setStorageNotice('Chat history could not be cleared locally.');
     }
   };
 
@@ -169,6 +236,9 @@ function WorkbenchContent() {
           isLoading={isLoading}
           onCitationClick={handleCitationClick}
           activeChunks={activeChunks}
+          canSend={conversationReady}
+          onClearConversation={() => setClearDialogOpen(true)}
+          storageNotice={storageNotice}
         />
 
         {/* Collapsible Grounded Chunks Inspector */}
@@ -187,6 +257,40 @@ function WorkbenchContent() {
           chunk={selectedChunk}
           onClose={() => setSelectedChunk(null)}
         />
+      )}
+
+      {clearDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-conversation-title"
+            className="w-full max-w-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-[var(--ink)]"
+          >
+            <h2 id="clear-conversation-title" className="text-base font-semibold">
+              Clear conversation?
+            </h2>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              This removes the saved conversation from this browser.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setClearDialogOpen(false)}
+                className="rounded border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--surface-raised)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleClearConversation}
+                className="rounded bg-red-600 px-3 py-2 text-sm text-white transition-colors hover:bg-red-700"
+              >
+                Clear conversation
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
