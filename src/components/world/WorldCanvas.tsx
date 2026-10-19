@@ -6,7 +6,8 @@ import { VectorCanopy } from './canopy/VectorCanopy';
 import { Fireflies } from './fx/Fireflies';
 import { CrawlEffects } from './fx/CrawlEffects';
 import { QueryFlight } from './fx/QueryFlight';
-import { BookCrates } from './ground/BookCrates';
+import { KnowledgeBlocks } from './ground/KnowledgeBlocks';
+import { FeedCables } from './fx/FeedCables';
 import { GroundGrid } from './ground/GroundGrid';
 import { Lighting } from './Lighting';
 import { PostFX } from './PostFX';
@@ -46,7 +47,8 @@ export default function WorldCanvas() {
       <Lighting />
       <group name="ground">
         <GroundGrid />
-        <BookCrates />
+        <KnowledgeBlocks />
+        <FeedCables />
       </group>
       <group name="tree">
         <AncientTree />

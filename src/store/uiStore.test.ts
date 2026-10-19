@@ -53,8 +53,8 @@ describe('useUi Zustand store', () => {
 
   describe('Camera & Navigation', () => {
     it('sets camera mode and target', () => {
-      useUi.getState().setCameraMode('tree', [0, 50, 0]);
-      expect(useUi.getState().cameraMode).toBe('tree');
+      useUi.getState().setCameraMode('canopy', [0, 50, 0]);
+      expect(useUi.getState().cameraMode).toBe('canopy');
       expect(useUi.getState().cameraTarget).toEqual([0, 50, 0]);
     });
 
@@ -66,9 +66,11 @@ describe('useUi Zustand store', () => {
           count: 1,
           positions: new Float32Array([10, 20, 30]),
           years: new Uint16Array([2024]),
-          categories: new Uint8Array([0]),
+          categories: new Uint16Array([0]),
           twigIds: new Uint32Array([1]),
           crateIds: new Uint32Array([1]),
+          authority: new Float32Array(1),
+          flags: new Uint8Array(1),
         },
       });
 

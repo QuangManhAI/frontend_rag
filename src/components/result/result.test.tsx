@@ -22,7 +22,7 @@ describe('Result Components & 3D Anchors', () => {
       vectors: null,
       vectorIds: [],
       vectorIndexByPaperId: new Map(),
-      categories: [{ id: 0, slug: 'cs.AI', name: 'Artificial Intelligence', color: '#ff0000', count: 10 }],
+      categories: [{ index: 0, code: 'cs.AI', name: 'Artificial Intelligence', paper_count: 10 }],
     });
     useFx.setState({ topK: [] });
   });
@@ -100,9 +100,11 @@ describe('Result Components & 3D Anchors', () => {
           count: 1,
           positions: new Float32Array([0, 10, 0]),
           years: new Uint16Array([2023]),
-          categories: new Uint8Array([0]),
+          categories: new Uint16Array([0]),
           twigIds: new Uint32Array([1]),
           crateIds: new Uint32Array([1]),
+          authority: new Float32Array(1),
+          flags: new Uint8Array(1),
         },
       });
 
@@ -115,8 +117,9 @@ describe('Result Components & 3D Anchors', () => {
               chunk_id: 'c1',
               paper_id: 'p1',
               title: 'Attention Paper',
-              authors: ['Vaswani'],
               section_title: 'Abstract',
+              section_type: 'abstract',
+              citation_tag: '[p1]',
               text: 'Attention is all you need',
               similarity_score: 0.95,
               authority_score: 0.8,
@@ -157,9 +160,11 @@ describe('Result Components & 3D Anchors', () => {
           count: 2,
           positions: new Float32Array([0, 0, 0, 10, 10, 10]),
           years: new Uint16Array([2023, 2024]),
-          categories: new Uint8Array([0, 0]),
+          categories: new Uint16Array([0, 0]),
           twigIds: new Uint32Array([1, 2]),
           crateIds: new Uint32Array([1, 2]),
+          authority: new Float32Array(2),
+          flags: new Uint8Array(2),
         },
       });
 

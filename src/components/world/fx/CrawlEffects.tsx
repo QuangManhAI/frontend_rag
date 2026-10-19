@@ -1,7 +1,6 @@
 import { useCrawl } from '../../../store/crawlStore';
 import { useUi } from '../../../store/uiStore';
 import type { FlowQuality } from '../../../utils/crawlFlow';
-import { CrawlStreams } from './CrawlStreams';
 import { RootRiseParticles } from './RootRiseParticles';
 
 export function useFlowQuality(): FlowQuality {
@@ -11,10 +10,9 @@ export function useFlowQuality(): FlowQuality {
 }
 
 /**
- * Live-crawl visuals. Mounted only while crawling (and for the fade-out afterwards): when idle
- * nothing is rendered, so the scene's draw calls are exactly what they were before.
- * Low quality: smaller pool and no root-rise particles. Reduce motion: no particles at all —
- * crates and tiles still react (crawlStore applies arrivals directly).
+ * Crawl-only visuals (the cables themselves are always on, see FeedCables). Mounted only while
+ * crawling and for the fade-out afterwards. Low quality: no root-rise particles. Reduce motion:
+ * no particles at all — blocks and tiles still react (crawlStore applies arrivals directly).
  */
 export function CrawlEffects() {
   const active = useCrawl((s) => s.visualActive);
@@ -24,7 +22,6 @@ export function CrawlEffects() {
   if (!active) return null;
   return (
     <group name="crawl">
-      {!reduce && <CrawlStreams quality={quality} />}
       {!reduce && showRise && quality === 'high' && <RootRiseParticles />}
     </group>
   );

@@ -103,9 +103,11 @@ describe('Layout Components', () => {
           count: 3,
           positions: new Float32Array(9),
           years: new Uint16Array([2020, 2022, 2024]),
-          categories: new Uint8Array(3),
+          categories: new Uint16Array(3),
           twigIds: new Uint32Array(3),
           crateIds: new Uint32Array(3),
+          authority: new Float32Array(3),
+          flags: new Uint8Array(3),
         },
       });
 
@@ -165,9 +167,11 @@ describe('Layout Components', () => {
           count: 3,
           positions: new Float32Array(9),
           years: new Uint16Array([2020, 2022, 2024]),
-          categories: new Uint8Array(3),
+          categories: new Uint16Array(3),
           twigIds: new Uint32Array(3),
           crateIds: new Uint32Array(3),
+          authority: new Float32Array(3),
+          flags: new Uint8Array(3),
         },
       });
 
@@ -196,7 +200,7 @@ describe('Layout Components', () => {
       expect(screen.getByTestId('loading-tree')).toBeDefined();
 
       useWorld.setState({ status: 'ready', categories: [] });
-      useUi.setState({ highlightLabel: { label: 'cs.AI' } });
+      useUi.setState({ highlightLabel: { kind: 'category', id: 0, label: 'cs.AI' } });
       rerender(<AppShell />);
       expect(screen.getByTestId('filter-chip')).toBeDefined();
 

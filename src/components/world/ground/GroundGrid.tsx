@@ -50,6 +50,15 @@ export function GroundGrid() {
   }, [ground, count, cols]);
   const crateCell = useMemo(() => new Map(ground?.crates.map((c) => [c.id, c.cell[1] * cols + c.cell[0]]) ?? []), [ground, cols]);
   const baseColors = useRef(new Float32Array(count * 3));
+  const zoneCells = useMemo(() => {
+    const out = new Map<number, number[]>();
+    ground?.crates.forEach((c) => {
+      const list = out.get(c.category_index) ?? [];
+      list.push(c.cell[1] * cols + c.cell[0]);
+      out.set(c.category_index, list);
+    });
+    return out;
+  }, [ground, cols]);
 
   const geometry = useMemo(() => new THREE.BoxGeometry(tile * 0.93, TILE_H, tile * 0.93), [tile]);
   const material = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.94 }), []);
@@ -100,7 +109,8 @@ export function GroundGrid() {
     }
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
     lineMaterial.color.copy(toColor(theme.groundLine));
-    lineMaterial.opacity = theme.additiveGlow ? 0.55 : 0.8;
+    // 40% dimmer than before so the lines don't compete with the cables and glass blocks.
+    lineMaterial.opacity = (theme.additiveGlow ? 0.55 : 0.8) * 0.6;
   }, [theme, ground, count, cellCrate, selected, lineMaterial]);
 
   useEffect(() => () => {
@@ -151,6 +161,21 @@ export function GroundGrid() {
         tmp.fromArray(baseColors.current, cell * 3);
         if (age < 1.2) tmp.multiplyScalar(1 + (theme.additiveGlow ? 1.8 : 0.18) * Math.exp(-age * 3));
         m.setColorAt(cell, tmp);
+        dirty = true;
+      }
+    }
+    // A cable pulse reached a block: the tiles of that zone flash softly.
+    if (crawlFx.zoneFlash.size > 0) {
+      const now = nowSec();
+      for (const [cat, at] of crawlFx.zoneFlash) {
+        const age = now - at;
+        const k = age < 0.9 ? 1 + (theme.additiveGlow ? 0.45 : 0.08) * Math.exp(-age * 4) : 1;
+        for (const cell of zoneCells.get(cat) ?? []) {
+          if (pulsing.has(cellCrate[cell]) || crawlFx.flash.has(cellCrate[cell])) continue;
+          tmp.fromArray(baseColors.current, cell * 3).multiplyScalar(k);
+          m.setColorAt(cell, tmp);
+        }
+        if (age >= 0.9) crawlFx.zoneFlash.delete(cat);
         dirty = true;
       }
     }

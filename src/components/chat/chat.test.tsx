@@ -201,10 +201,10 @@ describe('MessageBubble & MessageList', () => {
           runId: 1,
           status: 'done',
           citationChecks: [
-            { paper_id: '1906.00071', status: 'verified', claim: 'LoRA works' },
-            { paper_id: '1906.99999', status: 'unverified', claim: 'Hallucination' },
+            { paper_id: '1906.00071', status: 'verified' },
+            { paper_id: '1906.99999', status: 'unverified' },
           ],
-          timings: { total_ms: 450, embed_ms: 50, retrieve_ms: 100, generate_ms: 300 },
+          timings: { total_ms: 450, embed_ms: 50, route_ms: 20, search_ms: 60, rerank_ms: 20, llm_ms: 300 },
         }}
       />,
     );

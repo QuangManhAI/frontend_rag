@@ -23,11 +23,17 @@ export const crawlFx = {
   heightVersion: 0,
   /** When the last scheduled particle lands. */
   lastEnd: 0,
-  /** Set by the mounted stream / rise components. */
+  /** Set by the mounted cable / rise components. */
   streamsLive: false,
   /** Particle slots in use by the stream pool (perf audits). */
   poolUsed: 0,
   riseLive: false,
+  /** Zone index → when the last energy pulse reached its block (block "fills" with light). */
+  zoneRise: new Array<number>(16).fill(-1e6),
+  /** Category index → when a pulse reached its block (tiles above flash softly). */
+  zoneFlash: new Map<number, number>(),
+  /** Zone index → crawl activity 0..1 (decays), set by the cables, read by the blocks. */
+  zoneActivity: new Float32Array(16),
 };
 
 export function scheduleArrival(crate: number, count: number, at: number): void {

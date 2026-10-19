@@ -26,12 +26,12 @@ export function RootRiseParticles() {
   const ground = useWorld((s) => s.ground);
   const nodesById = useWorld((s) => s.nodesById);
   const theme = useTheme();
-  const { size, camera, gl } = useThree();
+  const { size, camera } = useThree();
   const stream = useMemo(() => new StreamParticles(POOL, ROWS, SAMPLES), []);
 
   useEffect(() => {
     stream.material.blending = glowBlending(theme);
-    stream.material.uniforms.uSize.value = 0.6;
+    stream.material.uniforms.uSize.value = 0.18;
     stream.material.uniforms.uSpread.value = 0.4;
     stream.material.uniforms.uTail.value.copy(toColor(theme.sap));
     stream.material.uniforms.uTailMix.value = 0.6;
@@ -96,8 +96,7 @@ export function RootRiseParticles() {
     const u = stream.material.uniforms;
     u.uNow.value = nowSec();
     u.uScale.value = pointScale(size.height, (camera as THREE.PerspectiveCamera).fov);
-    u.uPixelRatio.value = gl.getPixelRatio();
   });
 
-  return <primitive object={stream.points} />;
+  return <primitive object={stream.object} />;
 }

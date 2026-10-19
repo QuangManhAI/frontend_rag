@@ -44,7 +44,7 @@
 - [Perf] Lưới raycast giả định tán cây không có transform (group `canopy` ở gốc toạ độ) — toạ độ trong `vectors.bin` là toạ độ thế giới.
 - [P12] Chưa có backend cào: `VITE_USE_MOCK` dùng `MockCrawler` (tick 250 ms, phân bố theo `paper_count` của category, vector mới quanh nhánh cùng category) đi qua **cùng** `streamCrawl` + logic tự kết nối lại như backend thật. Bật/tắt, tốc độ 300/3.000 bài/phút và "Giả lập mất kết nối" nằm trong HUD (chỉ hiện ở chế độ mock).
 - [P12] Mục tiêu mock = max(150.000, số bài hiện có + 120.000) để luôn còn bài để cào.
-- [P12] Mỗi **vùng** thùng (mỗi category, 10 vùng ở mock) có **một cột hạt thẳng đứng** từ tầng nguồn (y = −40, không vẽ gì ở đó) lên ngay dưới đáy thùng sâu nhất của vùng, đặt tại tâm vùng, rộng ~30% bán kính vùng, màu của category. Batch gộp 250 ms rồi cộng theo vùng; số hạt theo tổng số bài của vùng. Khi hạt tới nơi, đúng thùng nhận bài sẽ lóe và cao lên. Đáy cột tính lại theo chiều cao thùng hiện tại mỗi lần phát.
+- [P12 → P14.1] Mỗi **vùng** (mỗi category, 10 vùng ở mock) có **một cáp tri thức**; xem các mục [P14.1] bên dưới (thay cho cột hạt thẳng đứng trước đó).
 - [P12] Chiều cao thùng tăng theo `crateHeight(paper_count + số bài mới, max ban đầu)` — thùng đã cao tối đa thì giữ 12; bố cục chính xác chờ pipeline dựng lại thế giới (C4).
 - [P12] Khi đang cào, mặt đất giảm độ đặc xuống 0.62 (ngoài chế độ "Dưới đất") để thấy các dòng chảy bên dưới; trở lại bình thường khi dừng.
 - [P12] Vector mới "mọc" tại thời điểm `born` (đồng hồ `performance.now()/1000`): nếu bật "Hiện hạt lên cây" thì sau 2.6 s (khi hạt đi hết rễ → thân → nhánh), nếu không thì ngay lập tức.
@@ -54,3 +54,12 @@
 - [P12] Lóe sáng ô/thùng ở light theme yếu hơn (×1.18 / ×1.3) để pastel không cháy trắng.
 
 - [Độ nét] Ưu tiên độ nét hơn vài ms: MSAA 4× trong composer ở bậc đầy đủ, `antialias: true`, **không hạ dpr khi xoay/zoom** (bỏ `AdaptiveDpr`). Bậc tự động: 0 đầy đủ → 1 tắt MSAA → 2 dpr 1.5 + bloom nhẹ → 3 dpr 1, tắt bloom.
+
+- [P14.1] Repo chưa có `FeedCables` (P14) → dựng mới `FeedCables.tsx` từ cột hạt theo vùng của P12. Cáp **luôn hiện** (không chỉ khi cào); khi cào chỉ cáp của vùng nhận bài mạnh lên (hoạt động 0..1 tăng theo `log2(1+count)`, giảm dần ~2.5 s).
+- [P14.1] Hình cáp: cubic Bézier từ y = −150, xa ra ngoài theo hướng tâm vùng và nghiêng về phía camera overview (để chạy ra khỏi mép dưới khung hình), uốn vào dưới lưới, 9 đơn vị cuối thẳng đứng cắm vào đáy khối. Mờ dần ở 25% đầu (phía sâu). Bán kính ống 1.25 (loe ×1.9 ở 8% cuối); quầng 3.75.
+- [P14.1] Lõi sáng không phải hình học riêng: lấy `pow(|N·V|, 22)` trên chính ống (dải mảnh ở tâm, nơi mặt ống quay về camera); viền = fresnel. Nhờ vậy cáp vẫn là 1 geometry (+1 quầng ở mức Cao).
+- [P14.1] Light theme: lõi dùng màu category bão hoà (lõi trắng sẽ biến mất trên nền trắng), viền tối mảnh ở silhouette; dark: neon phát sáng.
+- [P14.1] Xung năng lượng do CPU lên lịch (`PulseTrain`, 4 slot/cáp, 1.5–3 s, nhanh gấp ≤4 lần khi vùng đang nhận bài) để biết chính xác lúc xung tới khối → khối "dâng sáng" 0.6 s và ô đất của vùng lóe nhẹ.
+- [P14.1] Hạt thành vệt (quad hướng camera dọc theo chuyển động, dài 3–6× bề rộng, rộng tối thiểu 1.5 px); kích thước, tốc độ ±40%; dòng nghỉ 26 vệt/s/cáp (Thấp 8). Hạt lên cây (P12) dùng cùng lớp vệt.
+- [P14.1] Khối tri thức: thùng cùng vùng gộp thành MỘT lăng trụ kính (mặt trên theo hình các ô, không vách trong, mép ngoài thụt 0.12 để hai vùng kề nhau không trùng mặt). Độ sâu ∝ sqrt(số bài của vùng) trong [5, 16], thang có dư ×1.6 để vùng lớn nhất vẫn cao thêm khi cào. Lọc theo từng thùng vẫn ở ô đất (click ô).
+- [P14.1] Đường lưới mặt đất giảm 40% độ đậm.

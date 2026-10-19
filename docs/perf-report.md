@@ -163,3 +163,17 @@ Người dùng thấy ảnh mờ khi zoom/xoay so với bản đầu. Nguyên nh
 | Frame time p95 | — | 15.4 / 19.1 ms |
 
 Cột "Trước" lấy từ lượt đo không cào ở §8 (cùng script, cùng máy). Vẫn dưới 16.7 ms (60 FPS) ở median; máy yếu thì chế độ "Tự động" sẽ tắt MSAA trước.
+
+## 10. Cáp tri thức (Prompt 14.1)
+
+Đo bằng `scripts/perf-measure.cjs` (đồng bộ GPU, bản `vite build` + `vite preview`, 150k vector, 1440×900, dpr 2, chất lượng Cao, MacBook Air M4 cắm sạc). "Trước" = cột hạt của P12 (chỉ hiện khi cào) + thùng sách instanced; "Sau" = cáp luôn hiện (ống + quầng + vệt hạt + xung) + khối kính.
+
+| Kịch bản (dark / light) | Trước median | Sau median | Sau p95 | Draw call sau |
+| :-- | --: | --: | --: | --: |
+| Không cào | 11.5 / 11.8 ms | 11.9 / 12.0 ms | 17.2 / 16.7 ms | 53.9 / 52.8 |
+| Cào 3.000 bài/phút | 11.8 / 11.7 ms | 13.0 / 11.9 ms | 17.7 / 17.3 ms | 55.0 / 53.9 |
+| Không cào, chất lượng Thấp | — | 10.6 / 11.6 ms | 17.7 / 20.1 ms | 48.4 / 47.3 |
+
+- Thêm cố định: ống cáp (1), quầng (1, chỉ mức Cao), vệt hạt (1 instanced), khối kính (1) + viền khối (1); bỏ thùng instanced (1). Không vẽ gì thêm theo từng hạt hay từng cáp.
+- Cáp chỉ tốn +0.3–1.2 ms; vẫn dưới 16.7 ms ở median. p95 ~17 ms do đo đồng bộ từng frame (readPixels) — cùng mức với lượt "trước" (16.1–16.8 ms).
+- Ảnh trước/sau: `docs/screenshots/{before,after}-{dark,light}-{overview,ground}.png` (đang cào 3.000/phút, chụp bằng `scripts/cable-shots.cjs`).
