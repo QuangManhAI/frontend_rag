@@ -1,8 +1,6 @@
-'use client';
-
 import React from 'react';
-import { HealthResponse } from '../src/types/rag';
-import { useTheme } from '../src/context/ThemeContext';
+import { HealthResponse } from '../types/rag';
+import { useTheme } from '../context/ThemeContext';
 import { Cpu, Database, BookOpen, ExternalLink, Activity, Moon, Sun } from 'lucide-react';
 
 interface NavbarProps {

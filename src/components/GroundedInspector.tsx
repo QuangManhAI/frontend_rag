@@ -1,7 +1,5 @@
-'use client';
-
 import React from 'react';
-import { GroundedChunkResult } from '../src/types/rag';
+import { GroundedChunkResult } from '../types/rag';
 import { Layers, ChevronRight, BookOpen, User, Hash, Zap } from 'lucide-react';
 
 interface GroundedInspectorProps {

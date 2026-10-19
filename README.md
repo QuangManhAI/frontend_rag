@@ -1,20 +1,21 @@
 # Scientific Literature RAG - Frontend Client
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.3-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat&logo=vite&logoColor=white)](https://vite.dev/)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-Modern, high-performance web interface built with **Next.js 16 (App Router)**, **React 19**, and **Tailwind CSS v4** for exploring, querying, and interacting with the Scientific Literature RAG System.
+Modern, ultra-fast web interface built with **Vite**, **React 19**, and **Tailwind CSS v4** for exploring, querying, and interacting with the Scientific Literature RAG System.
 
 ---
 
 ## 🌟 Features
 
-- **Interactive Academic Chat**: Ask research questions and receive streaming answers grounded in over 13,000+ scientific papers.
+- **Interactive Academic Chat**: Ask research questions and receive answers grounded in over 913,000+ scientific chunks.
 - **Deep Citation Inspector**: View inline citations with direct links to referenced papers, confidence metrics, and author details.
-- **Data Mining Visualizer**: Inspect PageRank authority indicators and related research topics derived from co-authorship networks.
-- **Responsive & Dark-Mode Ready**: Fully responsive user experience built with Tailwind CSS v4 and optimized Geist typography.
+- **Data Mining Visualizer**: Inspect PageRank authority indicators and retrieval metrics (cosine similarity vs. authority boost).
+- **Responsive & Dark-Mode Ready**: Fully responsive user experience built with Tailwind CSS v4 design tokens and anti-slop typography.
+- **Vite Fast HMR**: Instant Hot Module Replacement and lightning-fast developer experience.
 
 ---
 
@@ -22,9 +23,10 @@ Modern, high-performance web interface built with **Next.js 16 (App Router)**, *
 
 ```mermaid
 flowchart TD
-    User([User Browser]) <--> NextUI["Next.js 16 Client UI (App Router)"]
-    NextUI <--> APIRoute["Client API Layer / Server Actions"]
-    APIRoute <--> BackendAPI["NestJS Backend Service\n(http://localhost:3001)"]
+    User([User Browser]) <--> ViteUI["Vite + React 19 Client UI"]
+    ViteUI <--> DevProxy["Vite Dev Server Proxy (/api)"]
+    DevProxy <--> BackendAPI["NestJS Backend Service\n(http://localhost:8000)"]
+    ViteUI -.->|Production direct or reverse proxy| BackendAPI
 ```
 
 ---
@@ -33,17 +35,26 @@ flowchart TD
 
 ```text
 frontend_rag/
-├── app/
-│   ├── favicon.ico       # Application icon
-│   ├── globals.css       # Tailwind CSS v4 directives & theme styles
-│   ├── layout.tsx        # Root layout with HTML metadata & font providers
-│   └── page.tsx          # Main RAG chat & exploration interface
-├── public/               # Static assets & brand vectors
-├── .gitignore            # Git ignore specification
-├── eslint.config.mjs     # ESLint configuration
-├── next.config.ts        # Next.js build and routing options
-├── package.json          # Dependencies and script definitions
-└── tsconfig.json         # TypeScript compiler options
+├── public/                 # Static assets & brand vectors (favicon, SVGs)
+├── src/
+│   ├── components/         # Modular UI Components
+│   │   ├── ChatPanel.tsx          # Chat thread, Markdown & KaTeX rendering, sample queries
+│   │   ├── GroundedInspector.tsx  # Grounded chunks sidebar inspector
+│   │   ├── Navbar.tsx             # System telemetry badges, model info & theme toggle
+│   │   └── PaperModal.tsx         # Detailed paper inspect modal (arXiv / OpenAlex)
+│   ├── context/
+│   │   └── ThemeContext.tsx       # Dark & Light theme state provider
+│   ├── types/
+│   │   └── rag.ts                 # TypeScript interfaces for queries, chunks, & telemetry
+│   ├── App.tsx             # Root application orchestrator
+│   ├── index.css           # Tailwind CSS v4 & KaTeX styles, theme variables
+│   ├── main.tsx            # DOM root bootstrap
+│   └── vite-env.d.ts       # Vite client types & environment interface
+├── Dockerfile              # Multi-stage production container (Vite build -> Nginx)
+├── index.html              # Single page entry HTML
+├── package.json            # Scripts and dependencies (Vite, React 19, Tailwind CSS v4)
+├── tsconfig.json           # TypeScript configuration
+└── vite.config.ts          # Vite build, plugins (@tailwindcss/vite, @vitejs/plugin-react), & dev proxy
 ```
 
 ---
@@ -53,13 +64,15 @@ frontend_rag/
 ### 1. Requirements
 - **Node.js**: v20+ (v22 LTS recommended)
 - **npm**, **pnpm**, or **yarn**
-- Running instance of the `backend_rag` service (default: `http://localhost:3001`)
+- Running instance of the `backend_rag` service (default: `http://localhost:8000`)
 
-### 2. Environment Configuration
-Create a `.env.local` file in the `frontend_rag` directory:
+### 2. Environment Configuration (Optional)
+By default, Vite's dev server proxies `/api` to `http://localhost:8000`. You can customize this in `.env`:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:3001
+VITE_BACKEND_URL=http://localhost:8000
+# Or direct API URL for production:
+# VITE_API_URL=http://localhost:8000
 ```
 
 ### 3. Installation & Development
@@ -68,7 +81,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 # Install dependencies
 npm install
 
-# Run development server with Turbopack
+# Run development server with Vite (starts on http://localhost:3000)
 npm run dev
 ```
 
@@ -79,11 +92,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 ## 🚀 Build & Production
 
 ```bash
-# Build production bundle
+# Type check and build production bundle into dist/
 npm run build
 
-# Start production server
-npm run start
+# Preview production build locally
+npm run preview
 
 # Lint codebase
 npm run lint

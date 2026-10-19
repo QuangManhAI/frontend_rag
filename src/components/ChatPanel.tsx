@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,7 +7,7 @@ import {
   ChatMessage,
   GroundedChunkResult,
   QueryOptions,
-} from '../src/types/rag';
+} from '../types/rag';
 import {
   Send,
   SlidersHorizontal,
@@ -148,14 +146,6 @@ function preprocessContent(
   });
 
   // 3. Universal Citation Matching supporting BOTH [...] AND (...)
-  // Handles:
-  // - (Paper ID: openalex:W4409626943)
-  // - (Paper ID: 2111.07624)
-  // - (Paper ID: 2111.07624, Paper ID: 2111.07624, Paper ID: 2111.07624)
-  // - [openalex:W4409626943]
-  // - [2111.07624]
-  // - [Paper: 2111.07624]
-  // - [1], [2], (1), (2), [Source 1], (Source 1)
   processed = processed.replace(
     /`?([\[\(])\s*(?:(?:Paper(?:\s*ID)?|arXiv|Source)\s*:?\s*)?([^\]\)\n]+)\s*([\]\)])`?/gi,
     (fullMatch, openChar, rawInner, closeChar) => {

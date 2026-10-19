@@ -1,18 +1,18 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
-import { ThemeProvider } from '../src/context/ThemeContext';
-import { Navbar } from '../components/Navbar';
-import { ChatPanel } from '../components/ChatPanel';
-import { GroundedInspector } from '../components/GroundedInspector';
-import { PaperModal } from '../components/PaperModal';
+import { ThemeProvider } from './context/ThemeContext';
+import { Navbar } from './components/Navbar';
+import { ChatPanel } from './components/ChatPanel';
+import { GroundedInspector } from './components/GroundedInspector';
+import { PaperModal } from './components/PaperModal';
 import {
   ChatMessage,
   GroundedChunkResult,
   HealthResponse,
   QueryOptions,
   RAGSynthesisResponse,
-} from '../src/types/rag';
+} from './types/rag';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 function WorkbenchContent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -27,7 +27,7 @@ function WorkbenchContent() {
   useEffect(() => {
     async function checkHealth() {
       try {
-        const res = await fetch('/api/rag/health');
+        const res = await fetch(`${API_BASE_URL}/api/rag/health`);
         if (res.ok) {
           const data = await res.json();
           setHealth(data);
@@ -57,7 +57,7 @@ function WorkbenchContent() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/rag/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/rag/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ function WorkbenchContent() {
   );
 }
 
-export default function Home() {
+export default function App() {
   return (
     <ThemeProvider>
       <WorkbenchContent />

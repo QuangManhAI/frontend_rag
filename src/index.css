@@ -7,6 +7,11 @@
    ========================================================================== */
 
 :root {
+  /* Font Family Mappings */
+  --font-geist-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", monospace;
+  --font-serif: "Source Serif 4", Georgia, serif;
+
   /* White-oriented Theme (Clean Paper Editorial) */
   --bg: #ffffff;
   --surface: #f8fafc;
@@ -53,13 +58,13 @@
 body {
   color: var(--ink);
   background-color: var(--bg);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-geist-sans);
   overflow-x: hidden;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .font-editorial {
-  font-family: var(--font-serif), Georgia, serif;
+  font-family: var(--font-serif);
 }
 
 /* Custom Scrollbar */

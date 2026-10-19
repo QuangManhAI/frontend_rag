@@ -1,7 +1,5 @@
-'use client';
-
 import React from 'react';
-import { GroundedChunkResult } from '../src/types/rag';
+import { GroundedChunkResult } from '../types/rag';
 import { X, ExternalLink, BookOpen, User, Layers, Hash } from 'lucide-react';
 
 interface PaperModalProps {
