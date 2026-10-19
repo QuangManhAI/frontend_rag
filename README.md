@@ -1,90 +1,80 @@
-# Scientific Literature RAG - Frontend Client
+# Cây Tri Thức Vector — Frontend 3D cho RAG
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.3-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+Một **cây cổ thụ tri thức** mọc lên từ kho tài liệu: thùng sách dưới đất (kho bài báo), rễ (embedding), thân & cành (index phân cấp k-means), và tán lá — **mỗi điểm sáng là một vector bài báo**. Khi hỏi, câu hỏi tan thành một quả cầu vector, bay theo cành (điểm cosine thật ở mỗi ngã rẽ), so sánh với các vector ứng viên, sáng rực top-k, rồi camera phóng vào kết quả tốt nhất trong lúc LLM viết câu trả lời.
 
-Modern, high-performance web interface built with **Next.js 16 (App Router)**, **React 19**, and **Tailwind CSS v4** for exploring, querying, and interacting with the Scientific Literature RAG System.
+Spec gốc: [`../docs/prompt_frontend.md`](../docs/prompt_frontend.md) — hợp đồng dữ liệu ở **Mục 3**.
 
----
+Stack: Vite 6 · React 19 · TypeScript (strict) · three.js · @react-three/fiber + drei + postprocessing · zustand · react-markdown + KaTeX · Tailwind 4 · Vitest · Playwright.
 
-## 🌟 Features
+## Chạy
 
-- **Interactive Academic Chat**: Ask research questions and receive streaming answers grounded in over 13,000+ scientific papers.
-- **Deep Citation Inspector**: View inline citations with direct links to referenced papers, confidence metrics, and author details.
-- **Data Mining Visualizer**: Inspect PageRank authority indicators and related research topics derived from co-authorship networks.
-- **Responsive & Dark-Mode Ready**: Fully responsive user experience built with Tailwind CSS v4 and optimized Geist typography.
-
----
-
-## 🏗️ Architecture & Component Flow
-
-```mermaid
-flowchart TD
-    User([User Browser]) <--> NextUI["Next.js 16 Client UI (App Router)"]
-    NextUI <--> APIRoute["Client API Layer / Server Actions"]
-    APIRoute <--> BackendAPI["NestJS Backend Service\n(http://localhost:3001)"]
+```bash
+npm install
+npm run dev            # http://localhost:3000 — mặc định chạy mock, không cần backend
 ```
 
----
+| Biến (`.env`) | Mặc định | Ý nghĩa |
+| :-- | :-- | :-- |
+| `VITE_USE_MOCK` | `true` | `false` để gọi backend thật |
+| `VITE_API_BASE` | `/api` | Tiền tố API |
+| `VITE_BACKEND_URL` | `http://localhost:8000` | Đích proxy `/api` của `vite dev` |
 
-## 📂 Project Structure
+Query string hữu ích:
+
+| Query | Tác dụng |
+| :-- | :-- |
+| `?vectors=150000` | Thế giới mock 150k vector (test hiệu năng) |
+| `?perf` | Overlay r3f-perf (chỉ DEV) |
+| `?nofx` | Tắt bloom (GPU yếu / CI) |
+| `?mockHealth=down` | Giả lập LLM mất kết nối (banner cảnh báo) |
+
+Luồng cào dữ liệu (Prompt 12): mục **Cào dữ liệu** trong **Cài đặt** có nút *Bắt đầu cào* (mock, 300 hoặc 3.000 bài/phút) và *Giả lập mất kết nối*; khi có backend, client nghe `GET /api/crawl/stream` (SSE) và tự kết nối lại (1 s → 2 s → 4 s … ≤ 30 s).
+
+Trong chat mock: gõ câu chứa `/error` để giả lập lỗi stream. Câu trả lời mock luôn có 1 trích dẫn **ngoài ngữ cảnh** để thấy chip cảnh báo.
+
+## Test
+
+```bash
+npm test               # Vitest: 72 unit + component tests
+npx playwright install chromium   # lần đầu
+npm run test:e2e       # Playwright: 6 kịch bản E2E (tự bật dev server mock ở cổng 5198)
+npm run typecheck
+npm run build
+```
+
+## Thao tác
+
+- **Camera**: kéo để xoay, cuộn để zoom (không còn nút Toàn cảnh / Tán cây / Dưới đất).
+- **Click ô đất** hoặc **loại bài trong legend**: chỉ làm sáng vector thuộc thùng/loại đó. `Esc` để bỏ lọc.
+- **Thanh năm** (trong Cài đặt): ẩn bài xuất bản sau năm chọn, nút ▶ để xem cây "mọc lá" theo thời gian.
+- **Hover điểm sáng**: tooltip (tiêu đề tải lười sau 300ms). **Click**: bay tới bài, mở panel chi tiết.
+- **Chip trích dẫn** trong câu trả lời: bay tới vector của bài; chip viền vàng nét đứt = bài LLM trích nhưng không nằm trong ngữ cảnh.
+- **Cài đặt**: `top_k` (1–20), `nprobe` (1–6, quả cầu tách vào nhiều cành hơn), lọc loại bài, authority boost, query expansion, giảm chuyển động, nhãn chủ đề trên nhánh (mặc định tắt), chất lượng, và mục cào dữ liệu.
+
+## Cấu trúc
 
 ```text
-frontend_rag/
-├── app/
-│   ├── favicon.ico       # Application icon
-│   ├── globals.css       # Tailwind CSS v4 directives & theme styles
-│   ├── layout.tsx        # Root layout with HTML metadata & font providers
-│   └── page.tsx          # Main RAG chat & exploration interface
-├── public/               # Static assets & brand vectors
-├── .gitignore            # Git ignore specification
-├── eslint.config.mjs     # ESLint configuration
-├── next.config.ts        # Next.js build and routing options
-├── package.json          # Dependencies and script definitions
-└── tsconfig.json         # TypeScript compiler options
+src/
+├── types/           world.ts, rag.ts — đúng Mục 3 (snake_case)
+├── theme/           tokens.ts (chỉ giao diện tối, 12 màu category), applyCssVars.ts, useTheme.ts
+├── api/             client.ts, vectorParser.ts (vectors.bin), sseParser.ts, mock/ (rng, mockWorld, mockChat)
+├── store/           pipeline.ts (reducer thuần), ragStore, worldStore, uiStore, fxStore
+├── utils/           hàm thuần có test: flight, canopy, groundLayout, treeGeometry, cameraPresets, citations, arxiv, resultCase…
+└── components/
+    ├── chat/        ChatPanel, MessageList, MessageBubble, ChatInput, CitationChip, PipelineStatus, Markdown
+    ├── world/       WorldCanvas, SkyBackground, Lighting, PostFX, CameraDirector
+    │   ├── ground/  GroundGrid, BookCrates
+    │   ├── tree/    AncientTree, Roots, Trunk, Branches, SapFlow, BranchLabels
+    │   ├── canopy/  VectorCanopy (+ picker), canopyShader, VectorTooltip
+    │   ├── fx/      QueryFlight (điều phối), QueryOrb, QueryText, VectorDigits, RouteScores, CompareThreads, TopKThreads, EssenceFlow, Fireflies
+    │   └── overlay/ anchors (DOM overlay + projector), WorldOverlay, CompareScoreLabel
+    ├── result/      ResultCard, PaperPanel, ChunkList, ScoreBars, TopKBadges
+    └── layout/      AppShell, TopBar, ThemeToggle, SettingsPanel, HealthBanner, LoadingTree, CategoryLegend, YearSlider
+e2e/knowledge-tree.spec.ts
 ```
 
----
+Nguyên tắc: logic tách khỏi render (mọi tính toán là hàm thuần có test), animation chỉ dùng ref + `useFrame`, store chỉ đổi ở ranh giới giai đoạn. Xem `ASSUMPTIONS.md` cho các quyết định ngoài spec và `PROGRESS.md` cho trạng thái kiểm chứng.
 
-## ⚡ Getting Started
+## Nối backend thật
 
-### 1. Requirements
-- **Node.js**: v20+ (v22 LTS recommended)
-- **npm**, **pnpm**, or **yarn**
-- Running instance of the `backend_rag` service (default: `http://localhost:3001`)
-
-### 2. Environment Configuration
-Create a `.env.local` file in the `frontend_rag` directory:
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-### 3. Installation & Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server with Turbopack
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
-
----
-
-## 🚀 Build & Production
-
-```bash
-# Build production bundle
-npm run build
-
-# Start production server
-npm run start
-
-# Lint codebase
-npm run lint
-```
+Đặt `VITE_USE_MOCK=false`. Backend cần cung cấp (Phụ lục A của spec): `GET /api/world/{categories,ground,tree,vectors.bin,vector-ids}`, `GET /api/papers/:paper_id`, `POST /api/rag/chat/stream` (SSE với các event `phase/route/compare/retrieval/token/done/error`), `GET /api/rag/health` → `{ lancedb, llm, world }`.

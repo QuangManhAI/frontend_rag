@@ -1,0 +1,128 @@
+import { create } from 'zustand';
+import { streamChat } from '../api/client';
+import type { CitationCheck, GroundedChunk, PipelinePhase, PipelineTimings, RagRequest, RagStreamEvent } from '../types/rag';
+import { advanceVisual, emptyRun, reduceEvent, type RunData } from './pipeline';
+import { useUi } from './uiStore';
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  runId: number;
+  status: 'streaming' | 'done' | 'error' | 'stopped';
+  expanded_terms?: string[];
+  citationChecks?: CitationCheck[];
+  grounded_chunks?: GroundedChunk[];
+  timings?: PipelineTimings | null;
+  error?: string | null;
+}
+
+interface RagState {
+  messages: ChatMessage[];
+  phase: PipelinePhase;
+  visualPhase: PipelinePhase;
+  current: RunData;
+  runId: number;
+  /** True once the user skipped the animation for this run: remaining stages show instantly. */
+  skipped: boolean;
+  /** Bumped by skipAnimation() so the flight finishes its current stage at once. */
+  skipToken: number;
+  send: (text: string) => Promise<void>;
+  stop: () => void;
+  advanceVisual: () => void;
+  skipAnimation: () => void;
+}
+
+let controller: AbortController | null = null;
+
+export const useRag = create<RagState>((set, get) => {
+  const patchAssistant = (runId: number, patch: Partial<ChatMessage>) =>
+    set((s) => ({ messages: s.messages.map((m) => (m.role === 'assistant' && m.runId === runId ? { ...m, ...patch } : m)) }));
+
+  const dispatch = (runId: number, event: RagStreamEvent) => {
+    const s = get();
+    if (s.runId !== runId) return;
+    const next = reduceEvent({ phase: s.phase, current: s.current }, event);
+    if (next.phase === s.phase && next.current === s.current) return;
+    let visualPhase = s.visualPhase;
+    if (next.phase === 'error') visualPhase = 'error';
+    else if (visualPhase === 'idle' && next.phase !== 'idle') visualPhase = 'embedding';
+    set({ phase: next.phase, current: next.current, visualPhase });
+    if (event.type === 'token') patchAssistant(runId, { content: next.current.answer });
+    if (event.type === 'retrieval') patchAssistant(runId, { expanded_terms: next.current.expanded_terms, grounded_chunks: next.current.grounded_chunks });
+    if (next.phase === 'done' && s.phase !== 'done') {
+      patchAssistant(runId, { status: 'done', content: next.current.answer, citationChecks: next.current.citationChecks, timings: next.current.timings });
+    }
+    if (next.phase === 'error' && s.phase !== 'error') patchAssistant(runId, { status: 'error', error: next.current.error });
+  };
+
+  return {
+    messages: [],
+    phase: 'idle',
+    visualPhase: 'idle',
+    current: emptyRun(),
+    runId: 0,
+    skipped: false,
+    skipToken: 0,
+
+    send: async (text) => {
+      const query = text.trim();
+      if (!query) return;
+      controller?.abort();
+      const ctrl = new AbortController();
+      controller = ctrl;
+      const runId = get().runId + 1;
+      const st = useUi.getState().settings;
+      set((s) => ({
+        runId,
+        phase: 'idle',
+        visualPhase: 'idle',
+        skipped: st.reduceMotion,
+        current: emptyRun(query),
+        messages: [
+          ...s.messages.map((m) => (m.status === 'streaming' ? { ...m, status: 'stopped' as const } : m)),
+          { id: `u${runId}`, role: 'user', content: query, runId, status: 'done' },
+          { id: `a${runId}`, role: 'assistant', content: '', runId, status: 'streaming' },
+        ],
+      }));
+      const req: RagRequest = {
+        query,
+        top_k: st.top_k,
+        nprobe: st.nprobe,
+        use_authority_boost: st.use_authority_boost,
+        expand_query: st.expand_query,
+        ...(st.category ? { category: st.category } : {}),
+      };
+      try {
+        for await (const ev of streamChat(req, ctrl.signal)) {
+          if (controller !== ctrl) return;
+          dispatch(runId, ev);
+        }
+      } catch (err) {
+        dispatch(runId, { type: 'error', message: (err as Error).message });
+      } finally {
+        const s = get();
+        if (s.runId === runId && !ctrl.signal.aborted && s.phase !== 'done' && s.phase !== 'error') {
+          dispatch(runId, { type: 'error', message: 'Stream kết thúc trước khi có kết quả.' });
+        }
+      }
+    },
+
+    stop: () => {
+      const s = get();
+      if (s.phase === 'done' || s.phase === 'error' || s.phase === 'idle') return;
+      controller?.abort();
+      controller = null;
+      set({ phase: 'error', visualPhase: 'error', current: { ...s.current, error: 'Đã dừng.' } });
+      patchAssistant(s.runId, { status: 'stopped' });
+    },
+
+    advanceVisual: () => {
+      const s = get();
+      const v = advanceVisual(s.visualPhase, s.phase);
+      if (v !== s.visualPhase) set({ visualPhase: v });
+    },
+
+    skipAnimation: () => set((s) => ({ visualPhase: s.phase, skipped: true, skipToken: s.skipToken + 1 })),
+  };
+});

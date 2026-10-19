@@ -1,0 +1,181 @@
+# Báo cáo tối ưu hiệu năng scene
+
+Tiếp nối `docs/trig-audit.md`, vốn chỉ ra lag nằm ở bloom/overdraw, raycast và `diffStates` chứ không ở lượng giác. Ngày đo: 2026-10-19.
+
+## 1. Điều kiện đo
+
+| | |
+| :-- | :-- |
+| Bản build | `npm run build` → `npx vite preview --port 4173` (production), URL `/?vectors=150000&bench` |
+| Máy | Apple M4 (CPU 10 nhân, **GPU tích hợp 8 nhân**, RAM 16 GB), macOS 26.5.2 — Chromium headless 156 qua ANGLE/Metal, 1440×900, dpr 1, `--disable-gpu-vsync --disable-frame-rate-limit` |
+| Kịch bản | Gửi câu hỏi → bỏ qua animation → giai đoạn `done` (quả cầu đang thở, ô đất nhấp sáng, top-k sáng) → camera `overview`, chờ 3 s |
+| Frame time (A) — rAF | Khoảng cách `requestAnimationFrame` trên 600 frame (bỏ 20 frame đầu): median và p95. Mỗi theme đo 3 lần, lấy median của các lần |
+| Frame time (B) — đồng bộ | Như (A) nhưng mỗi frame gọi `readPixels` 1 pixel (`SYNC=1`), buộc GPU vẽ xong frame trước. Đo **đủ** chi phí GPU (kể cả khi GPU chạy chậm hơn CPU); có cộng độ trễ readback nên là **cận trên** |
+| A/B trong cùng bản build | `?legacyfx` dựng lại đúng cấu hình GPU cũ (composer MSAA 4×, canvas AA, không FXAA, bloom ngưỡng 0.18/0.75 và cường độ 1.35/0.35, sprite đủ kích thước, không discard theo alpha). Số draw call của chế độ này khớp bản cũ (51.7 / 50.6) |
+| Draw call | `renderer.info.render.calls` cộng dồn 10 frame ÷ 10 (gồm cả các pass hậu kỳ) |
+| Raycast | Thời gian hàm `pick` (`perfProbe`) qua 60 vị trí chuột cố định trên tán, cách nhau 40 ms (lớn hơn throttle 30 ms) |
+| diffStates | Thời gian cập nhật state điểm (`perfProbe`) khi bật/tắt lọc theo loại 20 lần (lọc ↔ bỏ lọc, mỗi lần ~135k điểm đổi trạng thái hiển thị) |
+| Chất lượng | Bản "sau" ghim ở **Cao** (tier 0) để so sánh công bằng; bản "trước" không có bậc chất lượng |
+
+`performance.now()` ở bản build (trang không cross-origin isolated) bị làm tròn 0.1 ms, nên frame time có bước 0.1 ms. Script đo: `scripts/perf-measure.cjs`; số liệu thô: `docs/perf-shots/raw/perf-{before,after}.json`.
+
+## 2. Kết quả (150.000 vector, Apple M4)
+
+**Vì sao có hai cách đo frame time.** Khi tắt vsync, Chromium có thể gọi `requestAnimationFrame` nhanh hơn tốc độ GPU vẽ thật (bỏ frame), nên (A) không đo hết chi phí GPU. Kiểm tra chéo cho thấy cùng một bản build, (A) cho 2.6 ms còn (B) cho 7.6 ms. Bảng (B) là số đáng tin cho phần GPU; bảng (A) giữ lại vì đó là số đo bản build cũ thật (trước khi sửa code).
+
+### 2a. Frame time đồng bộ (B) — A/B cùng bản build (sau khi sửa lỗi FXAA, §7)
+
+| Hạng mục | Theme | Trước (`?legacyfx`) | Sau | Thay đổi |
+| :-- | :-- | --: | --: | :-- |
+| Frame time median | Dark | 12.7 ms | **8.0 ms** | −37% |
+| Frame time p95 | Dark | 17.3 ms | **13.7 ms** | −21% |
+| Frame time median | Light | 13.3 ms | **8.9 ms** | −33% |
+| Frame time p95 | Light | 18.4 ms | **13.7 ms** | −26% |
+| Draw call / frame | Dark / Light | 51.7 / 50.6 | 49.5 / 48.4 | −2.2 |
+
+### 2b. Đo rAF (A) — bản build cũ thật vs bản mới (đo khi còn FXAA, chỉ để tham khảo)
+
+| Hạng mục | Theme | Trước | Sau | Thay đổi |
+| :-- | :-- | --: | --: | :-- |
+| Frame time median | Dark | 6.10 ms | **2.60 ms** | −57% |
+| Frame time p95 | Dark | 7.80 ms | **5.20 ms** | −33% |
+| Frame time median | Light | 7.90 ms | **2.80 ms** | −65% |
+| Frame time p95 | Light | 10.60 ms | **7.30 ms** | −31% |
+| Draw call / frame | Dark | 51.7 | 49.5 | −2.2 |
+| Draw call / frame | Light | 50.6 | 48.4 | −2.2 |
+| Raycast hover (trung bình) | Dark | 2.10 ms | **0.165 ms** | ÷12.7 |
+| Raycast hover (p95) | Dark | 3.0 ms | 0.5 ms | |
+| Raycast hover (trung bình) | Light | 5.95 ms | **0.34 ms** | ÷17.5 |
+| diffStates (trung bình / tối đa) | Dark | 6.18 / 7.6 ms | **0.22 / 1.6 ms** | ÷28 |
+| diffStates (trung bình / tối đa) | Light | 14.27 / 18.0 ms | **0.53 / 3.2 ms** | ÷27 |
+
+Microbenchmark CPU (Node, `npm run bench` → `src/utils/perf.bench.ts`, 150k vector):
+
+| Đoạn | Cũ | Mới | |
+| :-- | --: | --: | :-- |
+| Raycast một tia | `THREE.Points.raycast` 1.20 ms | lưới không gian 0.022 ms | nhanh hơn 56× |
+| Đổi lọc loại A → loại B | `diffStates` + `applyStates` 2.31 ms | cập nhật mask 0.27 ms | nhanh hơn 8.6× |
+| Một bước "so sánh" của animation (overlay 30 mục) | 0.65 ms | 0.0002 ms | nhanh hơn ~2600× |
+
+
+**Về draw call:** chỉ giảm ~2/frame (bloom 8 → 7 mức mipmap, bỏ MSAA resolve). Phần lớn thời gian tiết kiệm được **không đến từ số draw call** mà từ **fill-rate**: bỏ MSAA 4× trong composer, bloom chạy ở ½ độ phân giải, và mỗi sprite vẽ ít fragment hơn. Điều này khớp với kết luận của `trig-audit.md`.
+
+## 3. Đã thay đổi gì
+
+| # | Hạng mục | Thay đổi | File |
+| :-- | :-- | :-- | :-- |
+| 1 | Bloom | `EffectComposer multisampling={0}`, **không** dùng FXAA (xem §7); canvas `antialias: false`, `alpha: false` (vì composer vẽ off-screen, MSAA của canvas là lãng phí) | `components/world/PostFX.tsx`, `WorldCanvas.tsx` |
+| 1 | Bloom | `mipmapBlur`, `resolutionScale 0.5` (tier 2: 0.25, 5 mức) | `PostFX.tsx` |
+| 1 | Bloom | Ngưỡng sáng dark 0.18 → **0.42**, light 0.75 → **0.82** (nền ô đất mờ, ánh sáng phụ không còn bloom); cường độ dark giữ 1.35, light 0.35 → 0.45 | `theme/tokens.ts` |
+| 2 | Điểm sáng | Không rasterise đuôi quầng (bán kính > 80%, alpha < 6%): diện tích sprite còn 64%; `discard` thêm fragment có alpha < 0.012; điểm focus giữ đủ vòng ngoài; kích thước tối đa 48 px; vẫn `depthWrite: false`, additive (dark) / normal (light) | `canopy/canopyShader.ts` |
+| 3 | Chất lượng thích ứng | `PerformanceMonitor` + `AdaptiveDpr` (drei), bắt đầu theo dõi sau 5 s khởi động, chỉ hạ bậc dưới ~30 FPS (màn 60 Hz) / ~45 FPS (120 Hz). Thang bậc: **0** đầy đủ → **1** dpr 1.5 → **2** dpr 1 + bloom ¼ độ phân giải → **3** tắt hậu kỳ; tự lên bậc lại khi FPS hồi phục, sau 4 lần chập chờn thì đứng ở bậc 2. AdaptiveDpr hạ dpr khi đang xoay/zoom camera (`performance.regress()` từ sự kiện `control` của CameraControls) | `world/AdaptiveQuality.tsx`, `CameraDirector.tsx`, `store/uiStore.ts` |
+| 3 | UI | Cài đặt → **Chất lượng: Tự động / Cao / Thấp**, kèm bậc đang dùng. "Thấp" = bậc 2 (giữ phát sáng nhưng rẻ) | `layout/SettingsPanel.tsx` |
+| 4 | Raycast | Lưới không gian (ô 3 đơn vị, dạng CSR) dựng một lần; tia đi qua các ô bằng 3D-DDA, kiểm tra ô lân cận trong phạm vi threshold; tái sử dụng mảng kết quả. Vẫn throttle 30 ms. Test: **cùng tập điểm trúng** với `THREE.Points.raycast` trên 40 tia ngẫu nhiên | `utils/spatialGrid.ts`, `canopy/VectorCanopy.tsx` |
+| 5 | diffStates | Bộ lọc chuyển thành mask `inFilter` (Uint8) + uniform `uFilter`: đổi lọc chỉ ghi chỉ số của lựa chọn cũ ∪ mới; overlay chỉ diff theo key; vùng upload gộp bằng `toUpdateRanges`. Test: kết quả hiển thị **bằng đúng** `diffStates` cũ trên 60 bước ngẫu nhiên | `utils/canopyUpdate.ts`, `VectorCanopy.tsx` |
+
+`diffStates`/`applyStates` cũ được giữ lại làm tham chiếu cho test tương đương. Hành vi không đổi: 85/85 unit test pass (79 cũ + 6 mới), 6/6 E2E pass. Thẻ kết quả (ResultCard) thu nhỏ theo khoảng cách nhưng không dưới 85% để luôn đọc được.
+
+## 4. Máy GPU yếu
+
+**Không có máy GPU tích hợp kiểu laptop Intel/AMD để đo.** Máy duy nhất là Apple M4 (GPU tích hợp trong SoC, nhưng mạnh). Để có một điểm đo "GPU rất yếu", mình chạy bản build trên **SwiftShader** (WebGL giả lập hoàn toàn bằng CPU qua `--use-angle=swiftshader`, cùng máy M4, cùng 150k vector, theme dark, 140 frame). Mục đích chính là kiểm chứng thang chất lượng tự động; đây **không** phải số đo của một laptop thật.
+
+Phép đo đồng bộ (B), 800×500 (1440×900 trên SwiftShader mất hàng chục phút cho một lượt), dpr 1, theme dark, 40 frame, 1 lần mỗi cấu hình:
+
+| Cấu hình | Bậc khi đo | Frame time median | p95 | Draw call |
+| :-- | :-: | --: | --: | --: |
+| Trước (`?legacyfx`) | — | 189.2 ms (~5 FPS) | 202.7 ms | 51.7 |
+| Sau · Cao | 0 | **113.4 ms** (−40%) | 121.0 ms | 49.5 |
+| Sau · Thấp | 2 | **108.9 ms** (−42%) | 327.6 ms | 45.1 |
+| Sau · Tự động | tự hạ 0 → 2/3 | **82.9 ms** (−56%) | 151.8 ms | 39.6 |
+
+Nhận xét:
+- Mức giảm 40% ở chất lượng Cao **khớp với M4** (−40%): lợi ích đến từ fill-rate nên giữ được cả trên GPU yếu.
+- "Thấp" gần như bằng "Cao" ở đây: dpr vốn đã là 1, và trên rasteriser phần mềm thì phần đắt nhất là vẽ 150k sprite chứ không phải bloom.
+- "Tự động" là nhanh nhất vì PerformanceMonitor tiếp tục hạ xuống bậc 3 (tắt hậu kỳ). Draw call trung bình 39.6 nằm giữa bậc 2 (45) và bậc 3 cho thấy nó chập chờn giữa hai bậc trong lúc đo; nếu chập chờn quá 4 lần thì `onFallback` khoá ở bậc 2 (chưa quan sát trực tiếp trong lượt đo ngắn này).
+- p95 của "Thấp"/"Tự động" có đỉnh 150–330 ms. Lúc đó PerformanceMonitor đang đổi bậc, và mỗi lần đổi bậc `EffectComposer` dựng lại các pass. Trên máy thật việc này chỉ xảy ra vài lần rồi ổn định.
+- Với máy GPU tích hợp yếu thật (Intel UHD…), nên kiểm thêm bằng `scripts/perf-measure.cjs` với `SYNC=1` trên chính máy đó.
+
+## 5. Ảnh trước / sau
+
+Cùng camera, chuyển động đóng băng (`reduceMotion`) để so được; trái = trước, phải = sau.
+
+| | |
+| :-- | :-- |
+| Dark · overview | ![](perf-shots/cmp-dark-overview.jpg) |
+| Dark · focus | ![](perf-shots/cmp-dark-focus.jpg) |
+| Light · overview | ![](perf-shots/cmp-light-overview.jpg) |
+| Light · focus | ![](perf-shots/cmp-light-focus.jpg) |
+
+Nhận xét (ảnh đã chụp lại sau khi sửa lỗi FXAA):
+- **Light:** hai ảnh gần như trùng khớp.
+- **Dark:** giữ nguyên phong cách phát sáng của bản gốc, kể cả vùng cháy sáng ở giữa tán khi có 150k điểm (do hàng chục nghìn sprite cộng sáng chồng lên nhau, không do bloom). Khác biệt nhìn thấy được là ô đất và các vùng sáng vừa bớt hào quang, do ngưỡng bloom cao hơn.
+
+## 6. Kết luận
+
+- Frame time giảm **33–37%** (median) và **21–26%** (p95) ở cả hai theme theo phép đo đồng bộ có tính đủ chi phí GPU (phép đo rAF cho 57–65% nhưng đánh giá thấp phần GPU), chủ yếu nhờ bỏ MSAA khỏi composer, bloom ½ độ phân giải và sprite gọn hơn (fill-rate).
+- Các đột biến CPU theo sự kiện gần như biến mất: hover từ 2–6 ms xuống 0.2–0.3 ms, đổi lọc từ 6–14 ms xuống 0.2–0.5 ms.
+- p95 vẫn cao hơn median khá nhiều (5–7 ms). Phần còn lại đến từ các tác vụ không theo frame: cập nhật overlay DOM của nhãn, GC, React render khi store đổi. Muốn giảm tiếp nên đo bằng Performance panel của Chrome.
+
+## 7. Lỗi FXAA phát hiện sau khi bàn giao (đã sửa)
+
+Bản đầu của tối ưu này có thêm pass **FXAA** trong cùng `EffectComposer` với bloom. Trên Safari (màn Retina) người dùng thấy một **mảng tím viền răng cưa hình đám mây quanh tán cây**; tái hiện được trên WebKit và cả Chromium (ảnh "sau" cũ trong báo cáo này có vệt đó mà bị bỏ sót). Tách từng thay đổi (MSAA, độ phân giải bloom, số mức mipmap, ngưỡng) cho thấy **chỉ FXAA gây lỗi**: gộp vào EffectPass với bloom, nó che phần lớn bloom và để lại "bóng ma" của tán trên nền trời.
+
+Hệ quả và sửa:
+- Bỏ FXAA. Trên màn dpr ≥ 1.5 răng cưa không đáng kể; bậc chất lượng thấp chấp nhận răng cưa.
+- Nhận định cũ "ngưỡng bloom mới làm tán hết cháy trắng ở 150k" là **sai**: chính lỗi FXAA đã nuốt bloom. Ảnh ở §5 và số đo ở §2a đã được làm lại sau khi sửa.
+- Chế độ "Tự động" từng hạ chất lượng quá sớm trên Safari (xuống dpr 1 trên màn Retina, nhìn thô): thêm 5 s khởi động, ngưỡng FPS thấp hơn, bậc 1 dùng dpr 1.5 thay vì 1.
+
+![](perf-shots/safari-fxaa-fix.jpg)
+
+*Trên trái: Safari/WebKit trước khi sửa (có FXAA). Trên phải: sau khi sửa. Dưới trái: bản gốc trước tối ưu. Dưới phải: Chromium sau khi sửa.*
+
+## 8. Luồng tri thức khi đang cào (Prompt 12)
+
+Máy: **MacBook Air M4** (Mac16,12, GPU 8 nhân, RAM 16 GB), **đang cắm sạc** (`pmset`: AC Power), macOS 26.5.2, bản build `vite preview`, Chromium headless/Metal, vsync tắt, 1440×900, dpr 1, 150.000 vector, chất lượng **Cao**, đo đồng bộ (B), 600 frame × 3 lần, median của các lần. Cào bằng mock (`CRAWL=300|3000`), đo sau khi chạy 10 s để các dòng đã đầy.
+
+| Kịch bản | Theme | Frame median | p95 | Draw call | Raycast hover (tb / p95) | Hạt đang dùng / pool |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| Không cào | Dark | 8.4 ms | 15.5 ms | 49.5 | 0.25 / 0.5 ms | — |
+| Không cào | Light | 8.5 ms | 13.1 ms | 48.4 | 0.25 / 0.4 ms | — |
+| 300 bài/phút | Dark | 8.2 ms | 15.5 ms | 52.8 | 0.32 / 0.5 ms | ~1.270 / 20.000 |
+| 300 bài/phút | Light | 9.1 ms | 16.8 ms | 51.7 | 0.34 / 0.7 ms | ~1.300 / 20.000 |
+| 3.000 bài/phút | Dark | 9.6 ms | 16.3 ms | 52.8 | 0.31 / 0.6 ms | ~8.900 / 20.000 |
+| 3.000 bài/phút | Light | 8.8 ms | 15.4 ms | 51.7 | 0.33 / 0.5 ms | ~9.200 / 20.000 |
+| 3.000 bài/phút, chất lượng Thấp | Dark | 9.3 ms | 16.9 ms | 47.3 | 0.31 ms | 3.359 / 5.000 |
+
+- Hiệu ứng cào thêm **+3.3 draw call**: tầng nguồn, một `Points` cho mọi dòng hạt, một `Points` cho hạt lên rễ. Sau khi dừng và tắt dần, draw call **về đúng như trước** (41.8 → 41.8 dark, 40.7 → 40.7 light, đo ở cùng camera ở bản dev).
+- Frame time khi cào chỉ cao hơn lúc không cào khoảng 0–1 ms, nằm trong mức nhiễu giữa các lần chạy (±0.7 ms). Ở 3.000 bài/phút pool dùng < 50%; pool không bao giờ vượt kích thước (vòng slot cố định, có test).
+- **Lỗi phát hiện khi đo, đã sửa:**
+  - Mock đặt mục tiêu cố định 150.000 bài, nên với thế giới 150k thì không còn gì để cào; lượt đo đầu vì thế vô nghĩa và đã bị loại. Mục tiêu giờ là `max(150.000, số bài hiện có + 120.000)`.
+  - Mỗi lô vector mới từng làm dựng lại cả lưới raycast 150k và nhóm lại toàn bộ vector theo thùng/loại, khiến p95 hover vọt lên 3.5–5.5 ms. Giờ lưới chỉ kiểm thêm "đuôi" vector mới bằng brute-force (dựng lại khi đuôi > 6.000) và nhóm được nối tăng dần; p95 hover về 0.5–0.7 ms.
+
+![](perf-shots/crawl-streams.jpg)
+
+*Trên: chế độ "Dưới đất" khi đang cào 3.000 bài/phút (dark / light). Dưới: toàn cảnh.*
+
+## 9. Trả lại độ nét
+
+Người dùng thấy ảnh mờ khi zoom/xoay so với bản đầu. Nguyên nhân: `AdaptiveDpr` hạ dpr xuống 0.6× mỗi lần điều khiển camera, composer không còn MSAA, và bậc 1 của chế độ tự động hạ dpr còn 1.5. Đã sửa: bỏ `AdaptiveDpr`, bật lại MSAA 4× ở bậc 0, bậc 1 chỉ tắt MSAA (giữ dpr đầy đủ). Tầng nguồn xoáy của hiệu ứng cào cũng đã bỏ.
+
+| Dark / Light (đồng bộ GPU, 150k, 1440×900, dpr 2) | Trước | Sau |
+| :-- | --: | --: |
+| Frame time median | 8.4 / 8.5 ms | 11.4 / 11.7 ms |
+| Frame time p95 | — | 15.4 / 19.1 ms |
+
+Cột "Trước" lấy từ lượt đo không cào ở §8 (cùng script, cùng máy). Vẫn dưới 16.7 ms (60 FPS) ở median; máy yếu thì chế độ "Tự động" sẽ tắt MSAA trước.
+
+## 10. Cáp tri thức (Prompt 14.1)
+
+Đo bằng `scripts/perf-measure.cjs` (đồng bộ GPU, bản `vite build` + `vite preview`, 150k vector, 1440×900, dpr 2, chất lượng Cao, MacBook Air M4 cắm sạc). "Trước" = cột hạt của P12 (chỉ hiện khi cào) + thùng sách instanced; "Sau" = cáp luôn hiện (ống + quầng + vệt hạt + xung) + khối kính.
+
+| Kịch bản (dark / light) | Trước median | Sau median | Sau p95 | Draw call sau |
+| :-- | --: | --: | --: | --: |
+| Không cào | 11.5 / 11.8 ms | 11.9 / 12.0 ms | 17.2 / 16.7 ms | 53.9 / 52.8 |
+| Cào 3.000 bài/phút | 11.8 / 11.7 ms | 13.0 / 11.9 ms | 17.7 / 17.3 ms | 55.0 / 53.9 |
+| Không cào, chất lượng Thấp | — | 10.6 / 11.6 ms | 17.7 / 20.1 ms | 48.4 / 47.3 |
+
+- Thêm cố định: ống cáp (1), quầng (1, chỉ mức Cao), vệt hạt (1 instanced), khối kính (1) + viền khối (1); bỏ thùng instanced (1). Không vẽ gì thêm theo từng hạt hay từng cáp.
+- Cáp chỉ tốn +0.3–1.2 ms; vẫn dưới 16.7 ms ở median. p95 ~17 ms do đo đồng bộ từng frame (readPixels) — cùng mức với lượt "trước" (16.1–16.8 ms).
+- Ảnh trước/sau: `docs/screenshots/{before,after}-{dark,light}-{overview,ground}.png` (đang cào 3.000/phút, chụp bằng `scripts/cable-shots.cjs`).
+
+**Sau góp ý (bỏ ống, chỉ giữ dòng hạt to và sáng hơn):** không cào 11.6 / 11.9 ms (p95 16.2 / 19.0), cào 3.000/phút 12.2 / 12.3 ms (p95 17.2 / 17.2); draw call 51.7 / 50.6 khi không cào (bớt 2 so với bản có ống). Ảnh trong `docs/screenshots/after-*` đã chụp lại với bản này.
