@@ -257,5 +257,84 @@ describe('resultCase', () => {
     expect(resolveResultCase('a', [{ paper_id: 'a', status: 'verified' }], g)).toBe('grounded');
     expect(resolveResultCase('b', [], g)).toBe('browse');
     expect(resolveResultCase('z', [{ paper_id: 'z', status: 'unverified' }], g)).toBe('unverified');
+    expect(resolveResultCase('a', [{ paper_id: 'a', status: 'unverified' }], [])).toBe('unverified');
+    expect(resolveResultCase('a', [], [{ chunk_id: 'c1', paper_id: 'a' } as any])).toBe('grounded');
   });
 });
+
+describe('storage.ts', () => {
+  it('reads, writes, and parses JSON safely', async () => {
+    const { readStorage, writeStorage, readJson } = await import('./storage');
+    writeStorage('test_key', 'hello');
+    expect(readStorage('test_key')).toBe('hello');
+    expect(readStorage('nonexistent')).toBeNull();
+
+    writeStorage('json_key', JSON.stringify({ a: 1 }));
+    const parsed = readJson('json_key', (v): v is { a: number } => typeof v === 'object' && v !== null && 'a' in v);
+    expect(parsed?.a).toBe(1);
+
+    writeStorage('bad_json', '{broken');
+    expect(readJson('bad_json', (v): v is any => true)).toBeNull();
+  });
+});
+
+describe('treeGeometry & cameraPresets edge cases', () => {
+  it('calculates rootRadiusAt and rootVertexColor', () => {
+    expect(rootRadiusAt(1)).toBeGreaterThan(rootRadiusAt(0));
+    expect(rootVertexColor(0, [1, 0, 0], [0, 1, 0]).length).toBe(3);
+    expect(rootVertexColor(1, [1, 0, 0], [0, 1, 0]).length).toBe(3);
+  });
+
+  it('buildSapParticles returns buffer attributes', () => {
+    const parts = buildSapParticles([
+      [[0, 0, 0], [10, 20, 30]],
+    ], 5);
+    expect(parts.count).toBe(5);
+    expect(parts.phase.length).toBe(5);
+    expect(parts.pathIndex.length).toBe(5);
+  });
+
+  it('tubeAlongPath builds geometry buffers', () => {
+    const tube = tubeAlongPath(
+      [
+        [0, 0, 0],
+        [0, 10, 0],
+        [0, 20, 0],
+      ],
+      { radius: (t) => 0.5 + t, tubularSegments: 8, radialSegments: 4 },
+    );
+    expect(tube.getAttribute('position')).toBeDefined();
+    expect(tube.getIndex()).toBeDefined();
+  });
+
+  it('returns camera presets for all modes', () => {
+    expect(getPreset('overview')).toBeDefined();
+    expect(getPreset('canopy')).toBeDefined();
+    expect(getPreset('ground')).toBeDefined();
+    expect(getPreset('focus', { point: [0, 10, 0] })).toBeDefined();
+    expect(getPreset('follow', { point: [0, 10, 0] })).toBeDefined();
+    expect(FOCUS_DISTANCE).toBeGreaterThan(0);
+  });
+
+  it('buildTrunkGeometry creates 3D trunk geometry with attributes', async () => {
+    const { buildTrunkGeometry } = await import('./treeGeometry');
+    const trunk = buildTrunkGeometry({ height: 20, baseRadius: 3, topRadius: 1.5, color: [0.5, 0.4, 0.3] });
+    expect(trunk.getAttribute('position')).toBeDefined();
+    expect(trunk.getAttribute('normal')).toBeDefined();
+    expect(trunk.getIndex()).toBeDefined();
+  });
+
+  it('provides animation config durations', async () => {
+    const { animationConfig } = await import('./animationConfig');
+    expect(animationConfig.flightSpeed).toBeGreaterThan(0);
+    expect(animationConfig.embedding).toBeGreaterThan(0);
+  });
+
+  it('executes timed blocks in perfProbe', async () => {
+    const { timed, perfStats } = await import('./perfProbe');
+    const res = timed('test-metric', () => 42);
+    expect(res).toBe(42);
+    expect(perfStats).toBeDefined();
+  });
+});
+

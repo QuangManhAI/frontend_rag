@@ -58,4 +58,18 @@ describe('PaperPanel', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(UNVERIFIED_WARNING);
     expect(await screen.findByText(/Không tải được metadata/)).toBeInTheDocument();
   });
+
+  it('handles Escape and Tab focus navigation', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    open('2310.00297');
+    const panel = screen.getByTestId('paper-panel');
+
+    // Tab key
+    fireEvent.keyDown(panel, { key: 'Tab' });
+    fireEvent.keyDown(panel, { key: 'Tab', shiftKey: true });
+
+    // Escape closes focus
+    fireEvent.keyDown(panel, { key: 'Escape' });
+    expect(useUi.getState().panelPaperId).toBeNull();
+  });
 });

@@ -30,3 +30,4 @@ dist-ssr
 # Test output
 test-results
 playwright-report
+coverage

@@ -25,4 +25,26 @@ describe('theme tokens', () => {
     expect(categoryColor(-1, lightTheme)).toBe(lightTheme.categoryOther);
     expect(categoryColor(1.5, darkTheme)).toBe(darkTheme.categoryOther);
   });
+
+  it('applies CSS variables to DOM', async () => {
+    const { applyCssVars } = await import('./applyCssVars');
+    const el = document.createElement('div');
+    applyCssVars(darkTheme, el);
+    expect(el.style.getPropertyValue('--bg')).toBe(darkTheme.bg);
+    expect(el.dataset.theme).toBe('dark');
+  });
+
+  it('useThemeSync listens to system media query', async () => {
+    const { renderHook } = await import('@testing-library/react');
+    const { useThemeSync, useTheme } = await import('./useTheme');
+    const { useUi } = await import('../store/uiStore');
+
+    useUi.setState({ themeSource: 'system' });
+    const { unmount } = renderHook(() => {
+      useThemeSync();
+      return useTheme();
+    });
+    expect(document.documentElement.dataset.theme).toBeDefined();
+    unmount();
+  });
 });
