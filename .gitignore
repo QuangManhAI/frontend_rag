@@ -26,3 +26,7 @@ dist-ssr
 # Environment
 .env
 .env.production
+
+# Test output
+test-results
+playwright-report

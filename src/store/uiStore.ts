@@ -1,0 +1,206 @@
+import { create } from 'zustand';
+import type { CitationCheck, GroundedChunk } from '../types/rag';
+import type { Vec3 } from '../types/world';
+import type { CameraMode } from '../utils/cameraPresets';
+import { vectorPosition } from '../utils/flight';
+import { resolveResultCase } from '../utils/resultCase';
+import { readJson, readStorage, writeStorage } from '../utils/storage';
+import { useWorld } from './worldStore';
+
+export type ThemeName = 'dark' | 'light';
+
+export interface Settings {
+  top_k: number;
+  nprobe: number;
+  category: string;
+  use_authority_boost: boolean;
+  expand_query: boolean;
+  reduceMotion: boolean;
+}
+
+/** Which answer a focused paper is judged against (its own message's context). */
+export interface FocusContext {
+  citationChecks: CitationCheck[];
+  grounded: GroundedChunk[];
+}
+
+export interface TooltipInfo {
+  kind: 'crate' | 'vector';
+  /** Crate id or vector index. */
+  id: number;
+  x: number;
+  y: number;
+}
+
+export interface HighlightLabel {
+  kind: 'crate' | 'category';
+  id: number;
+  label: string;
+}
+
+const THEME_KEY = 'rkt.theme';
+const SETTINGS_KEY = 'rkt.settings';
+
+function prefersReducedMotion(): boolean {
+  try {
+    return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  } catch {
+    return false;
+  }
+}
+
+export function systemTheme(): ThemeName {
+  try {
+    return globalThis.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  top_k: 5,
+  nprobe: 2,
+  category: '',
+  use_authority_boost: true,
+  expand_query: false,
+  reduceMotion: false,
+};
+
+export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Settings, string>> {
+  const errors: Partial<Record<keyof Settings, string>> = {};
+  if (s.top_k !== undefined && (!Number.isInteger(s.top_k) || s.top_k < 1 || s.top_k > 20)) errors.top_k = 'top_k phải là số nguyên từ 1 đến 20';
+  if (s.nprobe !== undefined && (!Number.isInteger(s.nprobe) || s.nprobe < 1 || s.nprobe > 6)) errors.nprobe = 'nprobe phải là số nguyên từ 1 đến 6';
+  return errors;
+}
+
+function isSettings(v: unknown): v is Partial<Settings> {
+  return typeof v === 'object' && v !== null;
+}
+
+function initialSettings(): Settings {
+  const stored = readJson(SETTINGS_KEY, isSettings) ?? {};
+  const merged: Settings = { ...DEFAULT_SETTINGS, reduceMotion: prefersReducedMotion(), ...stored };
+  return Object.keys(validateSettings(merged)).length ? { ...DEFAULT_SETTINGS, reduceMotion: merged.reduceMotion } : merged;
+}
+
+function initialTheme(): { theme: ThemeName; themeSource: 'system' | 'user' } {
+  const stored = readStorage(THEME_KEY);
+  if (stored === 'dark' || stored === 'light') return { theme: stored, themeSource: 'user' };
+  return { theme: systemTheme(), themeSource: 'system' };
+}
+
+interface UiState {
+  theme: ThemeName;
+  themeSource: 'system' | 'user';
+  cameraMode: CameraMode;
+  previousCameraMode: CameraMode;
+  cameraTarget: Vec3 | null;
+  /** Vector the camera/ResultCard is on; null for papers without a vector. */
+  focusedPaperId: string | null;
+  /** Paper shown in the right-side PaperPanel. */
+  panelPaperId: string | null;
+  focusContext: FocusContext | null;
+  hoveredVectorIndex: number | null;
+  tooltip: TooltipInfo | null;
+  highlights: Uint32Array | null;
+  highlightLabel: HighlightLabel | null;
+  maxYear: number | null;
+  settings: Settings;
+  chatOpen: boolean;
+  settingsOpen: boolean;
+
+  setTheme: (t: ThemeName, source?: 'system' | 'user') => void;
+  toggleTheme: () => void;
+  setCameraMode: (mode: CameraMode, target?: Vec3 | null) => void;
+  focusPaper: (paperId: string, opts?: { openPanel?: boolean; context?: FocusContext | null }) => void;
+  openPanel: (paperId: string) => void;
+  closeFocus: () => void;
+  setHovered: (index: number | null, tooltip: TooltipInfo | null) => void;
+  setTooltip: (tooltip: TooltipInfo | null) => void;
+  setHighlights: (indices: Uint32Array | null, label: HighlightLabel | null) => void;
+  setMaxYear: (y: number | null) => void;
+  updateSettings: (patch: Partial<Settings>) => Partial<Record<keyof Settings, string>>;
+  resetSettings: () => void;
+  setChatOpen: (open: boolean) => void;
+  setSettingsOpen: (open: boolean) => void;
+}
+
+export const useUi = create<UiState>((set, get) => ({
+  ...initialTheme(),
+  cameraMode: 'overview',
+  previousCameraMode: 'overview',
+  cameraTarget: null,
+  focusedPaperId: null,
+  panelPaperId: null,
+  focusContext: null,
+  hoveredVectorIndex: null,
+  tooltip: null,
+  highlights: null,
+  highlightLabel: null,
+  maxYear: null,
+  settings: initialSettings(),
+  chatOpen: true,
+  settingsOpen: false,
+
+  setTheme: (theme, source = 'user') => {
+    if (source === 'user') writeStorage(THEME_KEY, theme);
+    set({ theme, themeSource: source });
+  },
+  toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
+
+  setCameraMode: (mode, target) => {
+    const s = get();
+    set({
+      cameraMode: mode,
+      cameraTarget: target === undefined ? s.cameraTarget : target,
+      previousCameraMode: mode === 'focus' || mode === 'follow' ? s.previousCameraMode : mode,
+    });
+  },
+
+  focusPaper: (paperId, opts = {}) => {
+    const { vectors, vectorIndexByPaperId } = useWorld.getState();
+    const context = opts.context === undefined ? get().focusContext : opts.context;
+    const kind = context ? resolveResultCase(paperId, context.citationChecks, context.grounded) : 'browse';
+    const index = vectorIndexByPaperId.get(paperId);
+    const canFly = kind !== 'unverified' && index !== undefined && vectors !== null;
+    const s = get();
+    set({
+      focusContext: context,
+      panelPaperId: opts.openPanel === false ? s.panelPaperId : paperId,
+      focusedPaperId: canFly ? paperId : null,
+      ...(canFly && vectors
+        ? {
+            cameraMode: 'focus' as const,
+            cameraTarget: vectorPosition(vectors, index),
+            previousCameraMode: s.cameraMode === 'focus' || s.cameraMode === 'follow' ? s.previousCameraMode : s.cameraMode,
+          }
+        : {}),
+    });
+  },
+  openPanel: (paperId) => set({ panelPaperId: paperId }),
+  closeFocus: () => {
+    const s = get();
+    set({ panelPaperId: null, focusedPaperId: null, cameraMode: s.cameraMode === 'focus' ? s.previousCameraMode : s.cameraMode });
+  },
+
+  setHovered: (index, tooltip) => set({ hoveredVectorIndex: index, tooltip }),
+  setTooltip: (tooltip) => set({ tooltip }),
+  setHighlights: (indices, label) => set({ highlights: indices, highlightLabel: indices ? label : null }),
+  setMaxYear: (maxYear) => set({ maxYear }),
+
+  updateSettings: (patch) => {
+    const errors = validateSettings(patch);
+    if (Object.keys(errors).length > 0) return errors;
+    const settings = { ...get().settings, ...patch };
+    writeStorage(SETTINGS_KEY, JSON.stringify(settings));
+    set({ settings });
+    return {};
+  },
+  resetSettings: () => {
+    const settings = { ...DEFAULT_SETTINGS, reduceMotion: prefersReducedMotion() };
+    writeStorage(SETTINGS_KEY, JSON.stringify(settings));
+    set({ settings });
+  },
+  setChatOpen: (chatOpen) => set({ chatOpen }),
+  setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+}));
