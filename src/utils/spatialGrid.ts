@@ -162,6 +162,37 @@ export function raycastGrid(
   return out;
 }
 
+/**
+ * Brute-force hits for points [from, to) — used for papers appended after the grid was built,
+ * so the grid itself is only rebuilt once that tail gets large. Appends to `out`.
+ */
+export function raycastRange(
+  positions: Float32Array,
+  from: number,
+  to: number,
+  origin: readonly [number, number, number],
+  dir: readonly [number, number, number],
+  threshold: number,
+  near: number,
+  far: number,
+  out: RayHit[],
+): RayHit[] {
+  const thr2 = threshold * threshold;
+  for (let i = from; i < to; i++) {
+    const vx = positions[i * 3] - origin[0];
+    const vy = positions[i * 3 + 1] - origin[1];
+    const vz = positions[i * 3 + 2] - origin[2];
+    const t = Math.max(0, vx * dir[0] + vy * dir[1] + vz * dir[2]);
+    const ex = vx - dir[0] * t;
+    const ey = vy - dir[1] * t;
+    const ez = vz - dir[2] * t;
+    const d2 = ex * ex + ey * ey + ez * ez;
+    if (d2 > thr2 || t < near || t > far) continue;
+    out.push({ index: i, distance: t, distanceToRay: Math.sqrt(d2) });
+  }
+  return out;
+}
+
 /** Same choice as before: among the 64 nearest hits (by distance), the one closest to the ray. */
 export function pickNearest(hits: RayHit[], accept: (index: number) => boolean): number | null {
   hits.sort((a, b) => a.distance - b.distance);

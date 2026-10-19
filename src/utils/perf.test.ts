@@ -88,3 +88,66 @@ describe('incremental canopy states', () => {
     expect(toUpdateRanges([0, 100, 200], 10, 2)).toEqual([[0, 201]]);
   });
 });
+
+describe('appendToTable', async () => {
+  const { appendToTable, capacityOf } = await import('./vectorTable');
+  const base = {
+    count: 2,
+    positions: new Float32Array(6),
+    twigIds: new Uint32Array(2),
+    crateIds: new Uint32Array(2),
+    categories: new Uint16Array(2),
+    years: new Uint16Array(2),
+    authority: new Float32Array(2),
+    flags: new Uint8Array(2),
+  };
+  const item = (k: number) => ({ paper_id: `p${k}`, position: [k, 50, k] as const, twig_id: 20, crate_id: 3, category_index: 1, year: 2026, authority: 0.5 });
+
+  it('grows capacity by a multiple and keeps old rows', () => {
+    base.positions.set([1, 2, 3, 4, 5, 6]);
+    const { table, grown, start } = appendToTable(base, [item(0), item(1)]);
+    expect(grown).toBe(true);
+    expect(start).toBe(2);
+    expect(table.count).toBe(4);
+    expect(capacityOf(table)).toBe(Math.ceil(4 * 1.1));
+    expect([...table.positions.subarray(0, 12)]).toEqual([1, 2, 3, 4, 5, 6, 0, 50, 0, 1, 50, 1]);
+    expect(base.count).toBe(2);
+  });
+
+  it('fills spare capacity in place without reallocating', () => {
+    const first = appendToTable(base, [item(0), item(1)]).table;
+    const cap = capacityOf(first);
+    const second = appendToTable(first, [item(2)]);
+    expect(second.grown).toBe(false);
+    expect(second.table.positions).toBe(first.positions);
+    expect(second.table.count).toBe(5);
+    expect(first.count).toBe(4);
+    expect(capacityOf(second.table)).toBe(cap);
+  });
+});
+
+describe('pick tail + incremental groups', async () => {
+  const { raycastRange, raycastGrid: rg, buildPointGrid: bg } = await import('./spatialGrid');
+  const { appendToGroups, groupVectorsByCrate } = await import('./groundLayout');
+  it('grid (first part) + brute-force tail finds the same hits as a full grid', () => {
+    const pos = cloud(3000, 4);
+    const full = bg(pos, 3);
+    const head = bg(pos.subarray(0, 2000 * 3), 3);
+    const o = [0, 160, 170] as const;
+    const d = (() => { const v = [10, -100, -170]; const n = Math.hypot(...v); return [v[0] / n, v[1] / n, v[2] / n] as const; })();
+    const a: RayHit[] = [];
+    const b: RayHit[] = [];
+    rg(full, o, d, 1.2, 0, Infinity, a);
+    rg(head, o, d, 1.2, 0, Infinity, b);
+    raycastRange(pos, 2000, 3000, o, d, 1.2, 0, Infinity, b);
+    expect(b.map((h) => h.index).sort((x, y) => x - y)).toEqual(a.map((h) => h.index).sort((x, y) => x - y));
+  });
+  it('appendToGroups equals regrouping from scratch', () => {
+    const crate = new Uint32Array([1, 2, 1, 3, 2, 1]);
+    const t = (n: number) => ({ count: n, crateIds: crate, categories: crate } as unknown as Parameters<typeof groupVectorsByCrate>[0]);
+    const inc = appendToGroups(groupVectorsByCrate(t(4)), crate.subarray(4, 6), 4);
+    const full = groupVectorsByCrate(t(6));
+    expect([...inc.keys()].sort()).toEqual([...full.keys()].sort());
+    for (const [k, v] of full) expect([...(inc.get(k) ?? [])]).toEqual([...v]);
+  });
+});

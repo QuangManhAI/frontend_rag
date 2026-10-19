@@ -28,6 +28,8 @@ Query string hữu ích:
 | `?nofx` | Tắt bloom (GPU yếu / CI) |
 | `?mockHealth=down` | Giả lập LLM mất kết nối (banner cảnh báo) |
 
+Luồng cào dữ liệu (Prompt 12): bảng **Luồng tri thức** góc phải có nút *Bắt đầu cào* (mock, 300 hoặc 3.000 bài/phút) và *Giả lập mất kết nối*; khi có backend, client nghe `GET /api/crawl/stream` (SSE) và tự kết nối lại (1 s → 2 s → 4 s … ≤ 30 s).
+
 Trong chat mock: gõ câu chứa `/error` để giả lập lỗi stream. Câu trả lời mock luôn có 1 trích dẫn **ngoài ngữ cảnh** để thấy chip cảnh báo.
 
 ## Test

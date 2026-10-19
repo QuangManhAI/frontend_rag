@@ -1,6 +1,6 @@
 import type { RagRequest, RagStreamEvent } from '../types/rag';
 import type { Category, GroundLayout, HealthStatus, PaperDetail, TreeNode, WorldData } from '../types/world';
-import { buildChatScript, buildIndex, mockPaperDetail, type MockContext } from './mock/mockChat';
+import { buildChatScript, buildIndex, buildMockPaper, mockPaperDetail, type MockContext } from './mock/mockChat';
 import { generateMockWorld } from './mock/mockWorld';
 import { parseSseBlock, SseBuffer } from './sseParser';
 import { parseVectors } from './vectorParser';
@@ -37,7 +37,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 let mockCtx: MockContext | null = null;
 
 /** The mock world goes through the same binary parser as the real one. */
-function getMockContext(): MockContext {
+export function getMockContext(): MockContext {
   if (!mockCtx) {
     const requested = Number(searchParam('vectors'));
     const vectorCount = Number.isFinite(requested) && requested >= 1000 ? Math.min(300000, Math.floor(requested)) : 30000;
@@ -101,7 +101,8 @@ export function getPaper(paperId: string): Promise<PaperDetail> {
   const p = (async () => {
     if (USE_MOCK) {
       await sleep(180 + Math.random() * 220);
-      const detail = mockPaperDetail(getMockContext(), paperId);
+      const crawled = (await import('./crawlClient')).mockCrawledPapers.get(paperId);
+      const detail = crawled ? buildMockPaper(paperId, crawled.category_index, crawled.year, false) : mockPaperDetail(getMockContext(), paperId);
       if (!detail) throw new HttpError(404, `Không tìm thấy bài ${paperId}`);
       return detail;
     }

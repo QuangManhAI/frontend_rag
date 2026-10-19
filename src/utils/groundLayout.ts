@@ -35,10 +35,32 @@ function groupBy(values: ArrayLike<number>): Map<number, Uint32Array> {
 
 /** Vector indices per crate id (computed once, then cached by the caller). */
 export function groupVectorsByCrate(vectors: VectorTable): Map<number, Uint32Array> {
-  return groupBy(vectors.crateIds);
+  return groupBy(vectors.crateIds.subarray(0, vectors.count));
 }
 
 /** Vector indices per category index. */
 export function groupVectorsByCategory(vectors: VectorTable): Map<number, Uint32Array> {
-  return groupBy(vectors.categories);
+  return groupBy(vectors.categories.subarray(0, vectors.count));
+}
+
+/**
+ * Incrementally add indices [start, start + keys.length) to a grouping (new map; untouched groups
+ * keep their arrays, touched ones are re-allocated with a fast typed copy).
+ */
+export function appendToGroups(groups: ReadonlyMap<number, Uint32Array>, keys: ArrayLike<number>, start: number): Map<number, Uint32Array> {
+  const add = new Map<number, number[]>();
+  for (let k = 0; k < keys.length; k++) {
+    const list = add.get(keys[k]);
+    if (list) list.push(start + k);
+    else add.set(keys[k], [start + k]);
+  }
+  const out = new Map(groups);
+  for (const [key, list] of add) {
+    const old = groups.get(key);
+    const next = new Uint32Array((old?.length ?? 0) + list.length);
+    if (old) next.set(old);
+    next.set(list, old?.length ?? 0);
+    out.set(key, next);
+  }
+  return out;
 }

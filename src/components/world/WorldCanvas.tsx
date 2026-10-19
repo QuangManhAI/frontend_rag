@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { CameraDirector } from './CameraDirector';
 import { VectorCanopy } from './canopy/VectorCanopy';
 import { Fireflies } from './fx/Fireflies';
+import { CrawlEffects } from './fx/CrawlEffects';
 import { QueryFlight } from './fx/QueryFlight';
 import { BookCrates } from './ground/BookCrates';
 import { GroundGrid } from './ground/GroundGrid';
@@ -14,7 +15,7 @@ import { AnchorProjector } from './overlay/anchors';
 import { SkyBackground } from './SkyBackground';
 import { AncientTree } from './tree/AncientTree';
 import { getPreset } from '../../utils/cameraPresets';
-import { LEGACY_FX, PERF_ENABLED } from '../../utils/perfProbe';
+import { PERF_ENABLED } from '../../utils/perfProbe';
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
 const SHOW_PERF = import.meta.env.DEV && params.has('perf');
@@ -32,7 +33,7 @@ export default function WorldCanvas() {
       dpr={[1, 2]}
       camera={{ fov: 45, near: 0.5, far: 3000, position: [...start.position] }}
       // Canvas MSAA is wasted under the composer (it renders off-screen). Opaque: the sky covers everything.
-      gl={{ antialias: LEGACY_FX, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
       performance={{ min: 0.6, debounce: 250 }}
       onPointerMissed={() => undefined}
       data-testid="world-canvas"
@@ -56,6 +57,7 @@ export default function WorldCanvas() {
       <group name="fx">
         <Fireflies />
         <QueryFlight />
+        <CrawlEffects />
       </group>
       <CameraDirector />
       <AnchorProjector />

@@ -10,7 +10,7 @@ const QUALITY: ReadonlyArray<readonly [QualityMode, string]> = [
   ['high', 'Cao'],
   ['low', 'Thấp'],
 ];
-const TIER_LABEL = ['đầy đủ', 'dpr 1', 'bloom nhẹ', 'tắt bloom'] as const;
+const TIER_LABEL = ['đầy đủ', 'tắt MSAA', 'dpr 1.5 · bloom nhẹ', 'dpr 1 · tắt bloom'] as const;
 
 /** Retrieval settings; invalid numbers are rejected (shown inline, never applied). */
 export function SettingsPanel() {

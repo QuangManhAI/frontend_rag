@@ -1,6 +1,8 @@
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mulberry32 } from '../../../api/mock/rng';
+import { crawlFx, nowSec } from '../../../store/crawlFx';
 import { useWorld } from '../../../store/worldStore';
 import { categoryColor } from '../../../theme/tokens';
 import { useTheme } from '../../../theme/useTheme';
@@ -43,7 +45,13 @@ function getSpineTexture(): THREE.CanvasTexture {
   return spineTexture;
 }
 
-/** One instanced box per crate, hanging below its tile; height ∝ sqrt(paper_count). */
+/** Seconds a crate glows after crawled papers land in it. */
+const FLASH_S = 1.2;
+
+/**
+ * One instanced box per crate, hanging below its tile; height ∝ sqrt(paper_count). While crawling,
+ * papers landing in a crate (crawlFx) grow it and make it flash — instance matrix/colour updates only.
+ */
 export function BookCrates() {
   const ground = useWorld((s) => s.ground);
   const theme = useTheme();
@@ -55,32 +63,69 @@ export function BookCrates() {
     addVertexColorGlow(m, glow, 'book-crates');
     return m;
   }, [glow]);
-  const crates = ground?.crates ?? [];
+  const crates = useMemo(() => ground?.crates ?? [], [ground]);
+  const indexOf = useMemo(() => new Map(crates.map((c, i) => [c.id, i])), [crates]);
+  const maxCount = useMemo(() => Math.max(1, ...crates.map((c) => c.paper_count)), [crates]);
+  const baseColors = useRef(new Float32Array(0));
+  const tmp = useMemo(() => ({ o: new THREE.Object3D(), c: new THREE.Color() }), []);
+  const seenHeight = useRef(-1);
+
+  const place = (i: number) => {
+    const m = mesh.current;
+    if (!m || !ground) return;
+    const c = crates[i];
+    const [x, , z] = cellToWorld(c.cell, ground.grid_size, ground.tile_size);
+    const h = crateHeight(c.paper_count + (crawlFx.extra.get(c.id) ?? 0), maxCount);
+    tmp.o.position.set(x, -2 - h / 2, z);
+    tmp.o.scale.set(ground.tile_size * 0.78, h, ground.tile_size * 0.78);
+    tmp.o.updateMatrix();
+    m.setMatrixAt(i, tmp.o.matrix);
+  };
 
   useLayoutEffect(() => {
     const m = mesh.current;
-    if (!m || !ground) return;
-    const max = Math.max(1, ...ground.crates.map((c) => c.paper_count));
-    const o = new THREE.Object3D();
-    ground.crates.forEach((c, i) => {
-      const [x, , z] = cellToWorld(c.cell, ground.grid_size, ground.tile_size);
-      const h = crateHeight(c.paper_count, max);
-      o.position.set(x, -2 - h / 2, z);
-      o.scale.set(ground.tile_size * 0.78, h, ground.tile_size * 0.78);
-      o.updateMatrix();
-      m.setMatrixAt(i, o.matrix);
-    });
+    if (!m) return;
+    for (let i = 0; i < crates.length; i++) place(i);
     m.instanceMatrix.needsUpdate = true;
-  }, [ground]);
+  }, [crates, maxCount]); // `place` reads the same values
 
   useEffect(() => {
     const m = mesh.current;
     if (!m) return;
-    const col = new THREE.Color();
-    crates.forEach((c, i) => m.setColorAt(i, col.copy(toColor(categoryColor(c.category_index, theme))).multiplyScalar(0.62)));
+    baseColors.current = new Float32Array(crates.length * 3);
+    crates.forEach((c, i) => {
+      tmp.c.copy(toColor(categoryColor(c.category_index, theme))).multiplyScalar(0.62);
+      tmp.c.toArray(baseColors.current, i * 3);
+      m.setColorAt(i, tmp.c);
+    });
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
     glow.value = theme.additiveGlow ? 0.45 : 0.08;
-  }, [theme, crates, glow]);
+  }, [theme, crates, glow, tmp]);
+
+  useFrame(() => {
+    const m = mesh.current;
+    if (!m) return;
+    // Heights: crawlFx bumps heightVersion at most 4×/s (arrival timer).
+    if (crawlFx.heightVersion !== seenHeight.current) {
+      seenHeight.current = crawlFx.heightVersion;
+      for (const id of crawlFx.extra.keys()) {
+        const i = indexOf.get(id);
+        if (i !== undefined) place(i);
+      }
+      m.instanceMatrix.needsUpdate = true;
+    }
+    if (crawlFx.flash.size === 0) return;
+    const t = nowSec();
+    for (const [id, at] of crawlFx.flash) {
+      const i = indexOf.get(id);
+      if (i === undefined) continue;
+      const age = t - at;
+      tmp.c.fromArray(baseColors.current, i * 3);
+      if (age < FLASH_S) tmp.c.multiplyScalar(1 + (theme.additiveGlow ? 1.6 : 0.3) * Math.exp(-age * 3));
+      m.setColorAt(i, tmp.c);
+    }
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+  });
 
   useEffect(() => () => {
     geometry.dispose();

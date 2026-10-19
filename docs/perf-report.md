@@ -128,3 +128,38 @@ Hệ quả và sửa:
 ![](perf-shots/safari-fxaa-fix.jpg)
 
 *Trên trái: Safari/WebKit trước khi sửa (có FXAA). Trên phải: sau khi sửa. Dưới trái: bản gốc trước tối ưu. Dưới phải: Chromium sau khi sửa.*
+
+## 8. Luồng tri thức khi đang cào (Prompt 12)
+
+Máy: **MacBook Air M4** (Mac16,12, GPU 8 nhân, RAM 16 GB), **đang cắm sạc** (`pmset`: AC Power), macOS 26.5.2, bản build `vite preview`, Chromium headless/Metal, vsync tắt, 1440×900, dpr 1, 150.000 vector, chất lượng **Cao**, đo đồng bộ (B), 600 frame × 3 lần, median của các lần. Cào bằng mock (`CRAWL=300|3000`), đo sau khi chạy 10 s để các dòng đã đầy.
+
+| Kịch bản | Theme | Frame median | p95 | Draw call | Raycast hover (tb / p95) | Hạt đang dùng / pool |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| Không cào | Dark | 8.4 ms | 15.5 ms | 49.5 | 0.25 / 0.5 ms | — |
+| Không cào | Light | 8.5 ms | 13.1 ms | 48.4 | 0.25 / 0.4 ms | — |
+| 300 bài/phút | Dark | 8.2 ms | 15.5 ms | 52.8 | 0.32 / 0.5 ms | ~1.270 / 20.000 |
+| 300 bài/phút | Light | 9.1 ms | 16.8 ms | 51.7 | 0.34 / 0.7 ms | ~1.300 / 20.000 |
+| 3.000 bài/phút | Dark | 9.6 ms | 16.3 ms | 52.8 | 0.31 / 0.6 ms | ~8.900 / 20.000 |
+| 3.000 bài/phút | Light | 8.8 ms | 15.4 ms | 51.7 | 0.33 / 0.5 ms | ~9.200 / 20.000 |
+| 3.000 bài/phút, chất lượng Thấp | Dark | 9.3 ms | 16.9 ms | 47.3 | 0.31 ms | 3.359 / 5.000 |
+
+- Hiệu ứng cào thêm **+3.3 draw call**: tầng nguồn, một `Points` cho mọi dòng hạt, một `Points` cho hạt lên rễ. Sau khi dừng và tắt dần, draw call **về đúng như trước** (41.8 → 41.8 dark, 40.7 → 40.7 light, đo ở cùng camera ở bản dev).
+- Frame time khi cào chỉ cao hơn lúc không cào khoảng 0–1 ms, nằm trong mức nhiễu giữa các lần chạy (±0.7 ms). Ở 3.000 bài/phút pool dùng < 50%; pool không bao giờ vượt kích thước (vòng slot cố định, có test).
+- **Lỗi phát hiện khi đo, đã sửa:**
+  - Mock đặt mục tiêu cố định 150.000 bài, nên với thế giới 150k thì không còn gì để cào; lượt đo đầu vì thế vô nghĩa và đã bị loại. Mục tiêu giờ là `max(150.000, số bài hiện có + 120.000)`.
+  - Mỗi lô vector mới từng làm dựng lại cả lưới raycast 150k và nhóm lại toàn bộ vector theo thùng/loại, khiến p95 hover vọt lên 3.5–5.5 ms. Giờ lưới chỉ kiểm thêm "đuôi" vector mới bằng brute-force (dựng lại khi đuôi > 6.000) và nhóm được nối tăng dần; p95 hover về 0.5–0.7 ms.
+
+![](perf-shots/crawl-streams.jpg)
+
+*Trên: chế độ "Dưới đất" khi đang cào 3.000 bài/phút (dark / light). Dưới: toàn cảnh.*
+
+## 9. Trả lại độ nét
+
+Người dùng thấy ảnh mờ khi zoom/xoay so với bản đầu. Nguyên nhân: `AdaptiveDpr` hạ dpr xuống 0.6× mỗi lần điều khiển camera, composer không còn MSAA, và bậc 1 của chế độ tự động hạ dpr còn 1.5. Đã sửa: bỏ `AdaptiveDpr`, bật lại MSAA 4× ở bậc 0, bậc 1 chỉ tắt MSAA (giữ dpr đầy đủ). Tầng nguồn xoáy của hiệu ứng cào cũng đã bỏ.
+
+| Dark / Light (đồng bộ GPU, 150k, 1440×900, dpr 2) | Trước | Sau |
+| :-- | --: | --: |
+| Frame time median | 8.4 / 8.5 ms | 11.4 / 11.7 ms |
+| Frame time p95 | — | 15.4 / 19.1 ms |
+
+Cột "Trước" lấy từ lượt đo không cào ở §8 (cùng script, cùng máy). Vẫn dưới 16.7 ms (60 FPS) ở median; máy yếu thì chế độ "Tự động" sẽ tắt MSAA trước.

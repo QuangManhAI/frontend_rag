@@ -49,14 +49,5 @@ export function CameraDirector() {
     void c.setLookAt(...p.position, ...p.target, !reduce);
   });
 
-  // While the user drags/zooms, let AdaptiveDpr drop the pixel ratio (restored after `debounce`).
-  const regress = useThree((s) => s.performance.regress);
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    c.addEventListener('control', regress);
-    return () => c.removeEventListener('control', regress);
-  }, [regress]);
-
   return <CameraControls ref={ref} makeDefault minDistance={2.5} maxDistance={520} smoothTime={0.55} draggingSmoothTime={0.12} maxPolarAngle={Math.PI * 0.62} />;
 }

@@ -4,9 +4,9 @@ import { useTheme } from '../../theme/useTheme';
 import { LEGACY_FX } from '../../utils/perfProbe';
 
 /**
- * No MSAA in the composer (it multiplied the cost of every blended sprite). No FXAA either: merged
- * into this EffectPass it masked the bloom and left a hard-edged ghost of the canopy on the sky
- * (seen in Safari/WebKit and Chromium); on dpr ≥ 1.5 screens aliasing is negligible anyway.
+ * 4× MSAA in the composer on tier 0 for crisp edges (branches, crates, grid lines); tier 1 drops
+ * it first when the GPU struggles. No FXAA: merged into this EffectPass it masked the bloom and
+ * left a hard-edged ghost of the canopy on the sky (Safari/WebKit and Chromium).
  * Bloom runs at half resolution with a mipmap blur and a threshold that keeps it on the truly
  * bright parts (point cores, the orb, sap veins). Tier 2 halves it again; tier 3 renders without it.
  */
@@ -25,7 +25,7 @@ export function PostFX() {
     );
   }
   return (
-    <EffectComposer multisampling={0} enableNormalPass={false}>
+    <EffectComposer multisampling={tier === 0 ? 4 : 0} enableNormalPass={false}>
       <Bloom
         mipmapBlur
         resolutionScale={cheap ? 0.25 : 0.5}

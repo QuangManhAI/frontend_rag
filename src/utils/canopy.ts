@@ -41,9 +41,9 @@ export function pointSize(authority: number): number {
 }
 
 /** Per-point colors for a theme (also used when only the theme changes). */
-export function buildCanopyColors(vectors: VectorTable, theme: ThemeTokens, out: Float32Array = new Float32Array(vectors.count * 3)): Float32Array {
+export function buildCanopyColors(vectors: VectorTable, theme: ThemeTokens, out: Float32Array = new Float32Array(vectors.positions.length), from = 0): Float32Array {
   const cache = new Map<number, [number, number, number]>();
-  for (let i = 0; i < vectors.count; i++) {
+  for (let i = from; i < vectors.count; i++) {
     const c = vectors.categories[i];
     let rgb = cache.get(c);
     if (!rgb) {
@@ -57,23 +57,28 @@ export function buildCanopyColors(vectors: VectorTable, theme: ThemeTokens, out:
   return out;
 }
 
+/** Arrays are sized to the table's capacity (≥ count) so appended papers fit without a rebuild. */
 export function buildCanopyAttributes(vectors: VectorTable, theme: ThemeTokens): CanopyAttributes {
-  const size = new Float32Array(vectors.count);
-  const phase = new Float32Array(vectors.count);
-  const year = new Float32Array(vectors.count);
-  for (let i = 0; i < vectors.count; i++) {
-    size[i] = pointSize(vectors.authority[i]);
-    phase[i] = hash01(i);
-    year[i] = vectors.years[i];
-  }
-  return {
+  const cap = vectors.positions.length / 3;
+  const a: CanopyAttributes = {
     position: vectors.positions,
-    color: buildCanopyColors(vectors, theme),
-    size,
-    phase,
-    state: new Float32Array(vectors.count),
-    year,
+    color: buildCanopyColors(vectors, theme, new Float32Array(cap * 3)),
+    size: new Float32Array(cap),
+    phase: new Float32Array(cap),
+    state: new Float32Array(cap),
+    year: new Float32Array(cap),
   };
+  fillCanopyRange(vectors, a, 0);
+  return a;
+}
+
+/** Per-point size/phase/year for indices [from, count) — used again for appended papers. */
+export function fillCanopyRange(vectors: VectorTable, a: Pick<CanopyAttributes, 'size' | 'phase' | 'year'>, from: number): void {
+  for (let i = from; i < vectors.count; i++) {
+    a.size[i] = pointSize(vectors.authority[i]);
+    a.phase[i] = hash01(i);
+    a.year[i] = vectors.years[i];
+  }
 }
 
 /** Write changed states only; returns the touched [min, max] index range or null. */

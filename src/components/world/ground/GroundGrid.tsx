@@ -2,6 +2,8 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { crawlFx, nowSec } from '../../../store/crawlFx';
+import { useCrawl } from '../../../store/crawlStore';
 import { useFx } from '../../../store/fxStore';
 import { useUi } from '../../../store/uiStore';
 import { useWorld } from '../../../store/worldStore';
@@ -33,6 +35,7 @@ export function GroundGrid() {
   const mode = useUi((s) => s.cameraMode);
   const selected = useUi((s) => (s.highlightLabel?.kind === 'crate' ? s.highlightLabel.id : s.highlightLabel?.kind === 'category' ? -2 - s.highlightLabel.id : -1));
   const pulsing = useFx((s) => s.pulsingCrates);
+  const crawling = useCrawl((s) => s.visualActive && !s.fading);
   const mesh = useRef<THREE.InstancedMesh>(null);
   const hoverCell = useRef(-1);
 
@@ -113,7 +116,8 @@ export function GroundGrid() {
     const m = mesh.current;
     if (!m) return;
     // Opacity eases to the target in ~400 ms; see-through in "ground" mode.
-    const target = mode === 'ground' ? theme.groundSeeThrough : theme.groundOpacity;
+    // While crawling, thin the ground a little so the streams underneath read through it.
+    const target = mode === 'ground' ? theme.groundSeeThrough : crawling ? Math.min(theme.groundOpacity, 0.62) : theme.groundOpacity;
     material.opacity += (target - material.opacity) * Math.min(1, dt * 9);
     material.depthWrite = material.opacity > 0.8;
     // Pulse tiles of crates holding the retrieved papers.
@@ -136,6 +140,19 @@ export function GroundGrid() {
       tmp.fromArray(baseColors.current, cell * 3).multiplyScalar(k);
       m.setColorAt(cell, tmp);
       dirty = true;
+    }
+    // Crawl arrivals: the tile above a crate flashes in the crate's colour.
+    if (crawlFx.flash.size > 0) {
+      const now = nowSec();
+      for (const [id, at] of crawlFx.flash) {
+        const cell = crateCell.get(id);
+        if (cell === undefined || pulsing.has(id)) continue;
+        const age = now - at;
+        tmp.fromArray(baseColors.current, cell * 3);
+        if (age < 1.2) tmp.multiplyScalar(1 + (theme.additiveGlow ? 1.8 : 0.18) * Math.exp(-age * 3));
+        m.setColorAt(cell, tmp);
+        dirty = true;
+      }
     }
     if (dirty && m.instanceColor) m.instanceColor.needsUpdate = true;
   });

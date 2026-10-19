@@ -1,5 +1,5 @@
 // Usage: node scripts/perf-measure.cjs <label> [runs]  — needs `npm run build && npx vite preview --port 4173` running.
-// Env: QS='&legacyfx' (old GPU settings), SWIFT=1 (SwiftShader), SYNC=1 (readPixels sync each frame), QUALITY=high|low|auto, THEMES=dark,light, FRAMES, SETTLE, NOSHOTS=1.
+// Env: CRAWL=300|3000 (mock crawl rate), QS='&legacyfx' (old GPU settings), SWIFT=1 (SwiftShader), SYNC=1 (readPixels sync each frame), QUALITY=high|low|auto, THEMES=dark,light, FRAMES, SETTLE, NOSHOTS=1.
 const { chromium } = require('@playwright/test');
 const fs = require('fs');
 const label = process.argv[2] || 'run';
@@ -41,7 +41,9 @@ async function prepare(page, theme, reduceMotion) {
       const page = await browser.newPage({ viewport: VIEW, colorScheme: theme });
       await prepare(page, theme, false);
       await page.evaluate(() => { __rkt.ui.setState({ panelPaperId: null, focusedPaperId: null }); __rkt.ui.getState().setCameraMode('overview'); });
-      await page.waitForTimeout(Number(process.env.SETTLE || 3000));
+      // CRAWL=<papers/min>: run the mock crawler and let the streams fill up before measuring.
+      if (process.env.CRAWL) await page.evaluate((r) => __rkt.crawl.getState().setMock({ running: true, ratePerMin: r }), Number(process.env.CRAWL));
+      await page.waitForTimeout(Number(process.env.SETTLE || (process.env.CRAWL ? 10000 : 3000)));
       await page.evaluate((n) => { globalThis.__FRAMES = n; }, Number(process.env.FRAMES || 620));
       // SYNC=1: read back one pixel every frame so the GPU must finish the previous frame
       // (needed for SwiftShader, where rAF does not wait for the software GPU).
@@ -77,7 +79,8 @@ async function prepare(page, theme, reduceMotion) {
       r.pickMean.push(mean(perf.pick)); r.pickP95.push(pct(perf.pick, 0.95));
       r.diffMean.push(mean(perf.diff)); r.diffMax.push(Math.max(...perf.diff));
       const tierNow = await page.evaluate(() => __rkt.ui.getState().qualityTier);
-      console.log(theme, `tier ${tierNow}`, `run ${k + 1}: frame median ${pct(frames, 0.5).toFixed(2)} p95 ${pct(frames, 0.95).toFixed(2)} ms | calls ${calls} | pick ${mean(perf.pick).toFixed(3)} ms (n=${perf.pick.length}) | diff ${mean(perf.diff).toFixed(3)} ms (n=${perf.diff.length})`);
+      const pool = await page.evaluate(() => __rkt.crawlFx.poolUsed);
+      console.log(theme, `tier ${tierNow}`, `run ${k + 1}: frame median ${pct(frames, 0.5).toFixed(2)} p95 ${pct(frames, 0.95).toFixed(2)} ms | calls ${calls} | pick ${mean(perf.pick).toFixed(3)} ms (n=${perf.pick.length}) | diff ${mean(perf.diff).toFixed(3)} ms (n=${perf.diff.length}) | pool ${pool}`);
       await page.close();
     }
     const med = (a) => pct(a, 0.5);

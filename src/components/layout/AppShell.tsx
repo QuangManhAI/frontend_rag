@@ -6,7 +6,9 @@ import { ChatPanel, ChatReopenButton } from '../chat/ChatPanel';
 import { PaperPanel } from '../result/PaperPanel';
 import { VectorTooltip } from '../world/canopy/VectorTooltip';
 import { WorldOverlay } from '../world/overlay/WorldOverlay';
+import { useCrawl } from '../../store/crawlStore';
 import { CategoryLegend } from './CategoryLegend';
+import { CrawlHud } from './CrawlHud';
 import { HealthBanner, useHealth } from './HealthBanner';
 import { LoadingTree } from './LoadingTree';
 import { SettingsPanel } from './SettingsPanel';
@@ -89,6 +91,13 @@ export function AppShell() {
   const chatOpen = useUi((s) => s.chatOpen);
   const panelOpen = useUi((s) => s.panelPaperId !== null);
   const health = useHealth();
+
+  // Listen to the crawl stream once the world is in place (reconnects on its own).
+  useEffect(() => {
+    if (status !== 'ready') return;
+    useCrawl.getState().startListening();
+    return () => useCrawl.getState().stopListening();
+  }, [status]);
   const mobile = useIsMobile();
 
   useEffect(() => {
@@ -122,6 +131,11 @@ export function AppShell() {
         </div>
       </div>
 
+      {status === 'ready' && (
+        <div className={`absolute z-20 ${mobile ? 'left-2 top-16' : 'right-3 top-[4.6rem]'}`}>
+          <CrawlHud />
+        </div>
+      )}
       <div className="absolute right-3 top-[4.6rem] z-30">
         <SettingsPanel />
       </div>

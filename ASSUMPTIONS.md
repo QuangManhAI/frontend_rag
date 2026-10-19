@@ -42,3 +42,15 @@
 - [Perf] Chất lượng "Thấp" = bậc 2 (dpr 1 + bloom ¼ độ phân giải) để vẫn giữ phát sáng; chỉ chế độ "Tự động" mới có thể xuống bậc 3 (tắt hậu kỳ, không còn khử răng cưa).
 - [Perf] Ngưỡng bloom nâng lên (dark 0.42, light 0.82); không dùng FXAA vì gộp chung pass với bloom gây vệt tím quanh tán (xem `docs/perf-report.md` §7).
 - [Perf] Lưới raycast giả định tán cây không có transform (group `canopy` ở gốc toạ độ) — toạ độ trong `vectors.bin` là toạ độ thế giới.
+- [P12] Chưa có backend cào: `VITE_USE_MOCK` dùng `MockCrawler` (tick 250 ms, phân bố theo `paper_count` của category, vector mới quanh nhánh cùng category) đi qua **cùng** `streamCrawl` + logic tự kết nối lại như backend thật. Bật/tắt, tốc độ 300/3.000 bài/phút và "Giả lập mất kết nối" nằm trong HUD (chỉ hiện ở chế độ mock).
+- [P12] Mục tiêu mock = max(150.000, số bài hiện có + 120.000) để luôn còn bài để cào.
+- [P12] Mỗi **vùng** thùng (mỗi category, 10 vùng ở mock) có **một cột hạt thẳng đứng** từ tầng nguồn (y = −40, không vẽ gì ở đó) lên ngay dưới đáy thùng sâu nhất của vùng, đặt tại tâm vùng, rộng ~30% bán kính vùng, màu của category. Batch gộp 250 ms rồi cộng theo vùng; số hạt theo tổng số bài của vùng. Khi hạt tới nơi, đúng thùng nhận bài sẽ lóe và cao lên. Đáy cột tính lại theo chiều cao thùng hiện tại mỗi lần phát.
+- [P12] Chiều cao thùng tăng theo `crateHeight(paper_count + số bài mới, max ban đầu)` — thùng đã cao tối đa thì giữ 12; bố cục chính xác chờ pipeline dựng lại thế giới (C4).
+- [P12] Khi đang cào, mặt đất giảm độ đặc xuống 0.62 (ngoài chế độ "Dưới đất") để thấy các dòng chảy bên dưới; trở lại bình thường khi dừng.
+- [P12] Vector mới "mọc" tại thời điểm `born` (đồng hồ `performance.now()/1000`): nếu bật "Hiện hạt lên cây" thì sau 2.6 s (khi hạt đi hết rễ → thân → nhánh), nếu không thì ngay lập tức.
+- [P12] "Tự động" dùng pool Thấp (5.000, không có hạt lên rễ) khi bậc chất lượng ≥ 2.
+- [P12] Reduce motion: không có hạt; thùng và ô đất vẫn đổi chiều cao/độ sáng.
+- [P12] Bỏ tầng nguồn phát sáng (đĩa xoáy ở y = −40) theo yêu cầu: hạt chỉ xuất hiện dần ở đáy cột.
+- [P12] Lóe sáng ô/thùng ở light theme yếu hơn (×1.18 / ×1.3) để pastel không cháy trắng.
+
+- [Độ nét] Ưu tiên độ nét hơn vài ms: MSAA 4× trong composer ở bậc đầy đủ, `antialias: true`, **không hạ dpr khi xoay/zoom** (bỏ `AdaptiveDpr`). Bậc tự động: 0 đầy đủ → 1 tắt MSAA → 2 dpr 1.5 + bloom nhẹ → 3 dpr 1, tắt bloom.

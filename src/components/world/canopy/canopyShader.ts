@@ -6,7 +6,9 @@ export const CANOPY_VERT = /* glsl */ `
   attribute float state;
   attribute float year;
   attribute float inFilter;
+  attribute float born;
   uniform float uFilter;
+  uniform float uClock;
   uniform float uFootprint;
   uniform float uTime;
   uniform float uScale;
@@ -36,6 +38,12 @@ export const CANOPY_VERT = /* glsl */ `
     float tw = 1.0 + uTwinkle * 0.18 * sin(uTime * (1.2 + phase) + phase * 6.2831);
     float px = clamp(s * tw * uScale / -mv.z, uMinPx, maxPx) * uPixelRatio;
     if (year > uMaxYear) { px = 0.0; alpha = 0.0; }
+    // Papers added by the live crawl pop in (scale 0 → 1 with a small overshoot) at their birth time.
+    if (born > 0.0) {
+      float g = clamp((uClock - born) / 0.9, 0.0, 1.0);
+      if (g <= 0.0) { px = 0.0; alpha = 0.0; }
+      else { px *= g * (1.0 + 0.6 * sin(g * 3.14159)); alpha *= min(1.0, g * 2.0); }
+    }
     // Big sprites overlap and saturate when the camera is close: fade them a little.
     if (st < 1.5) alpha *= clamp(10.0 / max(px / uPixelRatio, 1.0), 0.4, 1.0);
     // Halo footprint: the faint tail beyond 80% of the radius is not rasterised (fewer blended

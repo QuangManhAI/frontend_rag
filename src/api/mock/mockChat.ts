@@ -67,7 +67,11 @@ export function mockPaperDetail(ctx: MockContext, paperId: string): PaperDetail 
   const index = ctx.indexByPaperId.get(paperId);
   if (index === undefined) return null;
   const v = ctx.world.vectors;
-  const category = v.categories[index];
+  return buildMockPaper(paperId, v.categories[index], v.years[index], v.flags[index] === 1);
+}
+
+/** Deterministic PaperDetail from metadata (also used for papers added by the mock crawler). */
+export function buildMockPaper(paperId: string, category: number, year: number, hasFull: boolean): PaperDetail {
   const rng = mulberry32(hashString(paperId) ^ 0x5bd1e995);
   const title = mockPaperTitle(paperId, category);
   const words = wordsOf(category);
@@ -78,7 +82,6 @@ export function mockPaperDetail(ctx: MockContext, paperId: string): PaperDetail 
     `We study **${w1}** in the context of ${w2}. Existing approaches treat the two independently, which limits transfer. ` +
     `We propose a unified objective that couples them through a shared latent space $z \\in \\mathbb{R}^{d}$, and show ` +
     `consistent gains of ${gain}% over strong baselines on ${2 + Math.floor(rng() * 4)} benchmarks, with particular robustness under ${w3}.`;
-  const hasFull = v.flags[index] === 1;
   const sections = hasFull ? SECTIONS : SECTIONS.slice(0, 5);
   const chunks: Chunk[] = sections.map(([type, sectionTitle], k) => ({
     chunk_id: `${paperId}::c${k}`,
@@ -86,7 +89,7 @@ export function mockPaperDetail(ctx: MockContext, paperId: string): PaperDetail 
     section_title: sectionTitle,
     text: chunkText(type, w1, w2, w3, gain, abstract),
   }));
-  return { paper_id: paperId, title, authors, category_index: category, year: v.years[index], abstract, has_fulltext: hasFull, chunks };
+  return { paper_id: paperId, title, authors, category_index: category, year, abstract, has_fulltext: hasFull, chunks };
 }
 
 function chunkText(type: SectionType, w1: string, w2: string, w3: string, gain: string, abstract: string): string {
