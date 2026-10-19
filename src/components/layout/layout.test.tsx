@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useUi, DEFAULT_SETTINGS } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
-import { ThemeToggle } from './ThemeToggle';
 import { HealthBanner, HealthDots } from './HealthBanner';
 import { SettingsPanel } from './SettingsPanel';
 import { YearSlider } from './YearSlider';
@@ -14,22 +13,9 @@ describe('Layout Components', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useUi.setState({
-      theme: 'dark',
       settingsOpen: false,
       settings: { ...DEFAULT_SETTINGS },
       maxYear: null,
-    });
-  });
-
-  describe('ThemeToggle', () => {
-    it('toggles theme on click', () => {
-      render(<ThemeToggle />);
-      const btn = screen.getByTestId('theme-toggle');
-      fireEvent.click(btn);
-      expect(useUi.getState().theme).toBe('light');
-
-      fireEvent.click(btn);
-      expect(useUi.getState().theme).toBe('dark');
     });
   });
 

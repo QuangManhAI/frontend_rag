@@ -53,3 +53,13 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Cây không đổi (`src/components/world/tree/` không sửa) | ✅ |
 | Unit test (`feedCables.test.ts` mới) | ✅ 190/190 |
 | Frame time trước/sau | `docs/perf-report.md` §10 |
+
+## Giao diện gọn (2026-10-20)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Chỉ còn giao diện tối, không nút đổi theme | ✅ (E2E b) |
+| Không còn nút Toàn cảnh / Tán cây / Dưới đất | ✅ (E2E b) |
+| Thanh năm nằm trong Cài đặt | ✅ (E2E b) |
+| Nhãn nhánh mặc định tắt, bật trong Cài đặt | ✅ (E2E b) |
+| Bảng cào dữ liệu nằm trong Cài đặt | ✅ (E2E b) |
+| Unit + E2E | ✅ 187/187, 6/6; `npm run build` sạch |

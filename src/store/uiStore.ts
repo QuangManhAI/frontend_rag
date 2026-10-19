@@ -4,10 +4,8 @@ import type { Vec3 } from '../types/world';
 import type { CameraMode } from '../utils/cameraPresets';
 import { vectorPosition } from '../utils/flight';
 import { resolveResultCase } from '../utils/resultCase';
-import { readJson, readStorage, writeStorage } from '../utils/storage';
+import { readJson, writeStorage } from '../utils/storage';
 import { useWorld } from './worldStore';
-
-export type ThemeName = 'dark' | 'light';
 
 export type QualityMode = 'auto' | 'high' | 'low';
 /** 0 = full · 1 = dpr 1 · 2 = cheap bloom · 3 = no post-processing. */
@@ -21,6 +19,8 @@ export interface Settings {
   use_authority_boost: boolean;
   expand_query: boolean;
   reduceMotion: boolean;
+  /** Topic labels on the branches (off by default: they clutter the view). */
+  showBranchLabels: boolean;
 }
 
 /** Which answer a focused paper is judged against (its own message's context). */
@@ -43,7 +43,6 @@ export interface HighlightLabel {
   label: string;
 }
 
-const THEME_KEY = 'rkt.theme';
 const SETTINGS_KEY = 'rkt.settings';
 
 function prefersReducedMotion(): boolean {
@@ -51,14 +50,6 @@ function prefersReducedMotion(): boolean {
     return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   } catch {
     return false;
-  }
-}
-
-export function systemTheme(): ThemeName {
-  try {
-    return globalThis.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  } catch {
-    return 'dark';
   }
 }
 
@@ -70,6 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
   use_authority_boost: true,
   expand_query: false,
   reduceMotion: false,
+  showBranchLabels: false,
 };
 
 export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Settings, string>> {
@@ -90,15 +82,7 @@ function initialSettings(): Settings {
   return Object.keys(validateSettings(merged)).length ? { ...DEFAULT_SETTINGS, reduceMotion: merged.reduceMotion } : merged;
 }
 
-function initialTheme(): { theme: ThemeName; themeSource: 'system' | 'user' } {
-  const stored = readStorage(THEME_KEY);
-  if (stored === 'dark' || stored === 'light') return { theme: stored, themeSource: 'user' };
-  return { theme: systemTheme(), themeSource: 'system' };
-}
-
 interface UiState {
-  theme: ThemeName;
-  themeSource: 'system' | 'user';
   cameraMode: CameraMode;
   previousCameraMode: CameraMode;
   cameraTarget: Vec3 | null;
@@ -118,8 +102,6 @@ interface UiState {
   chatOpen: boolean;
   settingsOpen: boolean;
 
-  setTheme: (t: ThemeName, source?: 'system' | 'user') => void;
-  toggleTheme: () => void;
   setCameraMode: (mode: CameraMode, target?: Vec3 | null) => void;
   focusPaper: (paperId: string, opts?: { openPanel?: boolean; context?: FocusContext | null }) => void;
   openPanel: (paperId: string) => void;
@@ -136,7 +118,6 @@ interface UiState {
 }
 
 export const useUi = create<UiState>((set, get) => ({
-  ...initialTheme(),
   cameraMode: 'overview',
   previousCameraMode: 'overview',
   cameraTarget: null,
@@ -152,12 +133,6 @@ export const useUi = create<UiState>((set, get) => ({
   qualityTier: 0,
   chatOpen: true,
   settingsOpen: false,
-
-  setTheme: (theme, source = 'user') => {
-    if (source === 'user') writeStorage(THEME_KEY, theme);
-    set({ theme, themeSource: source });
-  },
-  toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
 
   setCameraMode: (mode, target) => {
     const s = get();

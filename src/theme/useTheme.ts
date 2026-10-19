@@ -1,28 +1,13 @@
 import { useEffect } from 'react';
-import { systemTheme, useUi } from '../store/uiStore';
 import { applyCssVars } from './applyCssVars';
-import { themes, type ThemeTokens } from './tokens';
+import { darkTheme, type ThemeTokens } from './tokens';
 
-/** Current theme tokens (shared by the UI and the 3D scene). */
+/** Theme tokens shared by the UI and the 3D scene (dark only). */
 export function useTheme(): ThemeTokens {
-  return themes[useUi((s) => s.theme)];
+  return darkTheme;
 }
 
-/** Mirrors the theme to CSS variables and follows the OS until the user picks one. */
+/** Mirrors the theme to CSS variables. */
 export function useThemeSync(): void {
-  const theme = useTheme();
-  const source = useUi((s) => s.themeSource);
-  useEffect(() => applyCssVars(theme), [theme]);
-  useEffect(() => {
-    if (source !== 'system') return;
-    let mq: MediaQueryList | undefined;
-    try {
-      mq = globalThis.matchMedia?.('(prefers-color-scheme: light)');
-    } catch {
-      return;
-    }
-    const onChange = () => useUi.getState().setTheme(systemTheme(), 'system');
-    mq?.addEventListener('change', onChange);
-    return () => mq?.removeEventListener('change', onChange);
-  }, [source]);
+  useEffect(() => applyCssVars(darkTheme), []);
 }

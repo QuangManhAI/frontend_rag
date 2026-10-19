@@ -28,7 +28,7 @@ Query string hữu ích:
 | `?nofx` | Tắt bloom (GPU yếu / CI) |
 | `?mockHealth=down` | Giả lập LLM mất kết nối (banner cảnh báo) |
 
-Luồng cào dữ liệu (Prompt 12): bảng **Luồng tri thức** góc phải có nút *Bắt đầu cào* (mock, 300 hoặc 3.000 bài/phút) và *Giả lập mất kết nối*; khi có backend, client nghe `GET /api/crawl/stream` (SSE) và tự kết nối lại (1 s → 2 s → 4 s … ≤ 30 s).
+Luồng cào dữ liệu (Prompt 12): mục **Cào dữ liệu** trong **Cài đặt** có nút *Bắt đầu cào* (mock, 300 hoặc 3.000 bài/phút) và *Giả lập mất kết nối*; khi có backend, client nghe `GET /api/crawl/stream` (SSE) và tự kết nối lại (1 s → 2 s → 4 s … ≤ 30 s).
 
 Trong chat mock: gõ câu chứa `/error` để giả lập lỗi stream. Câu trả lời mock luôn có 1 trích dẫn **ngoài ngữ cảnh** để thấy chip cảnh báo.
 
@@ -44,19 +44,19 @@ npm run build
 
 ## Thao tác
 
-- **Toàn cảnh / Tán cây / Dưới đất** (thanh trên): chuyển camera; "Dưới đất" làm mặt đất trong suốt để thấy thùng sách và rễ.
+- **Camera**: kéo để xoay, cuộn để zoom (không còn nút Toàn cảnh / Tán cây / Dưới đất).
 - **Click ô đất** hoặc **loại bài trong legend**: chỉ làm sáng vector thuộc thùng/loại đó. `Esc` để bỏ lọc.
-- **Thanh năm**: ẩn bài xuất bản sau năm chọn, nút ▶ để xem cây "mọc lá" theo thời gian.
+- **Thanh năm** (trong Cài đặt): ẩn bài xuất bản sau năm chọn, nút ▶ để xem cây "mọc lá" theo thời gian.
 - **Hover điểm sáng**: tooltip (tiêu đề tải lười sau 300ms). **Click**: bay tới bài, mở panel chi tiết.
 - **Chip trích dẫn** trong câu trả lời: bay tới vector của bài; chip viền vàng nét đứt = bài LLM trích nhưng không nằm trong ngữ cảnh.
-- **Cài đặt**: `top_k` (1–20), `nprobe` (1–6, quả cầu tách vào nhiều cành hơn), lọc loại bài, authority boost, query expansion, giảm chuyển động.
+- **Cài đặt**: `top_k` (1–20), `nprobe` (1–6, quả cầu tách vào nhiều cành hơn), lọc loại bài, authority boost, query expansion, giảm chuyển động, nhãn chủ đề trên nhánh (mặc định tắt), chất lượng, và mục cào dữ liệu.
 
 ## Cấu trúc
 
 ```text
 src/
 ├── types/           world.ts, rag.ts — đúng Mục 3 (snake_case)
-├── theme/           tokens.ts (dark/light, 12 màu category), applyCssVars.ts, useTheme.ts
+├── theme/           tokens.ts (chỉ giao diện tối, 12 màu category), applyCssVars.ts, useTheme.ts
 ├── api/             client.ts, vectorParser.ts (vectors.bin), sseParser.ts, mock/ (rng, mockWorld, mockChat)
 ├── store/           pipeline.ts (reducer thuần), ragStore, worldStore, uiStore, fxStore
 ├── utils/           hàm thuần có test: flight, canopy, groundLayout, treeGeometry, cameraPresets, citations, arxiv, resultCase…

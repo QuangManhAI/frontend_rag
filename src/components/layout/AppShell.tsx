@@ -8,12 +8,10 @@ import { VectorTooltip } from '../world/canopy/VectorTooltip';
 import { WorldOverlay } from '../world/overlay/WorldOverlay';
 import { useCrawl } from '../../store/crawlStore';
 import { CategoryLegend } from './CategoryLegend';
-import { CrawlHud } from './CrawlHud';
 import { HealthBanner, useHealth } from './HealthBanner';
 import { LoadingTree } from './LoadingTree';
 import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
-import { YearSlider } from './YearSlider';
 
 const WorldCanvas = lazy(() => import('../world/WorldCanvas'));
 
@@ -131,11 +129,6 @@ export function AppShell() {
         </div>
       </div>
 
-      {status === 'ready' && (
-        <div className={`absolute z-20 ${mobile ? 'left-2 top-16' : 'right-3 top-[4.6rem]'}`}>
-          <CrawlHud />
-        </div>
-      )}
       <div className="absolute right-3 top-[4.6rem] z-30">
         <SettingsPanel />
       </div>
@@ -168,7 +161,6 @@ export function AppShell() {
           }`}
         >
           <FilterChip />
-          {!mobile && <YearSlider />}
           <CategoryLegend />
         </div>
       )}

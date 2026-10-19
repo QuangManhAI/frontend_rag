@@ -1,12 +1,10 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { useUi, validateSettings, systemTheme, DEFAULT_SETTINGS } from './uiStore';
+import { useUi, validateSettings, DEFAULT_SETTINGS } from './uiStore';
 import { useWorld } from './worldStore';
 
 describe('useUi Zustand store', () => {
   beforeEach(() => {
     useUi.setState({
-      theme: 'dark',
-      themeSource: 'user',
       cameraMode: 'overview',
       previousCameraMode: 'overview',
       cameraTarget: null,
@@ -25,12 +23,7 @@ describe('useUi Zustand store', () => {
     });
   });
 
-  describe('systemTheme and validateSettings', () => {
-    it('detects system theme', () => {
-      const theme = systemTheme();
-      expect(['dark', 'light']).toContain(theme);
-    });
-
+  describe('validateSettings', () => {
     it('validates settings correctly', () => {
       expect(Object.keys(validateSettings({ top_k: 5 })).length).toBe(0);
       expect(validateSettings({ top_k: 0 }).top_k).toBeDefined();
@@ -41,13 +34,9 @@ describe('useUi Zustand store', () => {
     });
   });
 
-  describe('Theme Actions', () => {
-    it('sets and toggles theme', () => {
-      useUi.getState().setTheme('light');
-      expect(useUi.getState().theme).toBe('light');
-
-      useUi.getState().toggleTheme();
-      expect(useUi.getState().theme).toBe('dark');
+  describe('Settings defaults', () => {
+    it('hides the branch labels by default', () => {
+      expect(DEFAULT_SETTINGS.showBranchLabels).toBe(false);
     });
   });
 

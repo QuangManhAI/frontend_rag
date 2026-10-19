@@ -3,7 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useUi } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
 
-/** Hide vectors published after the chosen year (shader uniform) — watch the tree grow its leaves. */
+const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+
+/**
+ * Settings section: hide vectors published after the chosen year (shader uniform) — press play to
+ * watch the tree grow its leaves (while the settings stay open).
+ */
 export function YearSlider() {
   const vectors = useWorld((s) => s.vectors);
   const maxYear = useUi((s) => s.maxYear);
@@ -43,29 +48,45 @@ export function YearSlider() {
     };
   }, [playing, lo, hi]);
 
+  // Closing the settings mid-playback: don't leave the tree stuck at an intermediate year.
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+  useEffect(
+    () => () => {
+      if (playingRef.current) useUi.getState().setMaxYear(null);
+    },
+    [],
+  );
+
   if (!vectors) return null;
   return (
-    <div className="glass glass-strong flex items-center gap-3 px-3 py-2 text-xs w-[min(28rem,calc(100vw-2rem))]">
-      <CalendarRange size={14} className="text-[var(--accent)] flex-none" />
-      <label htmlFor="year-slider" className="whitespace-nowrap">
-        Năm ≤ <span className="mono font-semibold">{value}</span>
-      </label>
-      <input
-        id="year-slider"
-        type="range"
-        min={lo}
-        max={hi}
-        value={value}
-        className="flex-1 min-w-0"
-        onChange={(e) => {
-          const y = Number(e.target.value);
-          useUi.getState().setMaxYear(y >= hi ? null : y);
-        }}
-      />
-      <span className="mono text-[var(--ink-muted)] w-16 text-right">{visible.toLocaleString('vi-VN')}</span>
-      <button type="button" className="btn btn-icon" aria-label={playing ? 'Dừng phát' : 'Phát theo thời gian'} onClick={() => setPlaying(!playing)}>
-        {playing ? <Square size={12} /> : <Play size={12} />}
-      </button>
-    </div>
+    <section className="mt-4 pt-3 border-t border-[var(--ui-border)] text-xs" aria-label="Lọc theo năm" data-testid="year-panel">
+      <div className="flex items-center gap-2 mb-2 font-semibold">
+        <CalendarRange size={14} className="text-[var(--accent)] flex-none" />
+        <label htmlFor="year-slider">
+          Năm ≤ <span className="mono">{value}</span>
+        </label>
+        <span className="ml-auto font-normal mono text-[var(--ink-muted)]" title={`${visible.toLocaleString('vi-VN')} bài đang hiện`}>
+          {compact.format(visible)} bài
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          id="year-slider"
+          type="range"
+          min={lo}
+          max={hi}
+          value={value}
+          className="flex-1 min-w-0"
+          onChange={(e) => {
+            const y = Number(e.target.value);
+            useUi.getState().setMaxYear(y >= hi ? null : y);
+          }}
+        />
+        <button type="button" className="btn btn-icon" aria-label={playing ? 'Dừng phát' : 'Phát theo thời gian'} onClick={() => setPlaying(!playing)}>
+          {playing ? <Square size={12} /> : <Play size={12} />}
+        </button>
+      </div>
+    </section>
   );
 }

@@ -1,18 +1,9 @@
-import { Eye, Mountain, Settings2, TreeDeciduous } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import { useUi } from '../../store/uiStore';
-import type { CameraMode } from '../../utils/cameraPresets';
 import { HealthDots } from './HealthBanner';
 import type { HealthStatus } from '../../types/world';
-import { ThemeToggle } from './ThemeToggle';
-
-const NAV: ReadonlyArray<{ mode: CameraMode; label: string; icon: typeof Eye }> = [
-  { mode: 'overview', label: 'Toàn cảnh', icon: Eye },
-  { mode: 'canopy', label: 'Tán cây', icon: TreeDeciduous },
-  { mode: 'ground', label: 'Dưới đất', icon: Mountain },
-];
 
 export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null }) {
-  const mode = useUi((s) => s.cameraMode);
   const settingsOpen = useUi((s) => s.settingsOpen);
   return (
     <header className="glass flex items-center gap-2 md:gap-3 px-3 py-2">
@@ -29,19 +20,11 @@ export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null
           <p className="text-[0.65rem] text-[var(--ink-muted)] leading-tight truncate hidden sm:block">RAG trực quan · tài liệu khoa học</p>
         </div>
       </div>
-      <nav className="flex items-center gap-1 mx-auto" aria-label="Điều hướng camera">
-        {NAV.map(({ mode: m, label, icon: Icon }) => (
-          <button key={m} type="button" className="btn !px-2 md:!px-2.5" aria-pressed={mode === m} onClick={() => useUi.getState().setCameraMode(m)} data-testid={`nav-${m}`}>
-            <Icon size={14} />
-            <span className="hidden md:inline">{label}</span>
-          </button>
-        ))}
-      </nav>
+      <span className="ml-auto" />
       <HealthDots health={health} />
       <button type="button" className="btn btn-icon" aria-label="Cài đặt" aria-pressed={settingsOpen} data-testid="settings-toggle" onClick={() => useUi.getState().setSettingsOpen(!settingsOpen)}>
         <Settings2 size={16} />
       </button>
-      <ThemeToggle />
     </header>
   );
 }

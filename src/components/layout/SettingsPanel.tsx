@@ -2,6 +2,8 @@ import { RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import { useUi, type QualityMode, type Settings } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
+import { CrawlSettings } from './CrawlSettings';
+import { YearSlider } from './YearSlider';
 
 type NumKey = 'top_k' | 'nprobe';
 
@@ -12,7 +14,7 @@ const QUALITY: ReadonlyArray<readonly [QualityMode, string]> = [
 ];
 const TIER_LABEL = ['đầy đủ', 'tắt MSAA', 'dpr 1.5 · bloom nhẹ', 'dpr 1 · tắt bloom'] as const;
 
-/** Retrieval settings; invalid numbers are rejected (shown inline, never applied). */
+/** Retrieval, display and crawl settings; invalid numbers are rejected (shown inline, never applied). */
 export function SettingsPanel() {
   const open = useUi((s) => s.settingsOpen);
   const settings = useUi((s) => s.settings);
@@ -31,7 +33,7 @@ export function SettingsPanel() {
   const setFlag = (patch: Partial<Settings>) => useUi.getState().updateSettings(patch);
 
   return (
-    <div className="glass glass-strong w-80 max-w-[calc(100vw-2rem)] p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt truy xuất" data-testid="settings-panel">
+    <div className="glass glass-strong w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
       <div className="flex items-center mb-3">
         <h2 className="font-semibold">Cài đặt</h2>
         <button type="button" className="btn btn-icon ml-auto" aria-label="Đóng cài đặt" onClick={() => useUi.getState().setSettingsOpen(false)}>
@@ -105,6 +107,7 @@ export function SettingsPanel() {
             ['use_authority_boost', 'Tăng điểm theo authority (PageRank)'],
             ['expand_query', 'Mở rộng câu hỏi (query expansion)'],
             ['reduceMotion', 'Giảm chuyển động'],
+            ['showBranchLabels', 'Hiện nhãn chủ đề trên nhánh'],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="flex items-center gap-2 cursor-pointer">
@@ -113,6 +116,8 @@ export function SettingsPanel() {
           </label>
         ))}
       </div>
+      <YearSlider />
+      <CrawlSettings />
       <button
         type="button"
         className="btn mt-4"

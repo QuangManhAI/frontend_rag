@@ -1,6 +1,7 @@
 /** Every color token is a hex string (#rrggbb or #rrggbbaa). */
 export interface ThemeTokens {
-  name: 'dark' | 'light';
+  /** Only the dark (neon) theme ships; light mode was removed. */
+  name: 'dark';
   /** Sky: gradient top, horizon and the flat page color behind the canvas. */
   bg: string;
   bgTop: string;
@@ -106,63 +107,6 @@ export const darkTheme: ThemeTokens = {
   categoryOther: '#8a7fa8',
 };
 
-export const lightTheme: ThemeTokens = {
-  name: 'light',
-  bg: '#fbf9f4',
-  bgTop: '#f3effc',
-  bgHorizon: '#fdfbf6',
-  fog: '#ece6fa',
-  fogNear: 240,
-  fogFar: 680,
-  groundBase: '#e9e7ef',
-  groundLine: '#b9b4c8',
-  tileSaturation: 1,
-  groundOpacity: 0.96,
-  groundSeeThrough: 0.3,
-  trunk: '#d9c4a3',
-  trunkVein: '#f4e7cf',
-  veinIntensity: 0.5,
-  vectorGlow: 0.6,
-  vectorOutline: '#2a2340',
-  vectorOutlineStrength: 0.4,
-  additiveGlow: false,
-  queryOrb: '#0f8f86',
-  queryOrbHalo: '#4cc9b8',
-  thread: '#0f8f86',
-  sap: '#e0a33a',
-  firefly: '#d89b2a',
-  bloomIntensity: 0.45,
-  bloomThreshold: 0.82,
-  ambient: 0.75,
-  sun: 1.25,
-  uiSurface: '#ffffffa6',
-  uiSurfaceStrong: '#ffffffeb',
-  uiBorder: '#2a234022',
-  uiInk: '#1f1a33',
-  uiInkMuted: '#6a6483',
-  uiAccent: '#0f8f86',
-  uiAccentInk: '#ffffff',
-  uiWarn: '#b7791f',
-  uiDanger: '#c53048',
-  uiSuccess: '#1f9d63',
-  categoryPalette: [
-    '#5aaee0',
-    '#e07aac',
-    '#7cbf5a',
-    '#e3ac4a',
-    '#9a88e0',
-    '#e88d62',
-    '#46c2a4',
-    '#de6a78',
-    '#6f8ee8',
-    '#c48ae0',
-    '#bdbd4a',
-    '#8fa0c4',
-  ],
-  categoryOther: '#a8a0b8',
-};
-
-export const themes: Record<ThemeTokens['name'], ThemeTokens> = { dark: darkTheme, light: lightTheme };
 
 /** Palette color for a category index; anything outside the 12 slots is "other". */
 export function categoryColor(index: number, theme: ThemeTokens): string {

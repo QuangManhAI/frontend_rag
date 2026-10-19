@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { applyCssVars } from './theme/applyCssVars';
-import { themes } from './theme/tokens';
+import { darkTheme } from './theme/tokens';
 import { useUi } from './store/uiStore';
 import { PERF_ENABLED, perfStats } from './utils/perfProbe';
 import './index.css';
@@ -14,8 +14,8 @@ if (PERF_ENABLED) {
   });
 }
 
-// Paint the right theme before React mounts (no dark→light flash).
-applyCssVars(themes[useUi.getState().theme]);
+// Paint the theme before React mounts.
+applyCssVars(darkTheme);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

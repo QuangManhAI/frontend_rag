@@ -13,7 +13,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
 async function prepare(page, theme, reduceMotion) {
   await page.goto('http://localhost:4173/?vectors=150000&bench' + (process.env.QS || ''));
   await page.waitForFunction(() => globalThis.__rkt && __rkt.world.getState().status === 'ready' && globalThis.__rktGl, null, { timeout: 90000 });
-  await page.evaluate(([t, rm, q]) => { __rkt.ui.getState().setTheme(t); __rkt.ui.getState().updateSettings({ reduceMotion: rm, quality: q }); }, [theme, reduceMotion, process.env.QUALITY || 'high']);
+  await page.evaluate(([t, rm, q]) => { __rkt.ui.getState().updateSettings({ reduceMotion: rm, quality: q }); }, [theme, reduceMotion, process.env.QUALITY || 'high']);
   await page.waitForTimeout(2500);
   await page.evaluate(() => __rkt.rag.getState().send('LoRA cho transformer'));
   await page.waitForTimeout(1200);
@@ -24,7 +24,7 @@ async function prepare(page, theme, reduceMotion) {
 (async () => {
   const browser = await chromium.launch({ args: process.env.SWIFT ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-gpu-vsync', '--disable-frame-rate-limit'] : ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--disable-gpu-vsync', '--disable-frame-rate-limit'] });
   const report = {};
-  for (const theme of (process.env.THEMES || 'dark,light').split(',')) {
+  for (const theme of (process.env.THEMES || 'dark').split(',')) {
     // Screenshots: frozen motion so before/after are comparable.
     if (!process.env.NOSHOTS) {
       const page = await browser.newPage({ viewport: VIEW, colorScheme: theme });

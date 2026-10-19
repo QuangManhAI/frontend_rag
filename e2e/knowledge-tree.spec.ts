@@ -24,14 +24,21 @@ test('a. world loads and the legend lists every category', async ({ page }) => {
   await expect(page.locator('canvas')).toBeVisible();
 });
 
-test('b. theme toggle flips data-theme on <html>', async ({ page }) => {
+test('b. dark-only layout: year slider, labels and crawl live in the settings', async ({ page }) => {
   await openWorld(page);
-  const html = page.locator('html');
-  const before = await html.getAttribute('data-theme');
-  await page.getByTestId('theme-toggle').click();
-  await expect(html).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
-  await page.getByTestId('theme-toggle').click();
-  await expect(html).toHaveAttribute('data-theme', before ?? 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByTestId('theme-toggle')).toHaveCount(0);
+  await expect(page.getByTestId('nav-overview')).toHaveCount(0);
+  // Branch labels are off until enabled in the settings; the year slider and crawl panel live there.
+  await expect(page.locator('.label3d')).toHaveCount(0);
+  await expect(page.getByTestId('year-panel')).toHaveCount(0);
+  await expect(page.getByTestId('crawl-hud')).toHaveCount(0);
+  await page.getByTestId('settings-toggle').click();
+  const settings = page.getByTestId('settings-panel');
+  await expect(settings.getByTestId('year-panel')).toBeVisible();
+  await expect(settings.getByTestId('crawl-hud')).toBeVisible();
+  await page.getByLabel('Hiện nhãn chủ đề trên nhánh').check();
+  await expect(page.locator('.label3d').first()).toBeAttached();
 });
 
 test('c. a question streams an answer, reaches "Xong" and shows the ResultCard', async ({ page }) => {

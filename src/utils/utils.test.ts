@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { darkTheme, lightTheme } from '../theme/tokens';
+import { darkTheme } from '../theme/tokens';
 import type { TreeNode, VectorTable, Vec3 } from '../types/world';
 import { toArxivUrl } from './arxiv';
 import { FOCUS_DISTANCE, getPreset } from './cameraPresets';
@@ -152,7 +152,7 @@ describe('canopy', () => {
     expect(a.position).toBe(t.positions);
   });
   it('size grows with authority', () => {
-    const a = buildCanopyAttributes(table(5), lightTheme);
+    const a = buildCanopyAttributes(table(5), darkTheme);
     for (let i = 1; i < 5; i++) expect(a.size[i]).toBeGreaterThan(a.size[i - 1]);
     expect(a.size[0]).toBeCloseTo(0.6);
     expect(a.size[4]).toBeCloseTo(1.8);
