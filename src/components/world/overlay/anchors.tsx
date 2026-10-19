@@ -36,7 +36,7 @@ export function projectAnchors(camera: THREE.Camera, width: number, height: numb
     const x = (v.x * 0.5 + 0.5) * width;
     const y = (-v.y * 0.5 + 0.5) * height;
     let scale = 1;
-    if (a.distanceFactor) scale = THREE.MathUtils.clamp(a.distanceFactor / camera.position.distanceTo(a.pos), 0.45, 1.1);
+    if (a.distanceFactor) scale = THREE.MathUtils.clamp(a.distanceFactor / camera.position.distanceTo(a.pos), 0.85, 1.1);
     a.el.style.visibility = 'visible';
     a.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
     a.el.style.zIndex = String(Math.round((1 - v.z) * 10000));

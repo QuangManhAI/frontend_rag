@@ -16,10 +16,16 @@ Trạng thái: **P1–P11 xong ở chế độ mock** (chưa nối backend thậ
 | P10 | ResultCard, PaperPanel 3 trường hợp | `arxiv`, `resultCase`, `PaperPanel.test.tsx` | ✅ 3/3 |
 | P11 | Layout, cài đặt, health, E2E | `npm run build` OK (chunk three/r3f/postprocessing/markdown tách riêng); Playwright a–f | ✅ 6/6 |
 
-Tổng: `npx vitest run` **72/72**, `npx playwright test` **6/6**.
+Tổng: `npx vitest run` **85/85** (gồm 7 test `rotation.test.ts`, 6 test `perf.test.ts`), `npx playwright test` **6/6**.
 
 ## Còn tồn tại
 - Chưa chạy với backend thật: các endpoint `/api/world/*`, `/api/papers/:id`, `/api/rag/chat/stream` (SSE theo Mục 3.8) chưa có ở `backend_rag` (Phụ lục A).
 - Ngân sách FPS mới đo trên Apple M4 (headless Chromium, Metal); chưa đo trên laptop GPU tích hợp.
 - Bundle `three` ~816 kB (209 kB gzip) — đã tách chunk và lazy-load canvas.
 - `AGENTS.md` trong repo vẫn là ghi chú cũ của Next.js (không còn đúng).
+
+## Rà soát lượng giác (2026-10-19)
+- `docs/trig-audit.md`: không có góc Euler; 2 chỗ `Math.sin` chạy mỗi frame trên CPU đã thử thay bằng rotor phức → không cải thiện (6.70 → 6.83 ms/frame, trong nhiễu) → hoàn tác. Nguồn lag chính: bloom (~77% frame) và overdraw sprite vào target MSAA.
+
+## Tối ưu hiệu năng (2026-10-19)
+- `docs/perf-report.md`: frame time (đo đồng bộ GPU) median 12.7→8.0 ms (dark), 13.3→8.9 ms (light); đã sửa lỗi FXAA làm vệt tím trên Safari trên Apple M4 @150k; SwiftShader 189→113 ms (Cao), 83 ms (Tự động); raycast ÷12–17; cập nhật state ÷27. Thêm Chất lượng Tự động/Cao/Thấp.

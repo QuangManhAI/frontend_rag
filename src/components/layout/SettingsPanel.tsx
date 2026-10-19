@@ -1,15 +1,23 @@
 import { RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
-import { useUi, type Settings } from '../../store/uiStore';
+import { useUi, type QualityMode, type Settings } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
 
 type NumKey = 'top_k' | 'nprobe';
+
+const QUALITY: ReadonlyArray<readonly [QualityMode, string]> = [
+  ['auto', 'Tự động'],
+  ['high', 'Cao'],
+  ['low', 'Thấp'],
+];
+const TIER_LABEL = ['đầy đủ', 'dpr 1', 'bloom nhẹ', 'tắt bloom'] as const;
 
 /** Retrieval settings; invalid numbers are rejected (shown inline, never applied). */
 export function SettingsPanel() {
   const open = useUi((s) => s.settingsOpen);
   const settings = useUi((s) => s.settings);
   const categories = useWorld((s) => s.categories);
+  const tier = useUi((s) => s.qualityTier);
   const [draft, setDraft] = useState<Record<NumKey, string>>({ top_k: String(settings.top_k), nprobe: String(settings.nprobe) });
   const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>({});
   if (!open) return null;
@@ -70,6 +78,27 @@ export function SettingsPanel() {
           ))}
         </select>
       </label>
+      <fieldset className="mt-3 text-xs">
+        <legend className="text-[var(--ink-muted)] mb-1">
+          Chất lượng <span className="mono">· đang dùng: {TIER_LABEL[tier]}</span>
+        </legend>
+        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Chất lượng hiển thị">
+          {QUALITY.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={settings.quality === value}
+              aria-pressed={settings.quality === value}
+              className="btn justify-center !py-1"
+              data-testid={`quality-${value}`}
+              onClick={() => setFlag({ quality: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <div className="flex flex-col gap-2 mt-3 text-xs">
         {(
           [

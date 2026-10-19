@@ -9,10 +9,12 @@ import { BookCrates } from './ground/BookCrates';
 import { GroundGrid } from './ground/GroundGrid';
 import { Lighting } from './Lighting';
 import { PostFX } from './PostFX';
+import { AdaptiveQuality } from './AdaptiveQuality';
 import { AnchorProjector } from './overlay/anchors';
 import { SkyBackground } from './SkyBackground';
 import { AncientTree } from './tree/AncientTree';
 import { getPreset } from '../../utils/cameraPresets';
+import { LEGACY_FX, PERF_ENABLED } from '../../utils/perfProbe';
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
 const SHOW_PERF = import.meta.env.DEV && params.has('perf');
@@ -29,9 +31,15 @@ export default function WorldCanvas() {
     <Canvas
       dpr={[1, 2]}
       camera={{ fov: 45, near: 0.5, far: 3000, position: [...start.position] }}
-      gl={{ antialias: !NO_FX, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
+      // Canvas MSAA is wasted under the composer (it renders off-screen). Opaque: the sky covers everything.
+      gl={{ antialias: LEGACY_FX, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
+      performance={{ min: 0.6, debounce: 250 }}
       onPointerMissed={() => undefined}
       data-testid="world-canvas"
+      onCreated={({ gl }) => {
+        // Perf-audit hook (draw calls / points per frame): __rktGl.info.render
+        if (PERF_ENABLED) Object.assign(globalThis, { __rktGl: gl });
+      }}
     >
       <SkyBackground />
       <Lighting />
@@ -51,6 +59,7 @@ export default function WorldCanvas() {
       </group>
       <CameraDirector />
       <AnchorProjector />
+      <AdaptiveQuality />
       {!NO_FX && <PostFX />}
       {Perf && (
         <Suspense fallback={null}>

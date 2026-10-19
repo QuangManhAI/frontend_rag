@@ -1,0 +1,20 @@
+{
+  "dark": {
+    "frameMedian": 8,
+    "frameP95": 13.7,
+    "calls": 49.5,
+    "pickMean": 0.163,
+    "pickP95": 0.4,
+    "diffMean": 0.165,
+    "diffMax": 1.1
+  },
+  "light": {
+    "frameMedian": 8.9,
+    "frameP95": 13.7,
+    "calls": 48.4,
+    "pickMean": 0.2,
+    "pickP95": 0.5,
+    "diffMean": 0.56,
+    "diffMax": 2.9
+  }
+}

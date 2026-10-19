@@ -36,3 +36,9 @@
 - [P10] Esc theo thứ tự: đóng Cài đặt → đóng panel/focus (camera về mode trước) → bỏ lọc.
 - [P11] Proxy dev `/api` trỏ `VITE_BACKEND_URL` (mặc định `http://localhost:8000`, khớp `backend_rag/src/main.ts`) thay vì cổng 3000 trong spec — backend hiện chạy 8000.
 - [P11] Dev server giữ cổng 3000 như repo cũ.
+- [Trig] `src/utils/rotation.ts` (rotor phức, slerp) được giữ làm thư viện có test nhưng chưa dùng trong scene — thay thử ở QueryFlight (thở) và GroundGrid (nhấp sáng) không cải thiện frame time ≥ 5% và vi phạm ngưỡng lệch 1e-3, nên đã hoàn tác (xem `docs/trig-audit.md`).
+- [Trig] Dev hook `globalThis.__rktGl` (chỉ DEV) để đọc `renderer.info` khi đo hiệu năng.
+- [Perf] `?bench` bật hook đo (`__rkt`, `__rktGl`, `perfProbe`) cả ở bản build production; không có `?bench` thì probe là no-op.
+- [Perf] Chất lượng "Thấp" = bậc 2 (dpr 1 + bloom ¼ độ phân giải) để vẫn giữ phát sáng; chỉ chế độ "Tự động" mới có thể xuống bậc 3 (tắt hậu kỳ, không còn khử răng cưa).
+- [Perf] Ngưỡng bloom nâng lên (dark 0.42, light 0.82); không dùng FXAA vì gộp chung pass với bloom gây vệt tím quanh tán (xem `docs/perf-report.md` §7).
+- [Perf] Lưới raycast giả định tán cây không có transform (group `canopy` ở gốc toạ độ) — toạ độ trong `vectors.bin` là toạ độ thế giới.

@@ -9,7 +9,12 @@ import { useWorld } from './worldStore';
 
 export type ThemeName = 'dark' | 'light';
 
+export type QualityMode = 'auto' | 'high' | 'low';
+/** 0 = full · 1 = dpr 1 · 2 = cheap bloom · 3 = no post-processing. */
+export type QualityTier = 0 | 1 | 2 | 3;
+
 export interface Settings {
+  quality: QualityMode;
   top_k: number;
   nprobe: number;
   category: string;
@@ -58,6 +63,7 @@ export function systemTheme(): ThemeName {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  quality: 'auto',
   top_k: 5,
   nprobe: 2,
   category: '',
@@ -70,6 +76,7 @@ export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Set
   const errors: Partial<Record<keyof Settings, string>> = {};
   if (s.top_k !== undefined && (!Number.isInteger(s.top_k) || s.top_k < 1 || s.top_k > 20)) errors.top_k = 'top_k phải là số nguyên từ 1 đến 20';
   if (s.nprobe !== undefined && (!Number.isInteger(s.nprobe) || s.nprobe < 1 || s.nprobe > 6)) errors.nprobe = 'nprobe phải là số nguyên từ 1 đến 6';
+  if (s.quality !== undefined && !['auto', 'high', 'low'].includes(s.quality)) errors.quality = 'Chất lượng không hợp lệ';
   return errors;
 }
 
@@ -106,6 +113,8 @@ interface UiState {
   highlightLabel: HighlightLabel | null;
   maxYear: number | null;
   settings: Settings;
+  /** Current render tier (driven by the quality mode / PerformanceMonitor). */
+  qualityTier: QualityTier;
   chatOpen: boolean;
   settingsOpen: boolean;
 
@@ -122,6 +131,7 @@ interface UiState {
   updateSettings: (patch: Partial<Settings>) => Partial<Record<keyof Settings, string>>;
   resetSettings: () => void;
   setChatOpen: (open: boolean) => void;
+  setQualityTier: (tier: QualityTier) => void;
   setSettingsOpen: (open: boolean) => void;
 }
 
@@ -139,6 +149,7 @@ export const useUi = create<UiState>((set, get) => ({
   highlightLabel: null,
   maxYear: null,
   settings: initialSettings(),
+  qualityTier: 0,
   chatOpen: true,
   settingsOpen: false,
 
@@ -202,5 +213,8 @@ export const useUi = create<UiState>((set, get) => ({
     set({ settings });
   },
   setChatOpen: (chatOpen) => set({ chatOpen }),
+  setQualityTier: (qualityTier) => {
+    if (get().qualityTier !== qualityTier) set({ qualityTier });
+  },
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
 }));
