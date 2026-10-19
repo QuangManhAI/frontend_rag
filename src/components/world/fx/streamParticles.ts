@@ -73,6 +73,7 @@ const FRAG = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
   varying vec2 vUv;
+  uniform float uGain;
   void main() {
     // x: 0 head → 1 tail; y: -1..1 across.
     float across = 1.0 - vUv.y * vUv.y;
@@ -80,7 +81,7 @@ const FRAG = /* glsl */ `
     float head = pow(clamp(1.0 - vUv.x, 0.0, 1.0), 6.0);
     float a = across * tail * vAlpha;
     if (a < 0.004) discard;
-    gl_FragColor = vec4(vColor * (0.8 + 1.4 * head * across), a);
+    gl_FragColor = vec4(vColor * (0.8 + 1.4 * head * across) * uGain, a);
   }
 `;
 
@@ -152,6 +153,7 @@ export class StreamParticles {
         uFadeIn: { value: 0.05 },
         uTail: { value: new THREE.Color() },
         uTailMix: { value: 0 },
+        uGain: { value: 1 },
       },
     });
     this.object = new THREE.Mesh(this.geometry, this.material);

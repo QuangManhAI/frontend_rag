@@ -9,7 +9,7 @@ export const CABLE_SAMPLES = 48;
 export const BLOCK_TOP_Y = -2;
 /** Cables start this deep, far enough out to leave the bottom of the overview frame. */
 export const CABLE_FAR_Y = -150;
-/** The cable (tube, core and particles) fades in over this first fraction of its length. */
+/** The particle streams fade in over this first fraction of the cable. */
 export const CABLE_FADE = 0.25;
 /** The last part of a cable that follows its block when the block grows (see `liftAt`). */
 const LIFT_FROM = 0.55;
@@ -119,103 +119,10 @@ export function liftAt(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
-/** The cable after its block's bottom moved by `dy` (same formula as the tube's vertex shader). */
+/** The cable after its block's bottom moved by `dy`. */
 export function liftPath(path: readonly Vec3[], dy: number): Vec3[] {
   const n = path.length - 1;
   return path.map((p, i) => [p[0], p[1] + dy * liftAt(n === 0 ? 1 : i / n), p[2]] as const);
-}
-
-/** Tube radius along the cable: constant, flaring out over the last few % into the plug. */
-export function tubeRadius(t: number, base: number, flare = 1.6): number {
-  const x = Math.min(1, Math.max(0, (t - 0.92) / 0.08));
-  return base * (1 + flare * x * x);
-}
-
-export interface TubeArrays {
-  position: Float32Array;
-  normal: Float32Array;
-  /** Parameter along the cable, 0 (deep end) → 1 (plug). */
-  along: Float32Array;
-  zone: Float32Array;
-  index: Uint32Array;
-}
-
-/** All cables as ONE indexed triangle mesh (parallel-transport frames, `radial` sides). */
-export function buildTubes(paths: readonly Vec3[][], zones: readonly number[], radius: (t: number) => number, radial = 10): TubeArrays {
-  const rings = paths.reduce((s, p) => s + p.length, 0);
-  const position = new Float32Array(rings * radial * 3);
-  const normal = new Float32Array(rings * radial * 3);
-  const along = new Float32Array(rings * radial);
-  const zone = new Float32Array(rings * radial);
-  const index: number[] = [];
-  let v = 0;
-  paths.forEach((path, pi) => {
-    const n = path.length;
-    const base = v;
-    let nx = 1;
-    let ny = 0;
-    let nz = 0;
-    for (let i = 0; i < n; i++) {
-      const a = path[Math.max(0, i - 1)];
-      const b = path[Math.min(n - 1, i + 1)];
-      let tx = b[0] - a[0];
-      let ty = b[1] - a[1];
-      let tz = b[2] - a[2];
-      const tl = Math.hypot(tx, ty, tz) || 1;
-      tx /= tl;
-      ty /= tl;
-      tz /= tl;
-      // Parallel transport: remove the tangent component from the previous normal.
-      const d = nx * tx + ny * ty + nz * tz;
-      nx -= d * tx;
-      ny -= d * ty;
-      nz -= d * tz;
-      let nl = Math.hypot(nx, ny, nz);
-      if (nl < 1e-4) {
-        [nx, ny, nz] = Math.abs(tx) < 0.9 ? [1, 0, 0] : [0, 0, 1];
-        const d2 = nx * tx + ny * ty + nz * tz;
-        nx -= d2 * tx;
-        ny -= d2 * ty;
-        nz -= d2 * tz;
-        nl = Math.hypot(nx, ny, nz);
-      }
-      nx /= nl;
-      ny /= nl;
-      nz /= nl;
-      const bx = ty * nz - tz * ny;
-      const by = tz * nx - tx * nz;
-      const bz = tx * ny - ty * nx;
-      const t = n === 1 ? 1 : i / (n - 1);
-      const r = radius(t);
-      for (let k = 0; k < radial; k++) {
-        const ang = (k / radial) * Math.PI * 2;
-        const c = Math.cos(ang);
-        const s = Math.sin(ang);
-        const ox = nx * c + bx * s;
-        const oy = ny * c + by * s;
-        const oz = nz * c + bz * s;
-        position[v * 3] = path[i][0] + ox * r;
-        position[v * 3 + 1] = path[i][1] + oy * r;
-        position[v * 3 + 2] = path[i][2] + oz * r;
-        normal[v * 3] = ox;
-        normal[v * 3 + 1] = oy;
-        normal[v * 3 + 2] = oz;
-        along[v] = t;
-        zone[v] = zones[pi];
-        v++;
-      }
-    }
-    for (let i = 0; i < n - 1; i++) {
-      for (let k = 0; k < radial; k++) {
-        const a = base + i * radial + k;
-        const b = base + i * radial + ((k + 1) % radial);
-        const c = a + radial;
-        const d = b + radial;
-        index.push(a, c, b, b, c, d);
-      }
-    }
-  });
-  return { position, normal, along, zone, index: new Uint32Array(index) };
 }
 
 export interface BlockArrays {
@@ -325,17 +232,19 @@ export function buildBlocks(zones: readonly Zone[], ground: GroundLayout, inset 
 }
 
 /**
- * Energy pulses: per zone a ring of `slots` (start, duration) pairs that the cable shader reads.
+ * Energy pulses: per zone a ring of `slots` (start, duration) pairs (a pack of bright streaks).
  * A new pulse leaves every 1.5–3 s (phases differ per zone), much more often while the zone
  * receives papers. `update` returns the zones whose pulse just reached the block.
  */
 export class PulseTrain {
-  /** (start, duration) per slot, zone-major: what the shader reads. */
+  /** (start, duration) per slot, zone-major. */
   readonly pulses: Float32Array;
   private readonly next: Float64Array;
   private readonly arrived: Uint8Array;
   private readonly cursor: Uint8Array;
   private readonly hits: number[] = [];
+  /** Zones that launched a pulse during the last `update`. */
+  readonly started: number[] = [];
 
   constructor(
     readonly zones: number,
@@ -357,8 +266,10 @@ export class PulseTrain {
   /** Advance to `now`; `activity[z]` ∈ [0,1], `travel[z]` = seconds for a pulse to reach the block. */
   update(now: number, activity: ArrayLike<number>, travel: ArrayLike<number>): readonly number[] {
     this.hits.length = 0;
+    this.started.length = 0;
     for (let z = 0; z < this.zones; z++) {
       if (now >= this.next[z]) {
+        this.started.push(z);
         const s = this.cursor[z];
         this.cursor[z] = (s + 1) % this.slots;
         const o = (z * this.slots + s) * 2;

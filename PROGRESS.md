@@ -44,12 +44,12 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 ## P14.1 — Cáp tri thức (2026-10-20)
 | Kiểm chứng | Kết quả |
 | :-- | :-- |
-| Góc overview: thấy rõ từng sợi cáp màu (thân ống + lõi sáng) đi lên từ mép dưới màn hình | ✅ cả dark và light (`docs/screenshots/after-*-overview.png`) |
+| Góc overview: thấy rõ từng dòng hạt màu đi lên từ mép dưới màn hình (ống đã bỏ theo góp ý) | ✅ cả dark và light (`docs/screenshots/after-*-overview.png`) |
 | Xung năng lượng chạy lên, khối "dâng sáng" khi xung tới | ✅ mỗi cáp có xung tới trong 0.4–2.3 s gần nhất (đọc `crawlFx.zoneRise`); ảnh chuỗi khung hình |
 | Khối là kính trong suốt liền mảng, thấy cáp cắm vào đáy | ✅ (`docs/screenshots/after-*-ground.png`) |
-| Mock crawl: cáp của khối đang nhận bài khác hẳn | ✅ lõi sáng hơn, xung dày hơn, vệt nhanh hơn theo `count` (rõ nhất ở 300 bài/phút khi chỉ vài vùng nhận bài cùng lúc) |
-| Reduce motion: cáp sáng tĩnh, không xung, không hạt | ✅ |
-| Mức Thấp: không quầng, ít hạt | ✅ |
+| Mock crawl: cáp của khối đang nhận bài khác hẳn | ✅ nhiều vệt hơn, sáng hơn, xung dày hơn, vệt nhanh hơn theo `count` (rõ nhất ở 300 bài/phút khi chỉ vài vùng nhận bài cùng lúc) |
+| Reduce motion: không xung, không hạt (khối vẫn phản ứng) | ✅ |
+| Mức Thấp: ít hạt hơn (12 thay vì 40 vệt/s/dòng) | ✅ |
 | Cây không đổi (`src/components/world/tree/` không sửa) | ✅ |
-| Unit test (`feedCables.test.ts` mới) + E2E | ✅ 191/191, E2E 6/6 |
+| Unit test (`feedCables.test.ts` mới) | ✅ 190/190 |
 | Frame time trước/sau | `docs/perf-report.md` §10 |

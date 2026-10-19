@@ -177,3 +177,5 @@ Cột "Trước" lấy từ lượt đo không cào ở §8 (cùng script, cùng
 - Thêm cố định: ống cáp (1), quầng (1, chỉ mức Cao), vệt hạt (1 instanced), khối kính (1) + viền khối (1); bỏ thùng instanced (1). Không vẽ gì thêm theo từng hạt hay từng cáp.
 - Cáp chỉ tốn +0.3–1.2 ms; vẫn dưới 16.7 ms ở median. p95 ~17 ms do đo đồng bộ từng frame (readPixels) — cùng mức với lượt "trước" (16.1–16.8 ms).
 - Ảnh trước/sau: `docs/screenshots/{before,after}-{dark,light}-{overview,ground}.png` (đang cào 3.000/phút, chụp bằng `scripts/cable-shots.cjs`).
+
+**Sau góp ý (bỏ ống, chỉ giữ dòng hạt to và sáng hơn):** không cào 11.6 / 11.9 ms (p95 16.2 / 19.0), cào 3.000/phút 12.2 / 12.3 ms (p95 17.2 / 17.2); draw call 51.7 / 50.6 khi không cào (bớt 2 so với bản có ống). Ảnh trong `docs/screenshots/after-*` đã chụp lại với bản này.

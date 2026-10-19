@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../api/mock/rng';
 import type { Crate, GroundLayout } from '../types/world';
-import { BLOCK_TOP_Y, buildBlocks, buildTubes, CABLE_FAR_Y, CABLE_SAMPLES, cablePath, liftAt, liftPath, PulseTrain, tubeRadius, zoneHeights, zonesOf } from './feedCables';
+import { BLOCK_TOP_Y, buildBlocks, CABLE_FAR_Y, CABLE_SAMPLES, cablePath, liftAt, liftPath, PulseTrain, zoneHeights, zonesOf } from './feedCables';
 import { cellToWorld } from './groundLayout';
 
 // Zone 0: an L of three cells; zone 1: a single cell far away.
@@ -65,28 +65,6 @@ describe('cablePath', () => {
   });
 });
 
-describe('buildTubes', () => {
-  it('builds one mesh for all cables, rings at the given radius, flaring at the plug', () => {
-    const zones = zonesOf(ground);
-    const paths = zones.map((z) => cablePath(z, -10, 12));
-    const radial = 8;
-    const t = buildTubes(paths, [0, 1], (u) => tubeRadius(u, 1), radial);
-    expect(t.position.length).toBe(2 * 12 * radial * 3);
-    expect(t.index.length).toBe(2 * 11 * radial * 6);
-    expect(Math.max(...t.index)).toBeLessThan(t.position.length / 3);
-    expect(t.zone[0]).toBe(0);
-    expect(t.zone[t.zone.length - 1]).toBe(1);
-    // Ring 3 of cable 0 is at radius 1 around its path point, perpendicular to the tangent.
-    const p = paths[0][3];
-    for (let k = 0; k < radial; k++) {
-      const v = (3 * radial + k) * 3;
-      expect(Math.hypot(t.position[v] - p[0], t.position[v + 1] - p[1], t.position[v + 2] - p[2])).toBeCloseTo(1);
-    }
-    expect(tubeRadius(1, 1)).toBeCloseTo(2.6);
-    expect(tubeRadius(0.5, 1)).toBe(1);
-  });
-});
-
 describe('buildBlocks', () => {
   const zones = zonesOf(ground);
   const b = buildBlocks(zones, ground, 0.1);
@@ -129,6 +107,7 @@ describe('PulseTrain', () => {
   it('reports each arrival exactly once, after its travel time', () => {
     const train = new PulseTrain(1, () => 0, 4, 0);
     expect(train.update(0, [0], [2])).toEqual([]);
+    expect(train.started).toEqual([0]);
     expect(train.update(1.9, [0], [2])).toEqual([]);
     expect(train.update(2.0, [0], [2])).toEqual([0]);
     expect(train.update(2.1, [0], [2])).toEqual([]);
