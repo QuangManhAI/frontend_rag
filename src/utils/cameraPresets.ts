@@ -16,7 +16,7 @@ export interface PresetContext {
 
 export const FOCUS_DISTANCE = 20;
 const FOLLOW_OFFSET: Vec3 = [26, 22, 26];
-const FOLLOW_DISTANCE = 62;
+const FOLLOW_DISTANCE = 80;
 
 /** Camera position + look target for a mode. */
 export function getPreset(mode: CameraMode, ctx: PresetContext = {}): CameraPreset {

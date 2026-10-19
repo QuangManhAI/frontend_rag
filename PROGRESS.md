@@ -63,3 +63,13 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Nhãn nhánh mặc định tắt, bật trong Cài đặt | ✅ (E2E b) |
 | Bảng cào dữ liệu nằm trong Cài đặt | ✅ (E2E b) |
 | Unit + E2E | ✅ 187/187, 6/6; `npm run build` sạch |
+
+## Hoạt cảnh tìm kiếm chậm & dịu mắt (2026-10-20)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Thanh năm nằm trong Cài đặt | ✅ (E2E b) |
+| Chuỗi tìm kiếm chậm lại | ✅ ~25 s từ lúc hỏi tới "Xong" với mock (trước ~17.5 s) |
+| Không cháy trắng khi camera bám quả cầu | ✅ tán mờ 90% khi bay/so sánh (ảnh kiểm tra) |
+| Không giật | ✅ M4, bản build 150k, 1440×900: 0–1% khung > 25 ms ở mọi giai đoạn (2 lượt đo) |
+| Sau khi tìm xong: camera về góc ban đầu, tán mờ, rank nổi bật | ✅ (E2E c: camera `overview`, `dim = 1`, có huy hiệu #1) |
+| Unit + E2E | ✅ 188/188, 6/6 |

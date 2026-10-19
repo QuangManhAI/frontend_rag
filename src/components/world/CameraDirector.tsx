@@ -49,5 +49,17 @@ export function CameraDirector() {
     void c.setLookAt(...p.position, ...p.target, !reduce);
   });
 
-  return <CameraControls ref={ref} makeDefault minDistance={2.5} maxDistance={520} smoothTime={0.55} draggingSmoothTime={0.12} maxPolarAngle={Math.PI * 0.62} />;
+  // Soft damping for scripted moves (chasing the orb, framing the result, pulling back) so the
+  // camera never whips around; dragging stays responsive.
+  return (
+    <CameraControls
+      ref={ref}
+      makeDefault
+      minDistance={2.5}
+      maxDistance={520}
+      smoothTime={mode === 'follow' ? 0.9 : 1.15}
+      draggingSmoothTime={0.12}
+      maxPolarAngle={Math.PI * 0.62}
+    />
+  );
 }

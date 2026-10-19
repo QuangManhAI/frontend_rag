@@ -70,6 +70,24 @@ describe('Result Components & 3D Anchors', () => {
       expect(el.style.visibility).toBe('hidden');
     });
 
+    it('keepInView slides a box that would overflow back inside the viewport', () => {
+      const el = document.createElement('div');
+      const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+      camera.position.set(0, 0, 10);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      camera.updateProjectionMatrix();
+      // A 300×200 card drawn 28 px right of the anchor, vertically centred on it; anchor near the right edge.
+      const item = { el, pos: new THREE.Vector3(5, 0, 0), visible: true, keepInView: true, box: { dx: 28, dy: -100, w: 300, h: 200, at: performance.now() } };
+      anchors.add(item);
+      projectAnchors(camera, 800, 600);
+      const m = /translate3d\(([\d.]+)px, ([\d.]+)px/.exec(el.style.transform);
+      expect(m).not.toBeNull();
+      const x = Number(m?.[1]);
+      expect(x + 28 + 300).toBeLessThanOrEqual(800 - 12 + 0.1);
+      anchors.delete(item);
+    });
+
     it('createManualAnchor shows and hides content', () => {
       const manual = createManualAnchor();
       const el = document.createElement('div');

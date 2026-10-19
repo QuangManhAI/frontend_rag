@@ -8,6 +8,7 @@ export const CANOPY_VERT = /* glsl */ `
   attribute float inFilter;
   attribute float born;
   uniform float uFilter;
+  uniform float uDimRest;
   uniform float uClock;
   uniform float uFootprint;
   uniform float uTime;
@@ -32,9 +33,13 @@ export const CANOPY_VERT = /* glsl */ `
     float boost = 0.0;
     float maxPx = uMaxPx;
     if (st > 0.5 && st < 1.5) { alpha = 0.1; s *= 0.65; }
+    // Spotlight after a search (eased 0 → 1): plain points fade back, the found ranks keep their boost.
+    else if (st < 0.5) { alpha = mix(0.9, 0.08, uDimRest); s *= mix(1.0, 0.6, uDimRest); }
     else if (st > 1.5 && st < 2.5) { s *= 1.7; boost = 0.45; maxPx *= 1.6; }
     else if (st > 2.5 && st < 3.5) { s *= 2.4; boost = 0.7; maxPx *= 2.2; }
     else if (st > 3.5) { s *= 3.0 * (1.0 + 0.18 * sin(uTime * 4.5)); boost = 0.8; maxPx *= 2.8; }
+    // Spotlight: the found ranks grow and brighten further while everything else dims.
+    if (st > 1.5) { s *= 1.0 + 0.7 * uDimRest; maxPx *= 1.0 + 0.6 * uDimRest; boost += 0.35 * uDimRest; }
     float tw = 1.0 + uTwinkle * 0.18 * sin(uTime * (1.2 + phase) + phase * 6.2831);
     float px = clamp(s * tw * uScale / -mv.z, uMinPx, maxPx) * uPixelRatio;
     if (year > uMaxYear) { px = 0.0; alpha = 0.0; }

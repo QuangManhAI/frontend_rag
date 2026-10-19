@@ -41,18 +41,27 @@ test('b. dark-only layout: year slider, labels and crawl live in the settings', 
   await expect(page.locator('.label3d').first()).toBeAttached();
 });
 
-test('c. a question streams an answer, reaches "Xong" and shows the ResultCard', async ({ page }) => {
+test('c. a question streams an answer, frames the best result, then pulls back and spotlights the ranks', async ({ page }) => {
   await openWorld(page);
   await ask(page, 'LoRA giúp fine-tune transformer hiệu quả như thế nào?');
   const status = page.getByTestId('pipeline-status');
   await expect(status).toHaveAttribute('data-visual-phase', /embedding|flying/);
+  // The best result is framed with its card while "found"…
+  await expect(page.getByTestId('result-card')).toBeVisible({ timeout: 60_000 });
   const answer = page.getByTestId('assistant-message').last().locator('.md');
   await expect(answer).toBeVisible({ timeout: 60_000 });
   const firstLen = (await answer.innerText()).length;
   await expect.poll(async () => (await answer.innerText()).length, { timeout: 20_000 }).toBeGreaterThan(firstLen);
   await expect(status).toHaveAttribute('data-visual-phase', 'done', { timeout: 60_000 });
   await expect(status.getByText('Xong')).toBeVisible();
-  await expect(page.getByTestId('result-card')).toBeVisible();
+  // …then the view pulls back: the card closes, every rank (incl. #1) gets a badge, the canopy dims.
+  await expect(page.getByTestId('result-card')).toHaveCount(0);
+  await expect(page.getByLabel(/^Kết quả hạng 1:/)).toBeAttached();
+  const view = await page.evaluate(() => {
+    const g = globalThis as unknown as { __rkt: { ui: { getState: () => { cameraMode: string } }; fx: { getState: () => { dim: number } } } };
+    return { mode: g.__rkt.ui.getState().cameraMode, dim: g.__rkt.fx.getState().dim };
+  });
+  expect(view).toEqual({ mode: 'overview', dim: 1 });
 });
 
 test('d. a verified citation opens the PaperPanel with the "used" band', async ({ page }) => {

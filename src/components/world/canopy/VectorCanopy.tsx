@@ -99,6 +99,7 @@ export function VectorCanopy() {
           uOutlineColor: { value: new THREE.Color() },
           uOutline: { value: 0 },
           uFilter: { value: 0 },
+          uDimRest: { value: 0 },
           uClock: { value: 0 },
           uFootprint: { value: LEGACY_FX ? 1 : 0.8 },
           uAlphaCut: { value: LEGACY_FX ? 0 : 0.012 },
@@ -164,6 +165,10 @@ export function VectorCanopy() {
   useFrame((_, dt) => {
     material.uniforms.uTime.value += reduce ? 0 : dt;
     material.uniforms.uClock.value = nowSec();
+    // Dimming fades in/out over ~1 s (instantly with reduce motion).
+    const dimTarget = useFx.getState().dim;
+    const u = material.uniforms.uDimRest;
+    u.value = reduce ? dimTarget : u.value + (dimTarget - u.value) * Math.min(1, dt * 2.5);
     material.uniforms.uScale.value = pointScale(size.height, (camera as THREE.PerspectiveCamera).fov);
     material.uniforms.uPixelRatio.value = gl.getPixelRatio();
   });

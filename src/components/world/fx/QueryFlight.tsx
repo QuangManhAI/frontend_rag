@@ -30,6 +30,8 @@ import { QueryText } from './QueryText';
 import { TopKThreads } from './TopKThreads';
 
 const MAX_ORBS = 12;
+/** Canopy dimming while the orb searches (1 = full spotlight once the ranks are found). */
+const SEARCH_DIM = 0.9;
 const CANOPY_CENTER: Vec3 = [0, 80, 0];
 
 type Plan =
@@ -203,9 +205,18 @@ export function QueryFlight() {
       ui.setCameraMode('canopy');
       r.orbPos = QUERY_ORIGIN;
     } else if (visual === 'flying' || visual === 'comparing') {
+      useFx.getState().setDim(SEARCH_DIM);
       flightProbe.active = true;
       flightProbe.position = [...r.orbPos];
       ui.setCameraMode('follow', r.orbPos);
+    } else if ((visual === 'generating' || visual === 'done') && useFx.getState().topK.length > 0 && useFx.getState().dim < 1) {
+      // The best result has been framed: pull back to the starting view and spotlight the ranks.
+      // Its card would sit on top of the rank cluster from there, so it closes (the answer's
+      // citation chips reopen any paper).
+      flightProbe.active = false;
+      if (ui.cameraMode === 'focus' || ui.cameraMode === 'follow' || ui.cameraMode === 'canopy') ui.setCameraMode('overview');
+      if (ui.panelPaperId === null) useUi.setState({ focusedPaperId: null });
+      useFx.getState().setDim(1);
     } else if (visual === 'error') {
       flightProbe.active = false;
       compare.current?.hide();
@@ -285,6 +296,9 @@ export function QueryFlight() {
             openPanel: false,
             context: { citationChecks: rag.current.citationChecks, grounded: rag.current.grounded_chunks },
           });
+          // Frame the best result from outside the canopy (the close "focus" shot dives through
+          // branches and is too busy mid-search); the view pulls back to the overview afterwards.
+          if (useUi.getState().cameraMode === 'focus') useUi.getState().setCameraMode('follow', plan.anchor);
         }
         break;
       }

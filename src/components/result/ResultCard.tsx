@@ -28,7 +28,7 @@ export function ResultCard() {
   const pos = vectorPosition(vectors, index);
 
   return (
-    <Anchor position={pos} distanceFactor={16}>
+    <Anchor position={pos} distanceFactor={16} keepInView>
       <article className="result-card glass glass-strong p-3 text-xs" data-testid="result-card" data-paper-id={paperId} aria-label="Thẻ kết quả">
         <header className="flex items-start gap-2">
           <span className="dot mt-1" style={{ background: color, color }} aria-hidden />
