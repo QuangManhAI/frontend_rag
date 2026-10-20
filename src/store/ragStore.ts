@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { streamChat } from '../api/client';
+import { MOCK_WORLD, streamChat, USE_MOCK } from '../api/client';
+import { bridgeStream, WorldBridge } from '../api/worldBridge';
 import type { CitationCheck, GroundedChunk, PipelinePhase, PipelineTimings, RagRequest, RagStreamEvent } from '../types/rag';
 import { advanceVisual, emptyRun, reduceEvent, type RunData } from './pipeline';
 import { useUi } from './uiStore';
+import { useWorld } from './worldStore';
 
 export interface ChatMessage {
   id: string;
@@ -34,6 +36,29 @@ interface RagState {
 }
 
 let controller: AbortController | null = null;
+
+/** Real backend on the mock world: one bridge for the session so a paper keeps its vector. */
+let bridge: WorldBridge | null = null;
+function chatEvents(req: RagRequest, signal: AbortSignal): AsyncIterable<RagStreamEvent> {
+  const events = streamChat(req, signal);
+  if (USE_MOCK || !MOCK_WORLD) return events;
+  const world = useWorld.getState();
+  if (world.status !== 'ready' || !world.vectors) return events;
+  if (!bridge) {
+    console.info('[bridge] real backend on the mock world: papers are placed on stand-in vectors');
+    bridge = new WorldBridge(() => {
+      const w = useWorld.getState();
+      return {
+        vectors: w.vectors!,
+        nodesById: w.nodesById,
+        childrenById: w.childrenById,
+        vectorIndexByPaperId: w.vectorIndexByPaperId,
+        vectorIds: w.vectorIds,
+      };
+    });
+  }
+  return bridgeStream(events, bridge, req.nprobe ?? 2);
+}
 
 export const useRag = create<RagState>((set, get) => {
   const patchAssistant = (runId: number, patch: Partial<ChatMessage>) =>
@@ -94,7 +119,7 @@ export const useRag = create<RagState>((set, get) => {
         ...(st.category ? { category: st.category } : {}),
       };
       try {
-        for await (const ev of streamChat(req, ctrl.signal)) {
+        for await (const ev of chatEvents(req, ctrl.signal)) {
           if (controller !== ctrl) return;
           dispatch(runId, ev);
         }

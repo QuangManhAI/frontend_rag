@@ -1,6 +1,6 @@
 import type { SectionType } from './world';
 
-/** Body of `POST /api/rag/chat/stream`. */
+/** Body of `POST /api/v1/rag/chat/stream`. */
 export interface RagRequest {
   query: string;
   top_k?: number;
@@ -66,7 +66,7 @@ export type RagStreamEvent =
   | { type: 'compare'; candidates: CompareCandidate[] }
   | { type: 'retrieval'; grounded_chunks: GroundedChunk[]; expanded_terms?: string[] }
   | { type: 'token'; text: string }
-  | { type: 'done'; citations: string[]; timings: PipelineTimings }
+  | { type: 'done'; citations: string[]; timings: PipelineTimings; session_id?: string | null; message_id?: string | null }
   | { type: 'error'; message: string; status?: number };
 
 /** Whether a cited paper was actually among the retrieved context. */

@@ -14,7 +14,7 @@ function walk(node: MdNode): void {
   if (!node.children) return;
   const out: MdNode[] = [];
   for (const child of node.children) {
-    if (child.type === 'text' && child.value?.includes('[Paper:')) {
+    if (child.type === 'text' && child.value !== undefined && /\[Paper(?:\s+ID)?:/.test(child.value)) {
       for (const part of splitCitations(child.value)) {
         if (part.kind === 'text') out.push({ type: 'text', value: part.value });
         else out.push({ type: 'citation', children: [], data: { hName: 'cite', hProperties: { dataPaperId: part.paperId } } });

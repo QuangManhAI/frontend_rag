@@ -21,18 +21,22 @@ describe('Layout Components', () => {
 
   describe('HealthBanner & HealthDots', () => {
     it('renders HealthDots when healthy', () => {
-      render(<HealthDots health={{ lancedb: true, llm: true, world: true }} />);
+      render(<HealthDots health={{ mongo: true, qdrant: true, llm: true, world: true }} />);
       expect(screen.getByLabelText('Trạng thái hệ thống')).toBeDefined();
     });
 
     it('renders HealthBanner when component is down or unreachable', () => {
-      const { rerender } = render(<HealthBanner health={{ lancedb: false, llm: true, world: true }} />);
-      expect(screen.getByTestId('health-banner')).toHaveTextContent(/LanceDB không phản hồi/);
+      const { rerender } = render(<HealthBanner health={{ mongo: true, qdrant: false, llm: true, world: true }} />);
+      expect(screen.getByTestId('health-banner')).toHaveTextContent(/Qdrant không phản hồi/);
 
       rerender(<HealthBanner health="unreachable" />);
       expect(screen.getByTestId('health-banner')).toHaveTextContent(/Backend không phản hồi/);
 
-      rerender(<HealthBanner health={{ lancedb: true, llm: true, world: true }} />);
+      rerender(<HealthBanner health={{ mongo: true, qdrant: true, llm: true, world: true }} />);
+      expect(screen.queryByTestId('health-banner')).toBeNull();
+
+      // `world` (backend routing tree) is not critical: no banner when only it is missing.
+      rerender(<HealthBanner health={{ mongo: true, qdrant: true, llm: true, world: false }} />);
       expect(screen.queryByTestId('health-banner')).toBeNull();
     });
   });

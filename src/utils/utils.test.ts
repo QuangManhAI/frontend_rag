@@ -32,6 +32,13 @@ function table(n: number): VectorTable {
 }
 
 describe('citations.splitCitations', () => {
+  it('a copied context header [Paper ID: id | …] becomes one chip', () => {
+    expect(splitCitations('See [Paper ID: 2403.04303 | Title: "LORS" | Section: Method].')).toEqual([
+      { kind: 'text', value: 'See ' },
+      { kind: 'citation', paperId: '2403.04303' },
+      { kind: 'text', value: '.' },
+    ]);
+  });
   it('one id', () => {
     expect(splitCitations('LoRA works [Paper: 2310.00297].')).toEqual([
       { kind: 'text', value: 'LoRA works ' },

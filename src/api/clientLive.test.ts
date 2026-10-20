@@ -5,6 +5,7 @@ describe('client.ts in live mode (mock fetch)', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.stubEnv('VITE_USE_MOCK', 'false');
+    vi.stubEnv('VITE_MOCK_WORLD', 'false');
   });
 
   afterEach(() => {
@@ -88,15 +89,36 @@ describe('client.ts in live mode (mock fetch)', () => {
     expect(paper.title).toBe('Live Paper');
   });
 
-  it('getHealth fetches from /rag/health', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
+  it('getHealth reads components from /api/v1/health', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ lancedb: true, llm: true, world: true }),
-    }) as any;
+      json: () =>
+        Promise.resolve({ status: 'degraded', components: { mongo: true, qdrant: true, llm: false, world: false } }),
+    });
+    globalThis.fetch = fetchMock as any;
 
     const { getHealth } = await import('./client');
     const health = await getHealth();
-    expect(health.lancedb).toBe(true);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/health');
+    expect(health).toEqual({ mongo: true, qdrant: true, llm: false, world: false });
+  });
+
+  it('world endpoints go to the pipeline base', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    globalThis.fetch = fetchMock as any;
+    const { loadWorld } = await import('./client');
+    await expect(loadWorld()).rejects.toThrow();
+    expect(fetchMock.mock.calls.map((c) => String(c[0]))).toContain('/pipeline/world/categories');
+  });
+
+  it('getPaper falls back to the mock world when the real backend 404s a mock id', async () => {
+    vi.stubEnv('VITE_MOCK_WORLD', 'true');
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 }) as any;
+    const { getPaper, getMockContext } = await import('./client');
+    const mockId = getMockContext().world.vectorIds[0];
+    const paper = await getPaper(mockId);
+    expect(paper.paper_id).toBe(mockId);
+    await expect(getPaper('2106.09685')).rejects.toThrow(/404/);
   });
 
   it('streamChat reads SSE stream from /rag/chat/stream', async () => {
