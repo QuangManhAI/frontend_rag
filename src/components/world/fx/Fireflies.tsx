@@ -49,6 +49,8 @@ export function Fireflies({ count = 320 }: { count?: number }) {
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('aPhase', new THREE.BufferAttribute(phase, 1));
     g.setAttribute('aSpeed', new THREE.BufferAttribute(speed, 1));
+    g.computeBoundingSphere();
+    if (g.boundingSphere) g.boundingSphere.radius += 10;
     return g;
   }, [count]);
   const material = useMemo(
@@ -79,5 +81,5 @@ export function Fireflies({ count = 320 }: { count?: number }) {
     material.uniforms.uPixelRatio.value = gl.getPixelRatio();
   });
 
-  return <points geometry={geometry} material={material} frustumCulled={false} />;
+  return <points geometry={geometry} material={material}  />;
 }

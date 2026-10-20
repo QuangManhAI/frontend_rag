@@ -37,9 +37,14 @@ export function projectAnchors(camera: THREE.Camera, width: number, height: numb
       a.el.style.visibility = 'hidden';
       continue;
     }
-    v.copy(a.pos).project(camera);
-    if (v.z > 1 || v.z < -1 || Math.abs(v.x) > 1.2 || Math.abs(v.y) > 1.2) {
-      a.el.style.visibility = 'hidden';
+    v.copy(a.pos).applyMatrix4(camera.matrixWorldInverse);
+    if (v.z >= -0.5) {
+      if (a.el.style.visibility !== 'hidden') a.el.style.visibility = 'hidden';
+      continue;
+    }
+    v.applyMatrix4(camera.projectionMatrix);
+    if (v.z > 1 || v.z < -1 || Math.abs(v.x) > 1.15 || Math.abs(v.y) > 1.15) {
+      if (a.el.style.visibility !== 'hidden') a.el.style.visibility = 'hidden';
       continue;
     }
     let x = (v.x * 0.5 + 0.5) * width;
@@ -64,7 +69,7 @@ export function projectAnchors(camera: THREE.Camera, width: number, height: numb
         a.at.y = y;
       } else a.at = { x, y };
     }
-    a.el.style.visibility = 'visible';
+    if (a.el.style.visibility !== 'visible') a.el.style.visibility = 'visible';
     a.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
     a.el.style.zIndex = String(Math.round((1 - v.z) * 10000));
   }

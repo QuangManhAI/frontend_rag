@@ -23,7 +23,7 @@ const PULSE_S = 2.2;
 const AMBIENT_RATE = { high: 40, low: 12 } as const;
 /** Streaks in one energy pulse (a tight, bright pack travelling together). */
 const PULSE_PACK = { high: 14, low: 6 } as const;
-const TICK_MS = 100;
+const TICK_MS = 250;
 
 /**
  * Knowledge streams: one stream of particle streaks per ground zone, from beyond the bottom of the

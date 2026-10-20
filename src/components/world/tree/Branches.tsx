@@ -64,6 +64,7 @@ export function Branches() {
     }
     const merged = mergeGeometries(parts, false);
     parts.forEach((p) => p.dispose());
+    merged.computeBoundingSphere();
     return { geometry: merged, ranges };
   }, [tree, nodesById]);
 

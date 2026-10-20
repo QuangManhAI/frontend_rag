@@ -84,6 +84,7 @@ export function SapFlow() {
     g.setAttribute('aPhase', new THREE.BufferAttribute(sap.phase, 1));
     g.setAttribute('aSpeed', new THREE.BufferAttribute(sap.speed, 1));
     g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(sap.count * 3), 3));
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 50, 0), 85);
     return { geometry: g, tex, cats, pathCount: paths.length };
   }, [ground, tree, nodesById]);
 
@@ -139,5 +140,5 @@ export function SapFlow() {
   });
 
   if (!built) return null;
-  return <points geometry={built.geometry} material={material} frustumCulled={false} raycast={() => null} />;
+  return <points geometry={built.geometry} material={material} raycast={() => null} />;
 }

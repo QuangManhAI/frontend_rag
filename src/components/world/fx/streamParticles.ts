@@ -157,7 +157,8 @@ export class StreamParticles {
       },
     });
     this.object = new THREE.Mesh(this.geometry, this.material);
-    this.object.frustumCulled = false;
+    this.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, -40, 0), 120);
+    this.object.frustumCulled = true;
     this.object.raycast = () => undefined;
   }
 

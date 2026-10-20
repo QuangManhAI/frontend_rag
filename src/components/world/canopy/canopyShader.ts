@@ -25,6 +25,29 @@ export const CANOPY_VERT = /* glsl */ `
 
   void main() {
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    // Frustum & near-plane culling: prune points behind camera plane
+    if (mv.z >= -0.1) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      gl_PointSize = 0.0;
+      vColor = vec3(0.0);
+      vAlpha = 0.0;
+      vState = 0.0;
+      vFoot = 0.0;
+      return;
+    }
+
+    vec4 clip = projectionMatrix * mv;
+    // Guard-band frustum culling: early out if point center is outside screen bounds
+    if (abs(clip.x) > clip.w * 1.25 || abs(clip.y) > clip.w * 1.25) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      gl_PointSize = 0.0;
+      vColor = vec3(0.0);
+      vAlpha = 0.0;
+      vState = 0.0;
+      vFoot = 0.0;
+      return;
+    }
+
     // Filter: points outside the active selection are drawn dimmed unless the overlay set a state.
     float st = state;
     if (st < 0.5 && uFilter > 0.5 && inFilter < 0.5) st = 1.0;
@@ -55,7 +78,7 @@ export const CANOPY_VERT = /* glsl */ `
     // fragments into the bloom target); the focused point keeps its full outer ring.
     vFoot = st > 3.5 ? 1.0 : uFootprint;
     gl_PointSize = min(px * vFoot, 48.0 * uPixelRatio);
-    gl_Position = projectionMatrix * mv;
+    gl_Position = clip;
     vColor = mix(color, vec3(1.0), boost * 0.35) * (1.0 + boost);
     vAlpha = alpha;
     vState = st;

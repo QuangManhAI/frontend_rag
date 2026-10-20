@@ -161,6 +161,10 @@ export function KnowledgeBlocks() {
     const edges = new THREE.BufferGeometry();
     edges.setAttribute('position', new THREE.BufferAttribute(b.edges, 3));
     edges.setAttribute('aZone', new THREE.BufferAttribute(b.edgeZone, 1));
+    body.computeBoundingSphere();
+    if (body.boundingSphere) body.boundingSphere.radius += 35;
+    edges.computeBoundingSphere();
+    if (edges.boundingSphere) edges.boundingSphere.radius += 35;
     return { body, edges };
   }, [ground, zones]);
 
@@ -245,8 +249,8 @@ export function KnowledgeBlocks() {
   if (!geometries || zones.length === 0) return null;
   return (
     <group name="knowledge-blocks">
-      <mesh geometry={geometries.body} material={materials.body} raycast={() => null} renderOrder={1} frustumCulled={false} />
-      <lineSegments geometry={geometries.edges} material={materials.edges} raycast={() => null} renderOrder={1} frustumCulled={false} />
+      <mesh geometry={geometries.body} material={materials.body} raycast={() => null} renderOrder={1} />
+      <lineSegments geometry={geometries.edges} material={materials.edges} raycast={() => null} renderOrder={1} />
     </group>
   );
 }

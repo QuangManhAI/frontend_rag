@@ -33,6 +33,7 @@ export function Roots() {
     }
     const merged = mergeGeometries(parts, false);
     parts.forEach((p) => p.dispose());
+    merged.computeBoundingSphere();
     return { geometry: merged, ranges };
   }, [ground]);
 
