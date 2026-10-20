@@ -1,0 +1,166 @@
+{
+  "label": "no_shader_stall",
+  "timestamp": "2026-10-20T13:22:01.698Z",
+  "targetUrl": "http://localhost:5174/?vectors=150000&bench",
+  "totalFrames": 187,
+  "frameTime": {
+    "medianMs": 0.9,
+    "meanMs": 11.24,
+    "p95Ms": 103.5,
+    "p99Ms": 114.2,
+    "maxMs": 114.8
+  },
+  "fps": {
+    "median": 1111.1,
+    "min": 8.7
+  },
+  "longTasks": {
+    "count": 21,
+    "maxDurationMs": 8563,
+    "tasks": [
+      {
+        "duration": 74,
+        "startTime": 4304.39999999851,
+        "name": "self"
+      },
+      {
+        "duration": 69,
+        "startTime": 4379.10000000149,
+        "name": "self"
+      },
+      {
+        "duration": 8563,
+        "startTime": 4842,
+        "name": "self"
+      },
+      {
+        "duration": 115,
+        "startTime": 13407.60000000149,
+        "name": "self"
+      },
+      {
+        "duration": 112,
+        "startTime": 13778.5,
+        "name": "self"
+      },
+      {
+        "duration": 105,
+        "startTime": 13890.60000000149,
+        "name": "self"
+      },
+      {
+        "duration": 113,
+        "startTime": 13996.29999999702,
+        "name": "self"
+      },
+      {
+        "duration": 114,
+        "startTime": 14110.39999999851,
+        "name": "self"
+      },
+      {
+        "duration": 103,
+        "startTime": 14225.19999999553,
+        "name": "self"
+      },
+      {
+        "duration": 103,
+        "startTime": 14328.89999999851,
+        "name": "self"
+      },
+      {
+        "duration": 101,
+        "startTime": 14432.69999999553,
+        "name": "self"
+      },
+      {
+        "duration": 102,
+        "startTime": 14534.60000000149,
+        "name": "self"
+      },
+      {
+        "duration": 103,
+        "startTime": 14637.60000000149,
+        "name": "self"
+      },
+      {
+        "duration": 102,
+        "startTime": 14740.69999999553,
+        "name": "self"
+      },
+      {
+        "duration": 102,
+        "startTime": 14842.89999999851,
+        "name": "self"
+      },
+      {
+        "duration": 103,
+        "startTime": 14945.69999999553,
+        "name": "self"
+      },
+      {
+        "duration": 103,
+        "startTime": 15049.10000000149,
+        "name": "self"
+      },
+      {
+        "duration": 103,
+        "startTime": 15152.39999999851,
+        "name": "self"
+      },
+      {
+        "duration": 102,
+        "startTime": 15256.39999999851,
+        "name": "self"
+      },
+      {
+        "duration": 104,
+        "startTime": 15359.19999999553,
+        "name": "self"
+      },
+      {
+        "duration": 107,
+        "startTime": 15463.5,
+        "name": "self"
+      }
+    ]
+  },
+  "topCpuFunctions": [
+    {
+      "name": "getProgramParameter (:-1)",
+      "ms": 8547.9
+    },
+    {
+      "name": "uniformMatrix4fv (:-1)",
+      "ms": 801.1
+    },
+    {
+      "name": "(program) (:-1)",
+      "ms": 367.5
+    },
+    {
+      "name": "uniform1fv (:-1)",
+      "ms": 322.9
+    },
+    {
+      "name": "bindVertexArray (:-1)",
+      "ms": 313.5
+    },
+    {
+      "name": "drawElements (:-1)",
+      "ms": 204.7
+    },
+    {
+      "name": "uniform2fv (:-1)",
+      "ms": 110.1
+    },
+    {
+      "name": "process (chunk-DG2K7ALI.js?v=90c9e65e:79763)",
+      "ms": 52.2
+    }
+  ],
+  "sla": {
+    "target": "60 FPS (Median <= 16.6ms, P99 <= 33.3ms, LongTasks = 0)",
+    "passed": false
+  }
+}

@@ -1,126 +1,131 @@
 {
   "label": "after",
-  "timestamp": "2026-10-20T12:59:12.022Z",
+  "timestamp": "2026-10-20T13:26:43.472Z",
   "targetUrl": "http://localhost:5174/?vectors=150000&bench",
-  "totalFrames": 184,
+  "totalFrames": 186,
   "frameTime": {
     "medianMs": 0.9,
-    "meanMs": 11.14,
-    "p95Ms": 119.9,
-    "p99Ms": 128.1,
-    "maxMs": 128.4
+    "meanMs": 10.76,
+    "p95Ms": 106.3,
+    "p99Ms": 111.9,
+    "maxMs": 114.9
   },
   "fps": {
     "median": 1111.1,
-    "min": 7.8
+    "min": 8.7
   },
   "longTasks": {
-    "count": 21,
-    "maxDurationMs": 9858,
+    "count": 22,
+    "maxDurationMs": 8567,
     "tasks": [
       {
-        "duration": 87,
-        "startTime": 3870,
+        "duration": 69,
+        "startTime": 4000.60000000149,
         "name": "self"
       },
       {
-        "duration": 87,
-        "startTime": 3958,
+        "duration": 82,
+        "startTime": 4069.9000000059605,
         "name": "self"
       },
       {
-        "duration": 157,
-        "startTime": 4063.89999999851,
+        "duration": 63,
+        "startTime": 4168,
         "name": "self"
       },
       {
-        "duration": 87,
-        "startTime": 4223.29999999702,
+        "duration": 72,
+        "startTime": 4232,
         "name": "self"
       },
       {
-        "duration": 9858,
-        "startTime": 4329.29999999702,
+        "duration": 8567,
+        "startTime": 4324.9000000059605,
         "name": "self"
       },
       {
-        "duration": 129,
-        "startTime": 14188.29999999702,
+        "duration": 88,
+        "startTime": 12893.30000000447,
         "name": "self"
       },
       {
-        "duration": 58,
-        "startTime": 14522.89999999851,
+        "duration": 106,
+        "startTime": 13218.10000000149,
         "name": "self"
       },
       {
-        "duration": 123,
-        "startTime": 14581.89999999851,
+        "duration": 108,
+        "startTime": 13325,
         "name": "self"
       },
       {
-        "duration": 122,
-        "startTime": 14705.60000000149,
+        "duration": 106,
+        "startTime": 13433.5,
         "name": "self"
       },
       {
-        "duration": 127,
-        "startTime": 14828.19999999553,
+        "duration": 102,
+        "startTime": 13540.40000000596,
         "name": "self"
       },
       {
-        "duration": 113,
-        "startTime": 14956.10000000149,
+        "duration": 103,
+        "startTime": 13642.90000000596,
         "name": "self"
       },
       {
-        "duration": 124,
-        "startTime": 15069.29999999702,
+        "duration": 104,
+        "startTime": 13745.90000000596,
         "name": "self"
       },
       {
-        "duration": 118,
-        "startTime": 15193.39999999851,
+        "duration": 104,
+        "startTime": 13850.20000000298,
         "name": "self"
       },
       {
-        "duration": 119,
-        "startTime": 15312.39999999851,
+        "duration": 103,
+        "startTime": 13954.30000000447,
         "name": "self"
       },
       {
-        "duration": 128,
-        "startTime": 15431.5,
+        "duration": 104,
+        "startTime": 14058.10000000149,
+        "name": "self"
+      },
+      {
+        "duration": 108,
+        "startTime": 14162.60000000149,
         "name": "self"
       },
       {
         "duration": 114,
-        "startTime": 15560.10000000149,
+        "startTime": 14271.40000000596,
         "name": "self"
       },
       {
-        "duration": 123,
-        "startTime": 15675.10000000149,
+        "duration": 110,
+        "startTime": 14386.30000000447,
         "name": "self"
       },
       {
-        "duration": 120,
-        "startTime": 15798.69999999553,
+        "duration": 111,
+        "startTime": 14496.90000000596,
         "name": "self"
       },
       {
-        "duration": 120,
-        "startTime": 15919.29999999702,
+        "duration": 107,
+        "startTime": 14608.70000000298,
         "name": "self"
       },
       {
-        "duration": 123,
-        "startTime": 16039.60000000149,
+        "duration": 111,
+        "startTime": 14716.10000000149,
         "name": "self"
       },
       {
-        "duration": 122,
-        "startTime": 16162.89999999851,
+        "duration": 103,
+        "startTime": 14827.20000000298,
         "name": "self"
       }
     ]

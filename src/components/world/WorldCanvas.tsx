@@ -38,8 +38,8 @@ export default function WorldCanvas() {
       performance={{ min: 0.6, debounce: 250 }}
       onPointerMissed={() => undefined}
       data-testid="world-canvas"
-      onCreated={({ gl }) => {
-        // Perf-audit hook (draw calls / points per frame): __rktGl.info.render
+      onCreated={({ gl, scene, camera }) => {
+        gl.debug.checkShaderErrors = false;
         if (PERF_ENABLED) Object.assign(globalThis, { __rktGl: gl });
       }}
     >

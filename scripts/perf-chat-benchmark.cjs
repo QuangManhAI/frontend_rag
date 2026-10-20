@@ -41,7 +41,6 @@ const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length 
     ],
   };
 
-  // On Windows, use built-in Microsoft Edge (Chromium) if ms-playwright browsers are not downloaded
   if (process.env.BROWSER_CHANNEL) {
     launchOptions.channel = process.env.BROWSER_CHANNEL;
   } else {
@@ -101,6 +100,7 @@ const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length 
       window.__frameTimes = [];
       window.__recording = true;
       let last = performance.now();
+
       function recordFrame() {
         if (!window.__recording) return;
         const now = performance.now();
@@ -115,7 +115,6 @@ const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length 
     console.log(`Triggering active scientific query with complex math streaming...`);
     await page.evaluate(() => {
       const complexQuery = 'Giải thích kiến trúc LoRA và cơ chế Attention với công thức toán: $W = W_0 + \\Delta W$ với $\\Delta W = B \\cdot A$.';
-      // Fire and forget so DevTools evaluate doesn't keep the task pending during network TTFT
       void __rkt.rag.getState().send(complexQuery);
     });
 
@@ -138,7 +137,6 @@ const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length 
     // Stop recording and retrieve stats
     const results = await page.evaluate(() => {
       window.__recording = false;
-      // Skip the first 10 warmup frames
       const frames = (window.__frameTimes || []).slice(10);
       const longTasks = window.__perfLongTasks || [];
       return { frames, longTasks };
@@ -202,7 +200,7 @@ const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length 
     console.log(`Saved detailed raw JSON report to: ${jsonPath}`);
 
     // Update docs/perf-chat-report.md
-    const markdownContent = `# Báo Cáo Hiệu Năng 3D + Chat Stream (${label})
+    const markdownContent = `# Báo Cáo So Sánh Hiệu Năng 3D + Chat Stream (${label})
 
 - **Thời gian đo**: ${summary.timestamp}
 - **URL**: \`${summary.targetUrl}\`
@@ -223,7 +221,7 @@ const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length 
 ## 2. Danh sách Long Tasks (nếu có)
 ${
   summary.longTasks.count > 0
-    ? summary.longTasks.tasks.map((t, i) => `- Task #${i + 1}: **${t.duration.toFixed(1)} ms** tại thời điểm ${t.startTime.toFixed(1)} ms`).join('\n')
+    ? summary.longTasks.tasks.slice(0, 15).map((t, i) => `- Task #${i + 1}: **${t.duration.toFixed(1)} ms** tại thời điểm ${t.startTime.toFixed(1)} ms`).join('\n')
     : '_Không có Long Task nào (>50ms). Main thread phản hồi liên tục mượt mà._'
 }
 `;
