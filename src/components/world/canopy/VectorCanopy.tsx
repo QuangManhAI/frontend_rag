@@ -102,7 +102,7 @@ export function VectorCanopy() {
           uDimRest: { value: 0 },
           uClock: { value: 0 },
           uFootprint: { value: LEGACY_FX ? 1 : 0.8 },
-          uAlphaCut: { value: LEGACY_FX ? 0 : 0.055 },
+          uAlphaCut: { value: LEGACY_FX ? 0 : 0.08 },
         },
       }),
     [],

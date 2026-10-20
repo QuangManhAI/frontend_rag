@@ -10,7 +10,7 @@ const FIXED_TIER: Record<'high' | 'low', QualityTier> = { high: 0, low: 2 };
  * Sharpness comes first: dpr is never lowered while the camera moves.
  */
 export function tierDpr(tier: QualityTier, deviceDpr: number): number {
-  const maxDpr = tier === 0 ? 1.35 : tier === 1 ? 1.2 : 1.0;
+  const maxDpr = tier === 0 ? 1.15 : 1.0;
   return Math.min(maxDpr, deviceDpr);
 }
 
@@ -54,7 +54,7 @@ export function AdaptiveQuality() {
       {mode === 'auto' && armed && (
         <PerformanceMonitor
           // Only step down below ~30 FPS (60 Hz) / ~45 FPS (120 Hz); step back up above 55 / 90.
-          bounds={(refresh) => (refresh > 100 ? [45, 90] : [30, 55])}
+          bounds={(refresh) => (refresh > 100 ? [75, 115] : [40, 58])}
           flipflops={4}
           onDecline={() => step(1)}
           onIncline={() => step(-1)}

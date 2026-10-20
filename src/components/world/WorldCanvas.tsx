@@ -31,10 +31,10 @@ const start = getPreset('overview');
 export default function WorldCanvas() {
   return (
     <Canvas
-      dpr={[1, 1.35]}
+      dpr={[1, 1.15]}
       camera={{ fov: 45, near: 0.5, far: 3000, position: [...start.position] }}
       // Canvas MSAA is wasted under the composer (it renders off-screen). Opaque: the sky covers everything.
-      gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
+      gl={{ antialias: false, alpha: false, stencil: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
       performance={{ min: 0.6, debounce: 250 }}
       onPointerMissed={() => undefined}
       data-testid="world-canvas"

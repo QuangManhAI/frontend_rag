@@ -28,8 +28,8 @@ export function PostFX() {
     <EffectComposer multisampling={0} enableNormalPass={false}>
       <Bloom
         mipmapBlur
-        resolutionScale={cheap ? 0.25 : 0.5}
-        levels={cheap ? 4 : 5}
+        resolutionScale={cheap ? 0.25 : 0.35}
+        levels={cheap ? 3 : 4}
         intensity={theme.bloomIntensity}
         luminanceThreshold={theme.bloomThreshold}
         luminanceSmoothing={0.2}

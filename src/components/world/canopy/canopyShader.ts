@@ -63,7 +63,8 @@ export const CANOPY_VERT = /* glsl */ `
     else if (st > 3.5) { s *= 3.0 * (1.0 + 0.18 * sin(uTime * 4.5)); boost = 0.8; maxPx *= 2.8; }
     // Spotlight: the found ranks grow and brighten further while everything else dims.
     if (st > 1.5) { s *= 1.0 + 0.7 * uDimRest; maxPx *= 1.0 + 0.6 * uDimRest; boost += 0.35 * uDimRest; }
-    float tw = 1.0 + uTwinkle * 0.18 * sin(uTime * (1.2 + phase) + phase * 6.2831);
+    float tw = 1.0;
+    if (uTwinkle > 0.05) tw += uTwinkle * 0.18 * sin(uTime * (1.2 + phase) + phase * 6.2831);
     float px = clamp(s * tw * uScale / -mv.z, uMinPx, maxPx) * uPixelRatio;
     if (year > uMaxYear) { px = 0.0; alpha = 0.0; }
     // Papers added by the live crawl pop in (scale 0 → 1 with a small overshoot) at their birth time.
