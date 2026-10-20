@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "bench": "vitest bench --run"
+    "bench": "vitest bench --run",
+    "dev:live": "VITE_USE_MOCK=false vite"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

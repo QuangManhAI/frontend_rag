@@ -88,9 +88,10 @@ export interface WorldData {
   vectorIds: string[];
 }
 
-/** Response of `GET /api/rag/health`. */
+/** `components` of `GET /api/v1/health` (RAG_TS). `world` = the backend can route on the tree. */
 export interface HealthStatus {
-  lancedb: boolean;
+  mongo: boolean;
+  qdrant: boolean;
   llm: boolean;
   world: boolean;
 }

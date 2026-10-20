@@ -1,9 +1,8 @@
 import type { CrawlConnection, CrawlStreamEvent, CrawlVectorItem } from '../types/crawl';
-import { getMockContext, USE_MOCK } from './client';
+import { getMockContext, MOCK_WORLD, PIPELINE_BASE } from './client';
 import { MockCrawler, mockCrawlStream, type MockCrawlControl } from './mock/mockCrawl';
 import { parseSseBlock, SseBuffer } from './sseParser';
 
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/$/, '');
 
 /** Reconnect delay after `attempt` consecutive failures: 1 s, 2 s, 4 s … capped at 30 s. */
 export function backoffDelay(attempt: number): number {
@@ -29,8 +28,8 @@ function isCrawlEvent(v: unknown): v is CrawlStreamEvent {
 /** One connection's worth of events; ends normally when the server closes, throws on failure. */
 export type CrawlSource = (signal: AbortSignal) => AsyncIterable<CrawlStreamEvent>;
 
-/** Real backend: `GET /api/crawl/stream` (SSE) read with fetch + SseBuffer. */
-export function httpCrawlSource(fetchImpl: typeof fetch = fetch, url = `${API_BASE}/crawl/stream`): CrawlSource {
+/** Pipeline: `GET <PIPELINE_BASE>/crawl/stream` (SSE) read with fetch + SseBuffer. */
+export function httpCrawlSource(fetchImpl: typeof fetch = fetch, url = `${PIPELINE_BASE}/crawl/stream`): CrawlSource {
   return async function* (signal) {
     const res = await fetchImpl(url, { headers: { Accept: 'text/event-stream' }, signal });
     if (!res.ok || !res.body) throw new Error(`crawl stream HTTP ${res.status}`);
@@ -82,7 +81,7 @@ function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
  * Aborting the signal ends the generator for good — no further reconnects.
  */
 export async function* streamCrawl(signal: AbortSignal, opts: StreamCrawlOptions = {}): AsyncGenerator<CrawlStreamEvent> {
-  const source = opts.source ?? (USE_MOCK ? mockCrawlSource() : httpCrawlSource());
+  const source = opts.source ?? (MOCK_WORLD ? mockCrawlSource() : httpCrawlSource());
   const sleep = opts.sleep ?? abortableSleep;
   let attempt = 0;
   while (!signal.aborted) {

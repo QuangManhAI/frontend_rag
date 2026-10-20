@@ -13,11 +13,19 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    // 5174: 5173 is the UTH pipeline's own frontend; the RAG_TS backend (3000) allows this origin by default.
+    port: 5174,
     proxy: {
-      '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
+      // RAG_TS backend: chat (SSE), papers, health.
+      '/api/v1': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:3000',
         changeOrigin: true,
+      },
+      // UTH pipeline (FastAPI, prefix /api): World 3D and the crawl stream.
+      '/pipeline': {
+        target: process.env.VITE_PIPELINE_URL || 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/pipeline/, '/api'),
       },
     },
   },

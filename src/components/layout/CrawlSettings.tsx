@@ -1,6 +1,6 @@
 import { CloudDownload, Pause, Play, Unplug, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { USE_MOCK } from '../../api/client';
+import { MOCK_WORLD } from '../../api/client';
 import { crawlFx, nowSec } from '../../store/crawlFx';
 import { useCrawl } from '../../store/crawlStore';
 import { useWorld } from '../../store/worldStore';
@@ -49,7 +49,7 @@ export function CrawlSettings() {
   const flowing = useFlowing();
 
   const running = status?.running ?? false;
-  if (!USE_MOCK && !status && connection !== 'reconnecting') return null;
+  if (!MOCK_WORLD && !status && connection !== 'reconnecting') return null;
 
   const conn =
     connection === 'connected' ? (
@@ -105,7 +105,7 @@ export function CrawlSettings() {
           <input type="checkbox" checked={showRise} onChange={(e) => useCrawl.getState().setShowRise(e.target.checked)} className="accent-[var(--accent)]" />
           Hiện hạt lên cây
         </label>
-        {USE_MOCK && (
+        {MOCK_WORLD && (
           <div className="mt-1 pt-2 border-t border-[var(--ui-border)] flex flex-col gap-1.5" data-testid="crawl-mock">
             <span className="text-[0.65rem] uppercase tracking-wide text-[var(--ink-muted)]">Giả lập (mock)</span>
             <div className="flex flex-wrap gap-1">

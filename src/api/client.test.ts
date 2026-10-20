@@ -55,7 +55,7 @@ describe('client.ts API client', () => {
   describe('getHealth in mock mode', () => {
     it('returns health status', async () => {
       const health = await getHealth();
-      expect(health.lancedb).toBe(true);
+      expect(health.qdrant).toBe(true);
       expect(health.world).toBe(true);
       expect(typeof health.llm).toBe('boolean');
     });

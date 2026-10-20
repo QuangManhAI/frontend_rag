@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react';
 import { getHealth } from '../../api/client';
 import type { HealthStatus } from '../../types/world';
 
-const LABEL: Record<keyof HealthStatus, string> = { lancedb: 'LanceDB', llm: 'LLM', world: 'World data' };
+const LABEL: Record<keyof HealthStatus, string> = { mongo: 'MongoDB', qdrant: 'Qdrant', llm: 'LLM', world: 'Route' };
+/** Without these the answer fails; `world` only drives the flight path, so it gets a dot but no banner. */
+const CRITICAL: (keyof HealthStatus)[] = ['mongo', 'qdrant', 'llm'];
 
-/** Polls /rag/health at start-up and every 30 s; shows a banner only when something is down. */
+/** Polls /health at start-up and every 30 s; shows a banner only when something critical is down. */
 export function useHealth(): HealthStatus | 'unreachable' | null {
   const [health, setHealth] = useState<HealthStatus | 'unreachable' | null>(null);
   useEffect(() => {
@@ -43,7 +45,7 @@ export function HealthDots({ health }: { health: HealthStatus | 'unreachable' | 
 
 export function HealthBanner({ health }: { health: HealthStatus | 'unreachable' | null }) {
   if (!health) return null;
-  const down = health === 'unreachable' ? ['Backend'] : (Object.keys(LABEL) as (keyof HealthStatus)[]).filter((k) => !health[k]).map((k) => LABEL[k]);
+  const down = health === 'unreachable' ? ['Backend'] : CRITICAL.filter((k) => !health[k]).map((k) => LABEL[k]);
   if (down.length === 0) return null;
   return (
     <div role="status" className="glass px-3 py-1.5 text-xs flex items-center gap-2 border-[var(--warn)]! fade-in" data-testid="health-banner">

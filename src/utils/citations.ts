@@ -1,6 +1,7 @@
 export type AnswerPart = { kind: 'text'; value: string } | { kind: 'citation'; paperId: string };
 
-const CITATION_RE = /\[Paper:\s*([^\]]+)\]/g;
+/** `[Paper: id]`, `[Paper: a, b]`; also `[Paper ID: id | Title …]` (the model copying a header). */
+const CITATION_RE = /\[Paper(?:\s+ID)?:\s*([^\]|]+)[^\]]*\]/g;
 
 /** Split an answer into text and citation parts; `[Paper: a, b]` yields two citations. */
 export function splitCitations(answer: string): AnswerPart[] {

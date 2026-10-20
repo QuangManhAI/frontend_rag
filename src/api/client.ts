@@ -5,9 +5,16 @@ import { generateMockWorld } from './mock/mockWorld';
 import { parseSseBlock, SseBuffer } from './sseParser';
 import { parseVectors } from './vectorParser';
 
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/$/, '');
-/** Mock is the default until the backend world endpoints exist (see ASSUMPTIONS.md). */
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api/v1').replace(/\/$/, '');
+/** World 3D and the crawl stream come from the UTH pipeline, not from RAG_TS. */
+export const PIPELINE_BASE = (import.meta.env.VITE_PIPELINE_BASE ?? '/pipeline').replace(/\/$/, '');
+/** Chat, papers and health: mock unless VITE_USE_MOCK=false (then RAG_TS at API_BASE). */
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
+/**
+ * World 3D + crawl: mock unless VITE_MOCK_WORLD=false (then the pipeline at PIPELINE_BASE).
+ * Mock by default because the pipeline does not serve `/world/*` yet (see ASSUMPTIONS.md).
+ */
+export const MOCK_WORLD = import.meta.env.VITE_MOCK_WORLD !== 'false';
 
 const MOCK_SEED = 7;
 
@@ -54,8 +61,8 @@ export function getMockContext(): MockContext {
   return mockCtx;
 }
 
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { signal });
+async function getJson<T>(path: string, signal?: AbortSignal, base = API_BASE): Promise<T> {
+  const res = await fetch(`${base}${path}`, { signal });
   if (!res.ok) throw new HttpError(res.status, `${path} → HTTP ${res.status}`);
   return (await res.json()) as T;
 }
@@ -71,19 +78,19 @@ export class HttpError extends Error {
 
 /** Categories, ground, tree, vectors.bin and vector ids, fetched in parallel. */
 export async function loadWorld(signal?: AbortSignal): Promise<WorldData> {
-  if (USE_MOCK) {
+  if (MOCK_WORLD) {
     await sleep(400, signal);
     return getMockContext().world;
   }
   const [categories, ground, tree, buffer, vectorIds] = await Promise.all([
-    getJson<Category[]>('/world/categories', signal),
-    getJson<GroundLayout>('/world/ground', signal),
-    getJson<TreeNode[]>('/world/tree', signal),
-    fetch(`${API_BASE}/world/vectors.bin`, { signal }).then((r) => {
+    getJson<Category[]>('/world/categories', signal, PIPELINE_BASE),
+    getJson<GroundLayout>('/world/ground', signal, PIPELINE_BASE),
+    getJson<TreeNode[]>('/world/tree', signal, PIPELINE_BASE),
+    fetch(`${PIPELINE_BASE}/world/vectors.bin`, { signal }).then((r) => {
       if (!r.ok) throw new HttpError(r.status, `/world/vectors.bin → HTTP ${r.status}`);
       return r.arrayBuffer();
     }),
-    getJson<string[]>('/world/vector-ids', signal),
+    getJson<string[]>('/world/vector-ids', signal, PIPELINE_BASE),
   ]);
   const vectors = parseVectors(buffer);
   if (vectorIds.length !== vectors.count) {
@@ -106,7 +113,14 @@ export function getPaper(paperId: string): Promise<PaperDetail> {
       if (!detail) throw new HttpError(404, `Không tìm thấy bài ${paperId}`);
       return detail;
     }
-    return getJson<PaperDetail>(`/papers/${encodeURIComponent(paperId)}`);
+    try {
+      return await getJson<PaperDetail>(`/papers/${encodeURIComponent(paperId)}`);
+    } catch (err) {
+      // Real backend + mock world: hovering a mock vector asks for a mock paper id.
+      const mock = MOCK_WORLD && err instanceof HttpError && err.status === 404 ? mockPaperDetail(getMockContext(), paperId) : null;
+      if (mock) return mock;
+      throw err;
+    }
   })();
   paperCache.set(paperId, p);
   p.catch(() => paperCache.delete(paperId));
@@ -117,9 +131,11 @@ export async function getHealth(): Promise<HealthStatus> {
   if (USE_MOCK) {
     await sleep(150);
     const down = searchParam('mockHealth') === 'down';
-    return { lancedb: true, llm: !down, world: true };
+    return { mongo: true, qdrant: true, llm: !down, world: true };
   }
-  return getJson<HealthStatus>('/rag/health');
+  const h = await getJson<{ components?: Partial<HealthStatus> }>('/health');
+  const c = h.components ?? {};
+  return { mongo: c.mongo === true, qdrant: c.qdrant === true, llm: c.llm === true, world: c.world === true };
 }
 
 function isStreamEvent(v: unknown): v is RagStreamEvent {

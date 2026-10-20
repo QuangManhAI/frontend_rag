@@ -16,9 +16,15 @@ interface Props {
   className?: string;
 }
 
-/** A line that is only `$$…$$` becomes block math (remark-math reads one-line `$$` as inline). */
+/**
+ * LLM math ➔ remark-math: `\[…\]` ➔ `$$…$$`, `\(…\)` ➔ `$…$` (Qwen often writes these), and a
+ * line that is only `$$…$$` becomes block math (remark-math reads one-line `$$` as inline).
+ */
 export function normalizeDisplayMath(text: string): string {
-  return text.replace(/^[ \t]*\$\$([^\n]+?)\$\$[ \t]*$/gm, (_m, body: string) => `$$\n${body}\n$$`);
+  return text
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_m, body: string) => `$$${body}$$`)
+    .replace(/\\\(([\s\S]+?)\\\)/g, (_m, body: string) => `$${body.trim()}$`)
+    .replace(/^[ \t]*\$\$([^\n]+?)\$\$[ \t]*$/gm, (_m, body: string) => `$$\n${body}\n$$`);
 }
 
 /** Markdown + KaTeX renderer; never injects raw HTML (react-markdown escapes it). */

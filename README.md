@@ -10,14 +10,20 @@ Stack: Vite 6 · React 19 · TypeScript (strict) · three.js · @react-three/fib
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000 — mặc định chạy mock, không cần backend
+npm run dev            # http://localhost:5174 — mặc định chạy mock, không cần backend
+npm run dev:live       # chat / paper / health gọi backend RAG_TS thật (:3000), world vẫn mock
 ```
 
 | Biến (`.env`) | Mặc định | Ý nghĩa |
 | :-- | :-- | :-- |
-| `VITE_USE_MOCK` | `true` | `false` để gọi backend thật |
-| `VITE_API_BASE` | `/api` | Tiền tố API |
-| `VITE_BACKEND_URL` | `http://localhost:8000` | Đích proxy `/api` của `vite dev` |
+| `VITE_USE_MOCK` | `true` | `false` ➔ chat, paper, health gọi backend RAG_TS thật |
+| `VITE_API_BASE` | `/api/v1` | Tiền tố API RAG_TS |
+| `VITE_BACKEND_URL` | `http://localhost:3000` | Đích proxy `/api/v1` của `vite dev` |
+| `VITE_MOCK_WORLD` | `true` | `false` ➔ World 3D + luồng cào lấy từ pipeline UTH |
+| `VITE_PIPELINE_BASE` | `/pipeline` | Tiền tố pipeline (proxy `/pipeline/*` ➔ `VITE_PIPELINE_URL/api/*`) |
+| `VITE_PIPELINE_URL` | `http://localhost:8000` | Đích proxy của pipeline |
+
+**Backend thật + world mock** (trạng thái hiện tại, pipeline chưa phục vụ `/world/*`): mỗi paper thật được đặt lên một vector cố định của world mock (đổi id vector thành id thật, nên rê chuột / bấm trích dẫn mở paper thật), và khi backend trả `route` rỗng thì đường bay được dựng lại từ các paper `compare` — điểm trên cành là similarity thật của paper đặt ở đó, không phải điểm centroid (`src/api/worldBridge.ts`). Khi pipeline xuất world thật, đặt `VITE_MOCK_WORLD=false`, bridge tự tắt.
 
 Query string hữu ích:
 
@@ -28,7 +34,7 @@ Query string hữu ích:
 | `?nofx` | Tắt bloom (GPU yếu / CI) |
 | `?mockHealth=down` | Giả lập LLM mất kết nối (banner cảnh báo) |
 
-Luồng cào dữ liệu (Prompt 12): mục **Cào dữ liệu** trong **Cài đặt** có nút *Bắt đầu cào* (mock, 300 hoặc 3.000 bài/phút) và *Giả lập mất kết nối*; khi có backend, client nghe `GET /api/crawl/stream` (SSE) và tự kết nối lại (1 s → 2 s → 4 s … ≤ 30 s).
+Luồng cào dữ liệu (Prompt 12): mục **Cào dữ liệu** trong **Cài đặt** có nút *Bắt đầu cào* (mock, 300 hoặc 3.000 bài/phút) và *Giả lập mất kết nối*; với `VITE_MOCK_WORLD=false`, client nghe `GET <VITE_PIPELINE_BASE>/crawl/stream` (SSE; pipeline hiện phát `SNAPSHOT`/`PAPER_INGESTED`, cần lớp map) và tự kết nối lại (1 s → 2 s → 4 s … ≤ 30 s).
 
 Trong chat mock: gõ câu chứa `/error` để giả lập lỗi stream. Câu trả lời mock luôn có 1 trích dẫn **ngoài ngữ cảnh** để thấy chip cảnh báo.
 
