@@ -16,19 +16,17 @@ export function MessageList() {
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
 
-  // Auto-scroll while streaming unless the user scrolled up.
+  // Auto-scroll while streaming via requestAnimationFrame to avoid forced synchronous reflows
   useEffect(() => {
     const el = scroller.current;
-    if (el && pinned.current) el.scrollTop = el.scrollHeight;
-  });
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    const id = setInterval(() => {
-      if (pinned.current) el.scrollTop = el.scrollHeight;
-    }, 120);
-    return () => clearInterval(id);
-  }, []);
+    if (!el || !pinned.current) return;
+    const rafId = requestAnimationFrame(() => {
+      if (el && pinned.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [messages]);
 
   if (messages.length === 0) {
     return (
@@ -58,14 +56,9 @@ export function MessageList() {
         const el = e.currentTarget;
         pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
       }}
-      aria-live="polite"
     >
       {messages.map((m) => (
-        <MessageBubble
-          key={m.id}
-          message={m}
-          expandedTerms={m.role === 'user' ? messages.find((x) => x.role === 'assistant' && x.runId === m.runId)?.expanded_terms : undefined}
-        />
+        <MessageBubble key={m.id} message={m} expandedTerms={m.role === 'user' ? undefined : m.expanded_terms} />
       ))}
     </div>
   );

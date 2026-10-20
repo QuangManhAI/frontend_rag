@@ -1,4 +1,4 @@
-import { memo, type ComponentProps } from 'react';
+import { memo, useEffect, useRef, useState, startTransition, type ComponentProps } from 'react';
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +14,7 @@ interface Props {
   checks?: readonly CitationCheck[];
   context?: FocusContext | null;
   className?: string;
+  streaming?: boolean;
 }
 
 /**
@@ -27,8 +28,52 @@ export function normalizeDisplayMath(text: string): string {
     .replace(/^[ \t]*\$\$([^\n]+?)\$\$[ \t]*$/gm, (_m, body: string) => `$$\n${body}\n$$`);
 }
 
+/**
+ * Throttles text parsing during active streaming to prevent KaTeX and ReactMarkdown
+ * from monopolizing the main thread and causing 3D animation lag spikes.
+ */
+function useThrottledStreamingText(text: string, streaming: boolean, delayMs = 60): string {
+  const [renderedText, setRenderedText] = useState(text);
+  const lastUpdateRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!streaming) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setRenderedText(text);
+      return;
+    }
+
+    const now = performance.now();
+    const elapsed = now - lastUpdateRef.current;
+
+    if (elapsed >= delayMs) {
+      lastUpdateRef.current = now;
+      startTransition(() => {
+        setRenderedText(text);
+      });
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        lastUpdateRef.current = performance.now();
+        startTransition(() => {
+          setRenderedText(text);
+        });
+      }, delayMs - elapsed);
+    }
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [text, streaming, delayMs]);
+
+  return streaming ? renderedText : text;
+}
+
 /** Markdown + KaTeX renderer; never injects raw HTML (react-markdown escapes it). */
-export const Markdown = memo(function Markdown({ text, checks = [], context = null, className = '' }: Props) {
+export const Markdown = memo(function Markdown({ text, checks = [], context = null, className = '', streaming = false }: Props) {
+  const displayText = useThrottledStreamingText(text, streaming);
+
   const components: Components = {
     cite: (props: ComponentProps<'cite'> & ExtraProps) => {
       const paperId = (props as Record<string, unknown>)['data-paper-id'];
@@ -42,10 +87,11 @@ export const Markdown = memo(function Markdown({ text, checks = [], context = nu
       </a>
     ),
   };
+
   return (
     <div className={`md ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath, remarkCitations]} rehypePlugins={[rehypeKatex]} components={components}>
-        {normalizeDisplayMath(text)}
+        {normalizeDisplayMath(displayText)}
       </ReactMarkdown>
     </div>
   );
