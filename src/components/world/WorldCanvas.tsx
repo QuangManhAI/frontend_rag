@@ -1,5 +1,4 @@
 import { Canvas } from '@react-three/fiber';
-import { lazy, Suspense } from 'react';
 import * as THREE from 'three';
 import { CameraDirector } from './CameraDirector';
 import { VectorCanopy } from './canopy/VectorCanopy';
@@ -13,17 +12,16 @@ import { Lighting } from './Lighting';
 import { PostFX } from './PostFX';
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { AnchorProjector } from './overlay/anchors';
+import { PerfHUD } from './overlay/PerfHUD';
 import { SkyBackground } from './SkyBackground';
 import { AncientTree } from './tree/AncientTree';
 import { getPreset } from '../../utils/cameraPresets';
 import { PERF_ENABLED } from '../../utils/perfProbe';
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
-const SHOW_PERF = import.meta.env.DEV && params.has('perf');
+const SHOW_PERF = import.meta.env.DEV || params.has('perf') || params.has('bench');
 /** `?nofx` disables bloom (useful for software-GL test runs). */
 const NO_FX = params.has('nofx');
-
-const Perf = SHOW_PERF ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null;
 
 const start = getPreset('overview');
 
@@ -65,11 +63,7 @@ export default function WorldCanvas() {
       <AnchorProjector />
       <AdaptiveQuality />
       {!NO_FX && <PostFX />}
-      {Perf && (
-        <Suspense fallback={null}>
-          <Perf position="bottom-right" />
-        </Suspense>
-      )}
+      {SHOW_PERF && <PerfHUD />}
     </Canvas>
   );
 }
