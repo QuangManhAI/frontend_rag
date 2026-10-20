@@ -25,11 +25,11 @@ export function PostFX() {
     );
   }
   return (
-    <EffectComposer multisampling={tier === 0 ? 4 : 0} enableNormalPass={false}>
+    <EffectComposer multisampling={0} enableNormalPass={false}>
       <Bloom
         mipmapBlur
         resolutionScale={cheap ? 0.25 : 0.5}
-        levels={cheap ? 5 : 7}
+        levels={cheap ? 4 : 5}
         intensity={theme.bloomIntensity}
         luminanceThreshold={theme.bloomThreshold}
         luminanceSmoothing={0.2}
