@@ -12,7 +12,7 @@ import { Lighting } from './Lighting';
 import { PostFX } from './PostFX';
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { AnchorProjector } from './overlay/anchors';
-import { PerfHUD } from './overlay/PerfHUD';
+import { PerfSampler, PerfHUD } from './overlay/PerfHUD';
 import { SkyBackground } from './SkyBackground';
 import { AncientTree } from './tree/AncientTree';
 import { getPreset } from '../../utils/cameraPresets';
@@ -28,42 +28,45 @@ const start = getPreset('overview');
 /** The one and only canvas: ground, tree, canopy and fx groups. */
 export default function WorldCanvas() {
   return (
-    <Canvas
-      dpr={[1, 1.15]}
-      camera={{ fov: 45, near: 0.5, far: 3000, position: [...start.position] }}
-      // Canvas MSAA is wasted under the composer (it renders off-screen). Opaque: the sky covers everything.
-      gl={{ antialias: false, alpha: false, stencil: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
-      performance={{ min: 0.6, debounce: 250 }}
-      onPointerMissed={() => undefined}
-      data-testid="world-canvas"
-      onCreated={({ gl, scene, camera }) => {
-        gl.debug.checkShaderErrors = false;
-        if (PERF_ENABLED) Object.assign(globalThis, { __rktGl: gl });
-      }}
-    >
-      <SkyBackground />
-      <Lighting />
-      <group name="ground">
-        <GroundGrid />
-        <KnowledgeBlocks />
-        <FeedCables />
-      </group>
-      <group name="tree">
-        <AncientTree />
-      </group>
-      <group name="canopy">
-        <VectorCanopy />
-      </group>
-      <group name="fx">
-        <Fireflies />
-        <QueryFlight />
-        <CrawlEffects />
-      </group>
-      <CameraDirector />
-      <AnchorProjector />
-      <AdaptiveQuality />
-      {!NO_FX && <PostFX />}
+    <>
+      <Canvas
+        dpr={[1, 1.15]}
+        camera={{ fov: 45, near: 0.5, far: 3000, position: [...start.position] }}
+        // Canvas MSAA is wasted under the composer (it renders off-screen). Opaque: the sky covers everything.
+        gl={{ antialias: false, alpha: false, stencil: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
+        performance={{ min: 0.6, debounce: 250 }}
+        onPointerMissed={() => undefined}
+        data-testid="world-canvas"
+        onCreated={({ gl, scene, camera }) => {
+          gl.debug.checkShaderErrors = false;
+          if (PERF_ENABLED) Object.assign(globalThis, { __rktGl: gl });
+        }}
+      >
+        <SkyBackground />
+        <Lighting />
+        <group name="ground">
+          <GroundGrid />
+          <KnowledgeBlocks />
+          <FeedCables />
+        </group>
+        <group name="tree">
+          <AncientTree />
+        </group>
+        <group name="canopy">
+          <VectorCanopy />
+        </group>
+        <group name="fx">
+          <Fireflies />
+          <QueryFlight />
+          <CrawlEffects />
+        </group>
+        <CameraDirector />
+        <AnchorProjector />
+        <AdaptiveQuality />
+        {!NO_FX && <PostFX />}
+        {SHOW_PERF && <PerfSampler />}
+      </Canvas>
       {SHOW_PERF && <PerfHUD />}
-    </Canvas>
+    </>
   );
 }

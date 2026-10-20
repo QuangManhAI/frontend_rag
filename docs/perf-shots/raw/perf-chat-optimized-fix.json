@@ -1,0 +1,42 @@
+{
+  "label": "optimized-fix",
+  "timestamp": "2026-10-20T16:47:03.556Z",
+  "targetUrl": "http://localhost:5174?bench",
+  "totalFrames": 219,
+  "fps": {
+    "mean": 437.3,
+    "stdDev": 159.6,
+    "median": 454.5,
+    "min": 0.4,
+    "max": 833.3
+  },
+  "frameTime": {
+    "meanMs": 15.45,
+    "stdDevMs": 182.23,
+    "medianMs": 2.2,
+    "p95Ms": 12.8,
+    "p99Ms": 25.9,
+    "minMs": 1.2,
+    "maxMs": 2705.6
+  },
+  "longTasks": {
+    "count": 2,
+    "maxDurationMs": 1847,
+    "tasks": [
+      {
+        "duration": 1847,
+        "startTime": 3909.2999999970198,
+        "name": "self"
+      },
+      {
+        "duration": 197,
+        "startTime": 5793.19999999553,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

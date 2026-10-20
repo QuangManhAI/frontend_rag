@@ -1,6 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { useEffect, useMemo, useState } from 'react';
 import { useUi, type QualityTier } from '../../../store/uiStore';
 
 export interface PerfSnapshot {
@@ -20,26 +19,27 @@ export interface PerfSnapshot {
 
 const WINDOW_SIZE = 120; // 2 seconds of history at 60 FPS
 
-/**
- * Real-time on-screen Performance HUD and console logger.
- * Displays instantaneous FPS, rolling Mean FPS, Standard Deviation (Jitter),
- * Frame Times, Draw Calls, and Triangles.
- */
-export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
-  const [visible, setVisible] = useState(() => defaultOpen || new URLSearchParams(window.location.search).has('perf'));
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.shiftKey && (e.key === 'P' || e.key === 'p')) setVisible((v) => !v);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-  const [snapshot, setSnapshot] = useState<PerfSnapshot | null>(null);
-  const qualityTier = useUi((s) => s.qualityTier);
-  const setQualityTier = useUi((s) => s.setQualityTier);
-  const mode = useUi((s) => s.settings.quality);
-  const updateSettings = useUi((s) => s.updateSettings);
+type PerfListener = (snap: PerfSnapshot) => void;
+const listeners = new Set<PerfListener>();
 
+export function subscribePerf(fn: PerfListener) {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+
+let latestSnapshot: PerfSnapshot | null = null;
+
+export function getLatestPerfSnapshot(): PerfSnapshot | null {
+  return latestSnapshot;
+}
+
+/**
+ * Three.js scene component that collects frame statistics inside the Canvas render loop.
+ * Renders null so it does not add any nodes to the Three.js scene graph.
+ */
+export function PerfSampler() {
   const history = useMemo(() => {
     return {
       deltas: new Float32Array(WINDOW_SIZE),
@@ -113,10 +113,14 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
         dpr: gl.getPixelRatio(),
       };
 
-      setSnapshot(snap);
+      latestSnapshot = snap;
       (window as unknown as { __rktPerf?: { getSnapshot: () => PerfSnapshot } }).__rktPerf = {
         getSnapshot: () => snap,
       };
+
+      for (const fn of listeners) {
+        fn(snap);
+      }
 
       // Realtime console logging every 2 seconds
       if (now - history.lastLog > 2000) {
@@ -127,6 +131,33 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
       }
     }
   });
+
+  return null;
+}
+
+/**
+ * Standard HTML DOM component displaying performance HUD overlay.
+ * Must be rendered OUTSIDE <Canvas> in regular DOM.
+ */
+export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
+  const [visible, setVisible] = useState(() => defaultOpen || new URLSearchParams(window.location.search).has('perf'));
+  const [snapshot, setSnapshot] = useState<PerfSnapshot | null>(() => latestSnapshot);
+  const setQualityTier = useUi((s) => s.setQualityTier);
+  const updateSettings = useUi((s) => s.updateSettings);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.shiftKey && (e.key === 'P' || e.key === 'p')) setVisible((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    return subscribePerf((snap) => {
+      setSnapshot(snap);
+    });
+  }, []);
 
   if (!visible || !snapshot) return null;
 
