@@ -150,7 +150,7 @@ export function AuthOverlay() {
 
           <button type="submit" disabled={loading} className="liquid-cta-btn mt-2">
             <span>{loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}</span>
-            {!loading && <SendHorizonal size={14} className="text-[var(--accent)]" />}
+            {!loading && <SendHorizonal size={0} className="text-[var(--accent)]" />}
           </button>
         </form>
 
