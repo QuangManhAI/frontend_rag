@@ -6,6 +6,7 @@ import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'FPS_LOCK'],
   plugins: [tailwindcss(), react()],
   resolve: {
     alias: {

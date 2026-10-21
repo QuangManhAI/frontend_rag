@@ -2,6 +2,7 @@ import { PerformanceMonitor } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useState } from 'react';
 import { useUi, type QualityTier } from '../../store/uiStore';
+import { FPS_LOCK } from './WorldCanvas';
 
 const FIXED_TIER: Record<'high' | 'low', QualityTier> = { high: 0, low: 2 };
 
@@ -54,7 +55,10 @@ export function AdaptiveQuality() {
       {mode === 'auto' && armed && (
         <PerformanceMonitor
           // Only step down below ~30 FPS (60 Hz) / ~45 FPS (120 Hz); step back up above 55 / 90.
-          bounds={(refresh) => (refresh > 100 ? [75, 115] : [40, 58])}
+          bounds={(refresh) => {
+            const cap = FPS_LOCK > 0 ? Math.min(refresh, FPS_LOCK) : refresh;
+            return cap > 100 ? [75, 115] : [Math.round(cap * 0.66), Math.round(cap * 0.96)];
+          }}
           flipflops={4}
           onDecline={() => step(1)}
           onIncline={() => step(-1)}
