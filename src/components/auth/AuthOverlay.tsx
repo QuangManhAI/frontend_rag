@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Lock, Mail, SendHorizonal, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../store/authStore';
 
@@ -9,6 +9,7 @@ export function AuthOverlay() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -40,11 +41,6 @@ export function AuthOverlay() {
       onKeyDown={(e) => e.stopPropagation()}
       data-testid="chat-auth-panel"
     >
-      {/* Ambient liquid caustic plasma orbs directly inside the chat panel */}
-      <div className="liquid-caustic-orb orb-cyan" aria-hidden="true" />
-      <div className="liquid-caustic-orb orb-violet" aria-hidden="true" />
-      <div className="liquid-caustic-orb orb-mint" aria-hidden="true" />
-
       <div className="my-auto w-full px-1 py-4">
         {/* Vector Knowledge Tree emblem (synced with TopBar) & heading */}
         <div className="text-center mb-6">
@@ -57,10 +53,10 @@ export function AuthOverlay() {
               <circle cx="12" cy="5" r="1.6" fill="var(--cat-0, var(--accent))" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold tracking-tight text-[var(--ink)]">
+          <h3 className="text-base font-semibold tracking-tight text-[var(--ink)]">
             {isLogin ? 'Đăng nhập' : 'Đăng ký tài khoản'}
           </h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-[var(--ink-muted)]">
+          <p className="mt-1 text-xs leading-relaxed text-[var(--ink-muted)]">
             {isLogin
               ? 'Đăng nhập để hỏi đáp và đối chiếu trích dẫn khoa học.'
               : 'Tạo tài khoản mới để bắt đầu phiên hỏi đáp RAG.'}
@@ -71,14 +67,14 @@ export function AuthOverlay() {
         {error && (
           <div
             role="alert"
-            className="mb-4 flex items-start gap-2 rounded-xl border border-[color-mix(in_srgb,var(--danger)_50%,transparent)] bg-[color-mix(in_srgb,var(--danger)_15%,transparent)] px-3.5 py-2.5 text-xs text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] fade-in"
+            className="mb-4 flex items-start gap-2 rounded-xl border border-[color-mix(in_srgb,var(--danger)_50%,transparent)] bg-transparent backdrop-blur-md px-3.5 py-2.5 text-xs text-[var(--danger)] fade-in"
           >
-            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span className="leading-snug">{error}</span>
           </div>
         )}
 
-        {/* Form inputs without icons */}
+        {/* Transparent glass form inputs with clean inline icons */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           {!isLogin && (
             <div className="flex flex-col gap-1.5 fade-in">
@@ -86,6 +82,7 @@ export function AuthOverlay() {
                 Tên hiển thị
               </label>
               <div className="liquid-input-wrap">
+                <User size={15} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
                 <input
                   id="auth-display-name"
                   type="text"
@@ -106,6 +103,7 @@ export function AuthOverlay() {
               Địa chỉ Email
             </label>
             <div className="liquid-input-wrap">
+              <Mail size={15} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
               <input
                 id="auth-email"
                 type="email"
@@ -127,9 +125,10 @@ export function AuthOverlay() {
               <span className="text-[10px] text-[var(--ink-muted)] opacity-75 mono">≥ 8 ký tự</span>
             </div>
             <div className="liquid-input-wrap">
+              <Lock size={15} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
               <input
                 id="auth-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 required
                 minLength={8}
@@ -138,11 +137,20 @@ export function AuthOverlay() {
                 className="liquid-input"
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                className="mr-2.5 rounded-lg p-1 text-[var(--ink-muted)] transition hover:text-[var(--ink)] cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
             </div>
           </div>
 
           <button type="submit" disabled={loading} className="liquid-cta-btn mt-2">
-            {loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}
+            <span>{loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}</span>
+            {!loading && <SendHorizonal size={14} className="text-[var(--accent)]" />}
           </button>
         </form>
 
