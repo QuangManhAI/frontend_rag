@@ -7,7 +7,6 @@ import { useThemeSync } from './theme/useTheme';
 export default function App() {
   useThemeSync();
   const reduceMotion = useUi((s) => s.settings.reduceMotion);
-
   useEffect(() => {
     // Yield to next frame to allow the critical text shell (ChatPanel & TopBar)
     // to paint immediately, guaranteeing LCP < 2.5s before heavy 3D scene init.
@@ -16,10 +15,8 @@ export default function App() {
     });
     return () => cancelAnimationFrame(id);
   }, []);
-
   useEffect(() => {
     document.documentElement.dataset.reduceMotion = String(reduceMotion);
   }, [reduceMotion]);
-
   return <AppShell />;
 }

@@ -139,7 +139,7 @@ export function PerfSampler() {
  * Standard HTML DOM component displaying performance HUD overlay.
  * Must be rendered OUTSIDE <Canvas> in regular DOM.
  */
-export function PerfHUD({ defaultOpen = true, fpsLock = 0 }: { defaultOpen?: boolean; fpsLock?: number }) {
+export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
   const [visible, setVisible] = useState(() => defaultOpen || new URLSearchParams(window.location.search).has('perf'));
   const [snapshot, setSnapshot] = useState<PerfSnapshot | null>(() => latestSnapshot);
   const setQualityTier = useUi((s) => s.setQualityTier);
@@ -187,9 +187,7 @@ export function PerfHUD({ defaultOpen = true, fpsLock = 0 }: { defaultOpen?: boo
           <span className={`text-2xl font-bold ${fpsColor}`}>
             {snapshot.fps.toFixed(1)}
           </span>
-          <span className="text-[10px] text-neutral-400 font-sans tracking-wide uppercase">
-            FPS{fpsLock > 0 ? ` · Lock ${fpsLock}` : ''}
-          </span>
+          <span className="text-[10px] text-neutral-400 font-sans tracking-wide uppercase">FPS</span>
         </div>
         <div className="text-right">
           <div className="text-neutral-300 font-semibold">
