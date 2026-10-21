@@ -6,7 +6,7 @@ import { HealthBanner, HealthDots } from './HealthBanner';
 import { SettingsPanel } from './SettingsPanel';
 import { YearSlider } from './YearSlider';
 import { CategoryLegend } from './CategoryLegend';
-import { LoadingTree } from './LoadingTree';
+import { WorldError } from './WorldError';
 import { TopBar } from './TopBar';
 
 describe('Layout Components', () => {
@@ -128,13 +128,10 @@ describe('Layout Components', () => {
     });
   });
 
-  describe('LoadingTree & TopBar', () => {
-    it('renders LoadingTree progress and error state', () => {
-      const { rerender } = render(<LoadingTree />);
-      expect(screen.getByText('Đang dựng cây tri thức…')).toBeDefined();
-
+  describe('WorldError & TopBar', () => {
+    it('renders WorldError with a retry button', () => {
       const onRetry = vi.fn();
-      rerender(<LoadingTree error="Lỗi kết nối" onRetry={onRetry} />);
+      render(<WorldError error="Lỗi kết nối" onRetry={onRetry} />);
       expect(screen.getByText(/Không tải được thế giới: Lỗi kết nối/)).toBeDefined();
       fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
       expect(onRetry).toHaveBeenCalledTimes(1);
@@ -187,7 +184,9 @@ describe('Layout Components', () => {
       useWorld.setState({ status: 'loading', error: null });
 
       const { rerender } = render(<AppShell />);
-      expect(screen.getByTestId('loading-tree')).toBeDefined();
+      // No loading screen: the chrome is usable while the world loads.
+      expect(screen.queryByTestId('world-error')).toBeNull();
+      expect(screen.getByRole('heading', { name: 'Cây Tri Thức Vector' })).toBeDefined();
 
       useWorld.setState({ status: 'ready', categories: [] });
       useUi.setState({ highlightLabel: { kind: 'category', id: 0, label: 'cs.AI' } });

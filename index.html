@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" style="background:#070614">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -15,37 +15,8 @@
     </noscript>
   </head>
   <body>
-    <!-- Critical splash shell pre-rendered in HTML to achieve instantaneous FCP (<200ms) -->
-    <div id="root">
-      <div style="position:fixed;inset:0;background:#070614;display:grid;place-items:center;color:#ece9ff;font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;z-index:30;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:0 24px;">
-          <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true" style="animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
-            <defs>
-              <filter id="splash-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="2.2" result="b" />
-                <feMerge>
-                  <feMergeNode in="b" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            <g fill="none" stroke="#7fe8ff" stroke-width="2.2" stroke-linecap="round" filter="url(#splash-glow)">
-              <path d="M60 112 C60 92 58 80 60 64" />
-              <path d="M60 78 C50 68 40 64 30 50" />
-              <path d="M60 72 C70 62 82 58 90 44" />
-              <path d="M60 66 C58 52 62 40 60 26" />
-              <path d="M60 112 C50 114 40 116 28 116 M60 112 C70 114 82 116 94 116" stroke-width="1.4" />
-            </g>
-            <circle cx="30" cy="50" r="3.4" fill="#7fe8ff" filter="url(#splash-glow)" />
-            <circle cx="90" cy="44" r="3.4" fill="#58f0a7" filter="url(#splash-glow)" />
-            <circle cx="60" cy="26" r="3.4" fill="#7fe8ff" filter="url(#splash-glow)" />
-            <circle cx="42" cy="36" r="3.4" fill="#ffc145" filter="url(#splash-glow)" />
-            <circle cx="78" cy="32" r="3.4" fill="#58f0a7" filter="url(#splash-glow)" />
-          </svg>
-          <div style="font-size:14px;color:#a29cc4;font-weight:400;letter-spacing:0.02em;">Đang dựng cây tri thức…</div>
-        </div>
-      </div>
-    </div>
+    <!-- Dark from the first paint (no white flash); the app slides its chrome in on mount. -->
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

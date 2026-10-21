@@ -9,9 +9,9 @@ import { WorldOverlay } from '../world/overlay/WorldOverlay';
 import { useCrawl } from '../../store/crawlStore';
 import { CategoryLegend } from './CategoryLegend';
 import { HealthBanner, useHealth } from './HealthBanner';
-import { LoadingTree } from './LoadingTree';
 import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
+import { WorldError } from './WorldError';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -154,13 +154,13 @@ export function AppShell() {
     <div className="fixed inset-0 overflow-hidden bg-[var(--bg)] text-[var(--ink)]">
       <div className={`absolute inset-x-0 top-0 ${mobile ? 'bottom-[12vh]' : 'bottom-0'}`}>
         {status === 'ready' && (
-          <Suspense fallback={<LoadingTree />}>
+          <Suspense fallback={null}>
             <WorldCanvas />
             <WorldOverlay />
           </Suspense>
         )}
       </div>
-      {status !== 'ready' && <LoadingTree error={error} onRetry={() => void useWorld.getState().load()} />}
+      {status === 'error' && <WorldError error={error ?? 'lỗi không xác định'} onRetry={() => void useWorld.getState().load()} />}
 
       <div className="absolute inset-x-3 top-3 z-20 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto intro-down">
         <TopBar health={health} />

@@ -75,7 +75,7 @@ src/
     │   ├── fx/      QueryFlight (điều phối), QueryOrb, QueryText, VectorDigits, RouteScores, CompareThreads, TopKThreads, EssenceFlow, Fireflies
     │   └── overlay/ anchors (DOM overlay + projector), WorldOverlay, CompareScoreLabel
     ├── result/      ResultCard, PaperPanel, ChunkList, ScoreBars, TopKBadges
-    └── layout/      AppShell, TopBar, ThemeToggle, SettingsPanel, HealthBanner, LoadingTree, CategoryLegend, YearSlider
+    └── layout/      AppShell, TopBar, ThemeToggle, SettingsPanel, HealthBanner, WorldError, CategoryLegend, YearSlider
 e2e/knowledge-tree.spec.ts
 ```
 
