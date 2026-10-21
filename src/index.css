@@ -699,45 +699,51 @@ input[type="range"] {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 1.15rem 1.1rem 1rem;
+  justify-content: center;
+  padding: 1.5rem 1.35rem;
   overflow-y: auto;
   overflow-x: hidden;
   isolation: isolate;
+  background:
+    radial-gradient(120% 80% at 15% 0%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.01) 50%, transparent 100%),
+    radial-gradient(110% 90% at 88% 100%, rgba(127, 232, 255, 0.08) 0%, rgba(168, 85, 247, 0.06) 55%, transparent 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 1px rgba(127, 232, 255, 0.12);
 }
 
 .liquid-caustic-orb {
   position: absolute;
   border-radius: 999px;
-  filter: blur(36px);
+  filter: blur(42px);
   pointer-events: none;
   z-index: -1;
-  opacity: 0.65;
+  opacity: 0.72;
   animation: liquid-float 9s ease-in-out infinite alternate;
 }
 .liquid-caustic-orb.orb-cyan {
-  width: 11rem;
-  height: 11rem;
-  top: 4%;
-  left: -12%;
-  background: radial-gradient(circle, rgba(127, 232, 255, 0.48) 0%, rgba(56, 189, 248, 0.12) 65%, transparent 100%);
+  width: 12rem;
+  height: 12rem;
+  top: 6%;
+  left: -15%;
+  background: radial-gradient(circle, rgba(127, 232, 255, 0.45) 0%, rgba(56, 189, 248, 0.12) 65%, transparent 100%);
 }
 .liquid-caustic-orb.orb-violet {
-  width: 12.5rem;
-  height: 12.5rem;
-  bottom: 8%;
-  right: -14%;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.42) 0%, rgba(99, 102, 241, 0.14) 65%, transparent 100%);
+  width: 13rem;
+  height: 13rem;
+  bottom: 6%;
+  right: -15%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(99, 102, 241, 0.14) 65%, transparent 100%);
   animation-delay: -4.2s;
   animation-duration: 11s;
 }
 .liquid-caustic-orb.orb-mint {
-  width: 8rem;
-  height: 8rem;
-  top: 46%;
-  left: 52%;
+  width: 9rem;
+  height: 9rem;
+  top: 48%;
+  left: 50%;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(88, 240, 167, 0.24) 0%, rgba(127, 232, 255, 0.08) 70%, transparent 100%);
+  background: radial-gradient(circle, rgba(88, 240, 167, 0.22) 0%, rgba(127, 232, 255, 0.08) 70%, transparent 100%);
   animation-delay: -2.1s;
 }
 
@@ -751,48 +757,6 @@ input[type="range"] {
   100% {
     transform: translate3d(-10px, 10px, 0) scale(0.95);
   }
-}
-
-.liquid-glass-card {
-  position: relative;
-  border-radius: 24px;
-  padding: 1.35rem 1.2rem 1.25rem;
-  background:
-    radial-gradient(130% 90% at 15% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.03) 48%, transparent 100%),
-    radial-gradient(110% 100% at 88% 100%, rgba(127, 232, 255, 0.12) 0%, rgba(168, 85, 247, 0.08) 55%, transparent 100%),
-    linear-gradient(155deg, rgba(255, 255, 255, 0.1) 0%, rgba(19, 15, 38, 0.52) 55%, rgba(12, 10, 26, 0.68) 100%);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.7),
-    0 0 32px -8px rgba(127, 232, 255, 0.18),
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.45),
-    inset 0 -1.5px 2px rgba(127, 232, 255, 0.18),
-    inset 1px 0 1px rgba(255, 255, 255, 0.16);
-  overflow: hidden;
-}
-
-/* Specular top arc reflection */
-.liquid-glass-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.65) 0%,
-    rgba(127, 232, 255, 0.35) 28%,
-    rgba(255, 255, 255, 0.05) 60%,
-    rgba(168, 85, 247, 0.4) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
 }
 
 .liquid-emblem {
@@ -812,43 +776,6 @@ input[type="range"] {
     0 0 22px rgba(127, 232, 255, 0.32),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65),
     inset 0 -2px 4px rgba(127, 232, 255, 0.25);
-}
-
-.liquid-pill-track {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  border-radius: 14px;
-  background: rgba(6, 5, 16, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.liquid-pill-btn {
-  position: relative;
-  z-index: 1;
-  padding: 0.48rem 0.65rem;
-  border-radius: 11px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--ink-muted);
-  transition: color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
-  cursor: pointer;
-}
-.liquid-pill-btn[data-active="true"] {
-  color: var(--ink);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.24) 0%, rgba(127, 232, 255, 0.15) 60%, rgba(255, 255, 255, 0.08) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow:
-    0 6px 16px -4px rgba(0, 0, 0, 0.55),
-    0 0 14px rgba(127, 232, 255, 0.22),
-    inset 0 1px 1px rgba(255, 255, 255, 0.55);
 }
 
 .liquid-input-wrap {
