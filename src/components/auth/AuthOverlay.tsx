@@ -1,15 +1,32 @@
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+  User as UserIcon,
+  XCircle,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../store/authStore';
-import { Mail, Lock, User as UserIcon, XCircle } from 'lucide-react';
 
 export function AuthOverlay() {
-  const { login, register } = useAuth();
+  const login = useAuth((s) => s.login);
+  const register = useAuth((s) => s.register);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const switchMode = (nextIsLogin: boolean) => {
+    setIsLogin(nextIsLogin);
+    setError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,95 +38,192 @@ export function AuthOverlay() {
       } else {
         await register(email, password, name);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div 
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all"
-        onKeyDown={(e) => e.stopPropagation()} // Thêm dòng này để chặn rò rỉ sự kiện phím
-      >
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-md">
-        
-        {/* Glow effect phía sau form */}
-        <div className="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-blue-500/30 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-purple-500/30 blur-3xl" />
+    <div
+      className="liquid-auth-shell scroll-thin fade-in"
+      onKeyDown={(e) => e.stopPropagation()}
+      data-testid="chat-auth-panel"
+    >
+      {/* Ambient liquid caustic plasma orbs */}
+      <div className="liquid-caustic-orb orb-cyan" aria-hidden="true" />
+      <div className="liquid-caustic-orb orb-violet" aria-hidden="true" />
+      <div className="liquid-caustic-orb orb-mint" aria-hidden="true" />
 
-        <div className="relative z-10">
-          <h2 className="mb-6 text-center text-3xl font-light tracking-wide text-white">
-            {isLogin ? 'Welcome Back' : 'Join the Nexus'}
-          </h2>
+      <div className="my-auto py-1">
+        <div className="liquid-glass-card">
+          {/* Refractive crystal emblem & heading */}
+          <div className="text-center mb-4">
+            <div className="liquid-emblem" aria-hidden="true">
+              <Sparkles size={22} strokeWidth={1.9} />
+            </div>
+            <h3 className="text-[1.08rem] font-semibold tracking-tight text-[var(--ink)]">
+              {isLogin ? 'Chào mừng trở lại' : 'Khởi tạo tài khoản'}
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--ink-muted)]">
+              {isLogin
+                ? 'Đăng nhập để mở khóa không gian hỏi đáp & truy vết trích dẫn khoa học.'
+                : 'Tạo định danh mới để lưu phiên hỏi đáp và khám phá Cây Tri Thức Vector.'}
+            </p>
+          </div>
 
+          {/* Segmented Liquid Glass Pill Switcher */}
+          <div className="liquid-pill-track mb-4" role="tablist" aria-label="Chế độ xác thực">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isLogin}
+              data-active={isLogin}
+              onClick={() => switchMode(true)}
+              className="liquid-pill-btn"
+            >
+              Đăng nhập
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isLogin}
+              data-active={!isLogin}
+              onClick={() => switchMode(false)}
+              className="liquid-pill-btn"
+            >
+              Đăng ký
+            </button>
+          </div>
+
+          {/* Error banner */}
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-500/20 p-3 text-sm text-red-200 border border-red-500/30">
-              <XCircle size={16} />
-              <span>{error}</span>
+            <div
+              role="alert"
+              className="mb-3.5 flex items-start gap-2 rounded-xl border border-[color-mix(in_srgb,var(--danger)_50%,transparent)] bg-[color-mix(in_srgb,var(--danger)_15%,transparent)] px-3 py-2.5 text-xs text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] fade-in"
+            >
+              <XCircle size={15} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+              <span className="leading-snug">{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Form inputs */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {!isLogin && (
-              <div className="relative">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" size={18} />
-                <input
-                  type="text"
-                  placeholder="Display Name"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-12 pr-4 text-white placeholder-white/40 outline-none transition focus:border-white/40 focus:bg-white/10"
-                />
+              <div className="flex flex-col gap-1 fade-in">
+                <label htmlFor="auth-display-name" className="text-[11px] font-medium text-[var(--ink-muted)] px-1">
+                  Tên hiển thị
+                </label>
+                <div className="liquid-input-wrap">
+                  <span className="liquid-input-icon" aria-hidden="true">
+                    <UserIcon size={15} />
+                  </span>
+                  <input
+                    id="auth-display-name"
+                    type="text"
+                    placeholder="VD: Minh Trần"
+                    required
+                    maxLength={60}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="liquid-input"
+                    autoComplete="name"
+                  />
+                </div>
               </div>
             )}
-            
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" size={18} />
-              <input
-                type="email"
-                placeholder="Email Address"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-12 pr-4 text-white placeholder-white/40 outline-none transition focus:border-white/40 focus:bg-white/10"
-              />
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="auth-email" className="text-[11px] font-medium text-[var(--ink-muted)] px-1">
+                Địa chỉ Email
+              </label>
+              <div className="liquid-input-wrap">
+                <span className="liquid-input-icon" aria-hidden="true">
+                  <Mail size={15} />
+                </span>
+                <input
+                  id="auth-email"
+                  type="email"
+                  placeholder="researcher@university.edu"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="liquid-input"
+                  autoComplete="email"
+                />
+              </div>
             </div>
 
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" size={18} />
-              <input
-                type="password"
-                placeholder="Password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-12 pr-4 text-white placeholder-white/40 outline-none transition focus:border-white/40 focus:bg-white/10"
-              />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between px-1">
+                <label htmlFor="auth-password" className="text-[11px] font-medium text-[var(--ink-muted)]">
+                  Mật khẩu
+                </label>
+                <span className="text-[10px] text-[var(--ink-muted)] opacity-75 mono">≥ 8 ký tự</span>
+              </div>
+              <div className="liquid-input-wrap">
+                <span className="liquid-input-icon" aria-hidden="true">
+                  <Lock size={15} />
+                </span>
+                <input
+                  id="auth-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="liquid-input"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  className="mr-2 rounded-lg p-1.5 text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-[var(--ink)]"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-2 w-full rounded-xl bg-white/20 py-3 font-medium text-white transition hover:bg-white/30 disabled:opacity-50"
-            >
-              {loading ? 'Processing...' : isLogin ? 'Access System' : 'Initialize Account'}
+            <button type="submit" disabled={loading} className="liquid-cta-btn mt-1.5">
+              <span>
+                {loading
+                  ? 'Đang xác thực...'
+                  : isLogin
+                    ? 'Truy cập Hỏi đáp RAG'
+                    : 'Tạo tài khoản & Bắt đầu'}
+              </span>
+              {!loading && <ArrowRight size={16} strokeWidth={2.2} />}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-white/60">
-            {isLogin ? "Don't have an account?" : "Already registered?"}{' '}
+          {/* Bottom switch link */}
+          <div className="mt-4 pt-3 border-t border-white/10 text-center text-xs text-[var(--ink-muted)]">
+            {isLogin ? 'Chưa có tài khoản nghiên cứu?' : 'Đã có tài khoản hệ thống?'}{' '}
             <button
-              onClick={() => { setIsLogin(!isLogin); setError(''); }}
-              className="font-medium text-white hover:underline focus:outline-none"
+              type="button"
+              onClick={() => switchMode(!isLogin)}
+              className="font-semibold text-[var(--accent)] hover:underline cursor-pointer"
             >
-              {isLogin ? 'Create one' : 'Sign in'}
+              {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
             </button>
-          </p>
+          </div>
         </div>
+      </div>
+
+      {/* Liquid glass footer badges */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-center">
+        <span className="liquid-badge-chip">
+          <ShieldCheck size={12} className="text-[var(--success)]" />
+          JWT & Argon2id
+        </span>
+        <span className="liquid-badge-chip">
+          <Sparkles size={12} className="text-[var(--accent)]" />
+          3D Vector Grounding
+        </span>
       </div>
     </div>
   );
