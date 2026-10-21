@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { useWorld } from '../../../store/worldStore';
@@ -7,6 +8,7 @@ import { useTheme } from '../../../theme/useTheme';
 import { hexToRgb } from '../../../utils/canopy';
 import { rootRadiusAt, rootVertexColor, tubeAlongPath } from '../../../utils/treeGeometry';
 import { addVertexColorGlow } from '../materials';
+import { introBrightness, sceneIntro } from '../sceneIntro';
 import { TRUNK_BASE_RADIUS } from './Trunk';
 
 const TUBULAR = 28;
@@ -16,7 +18,9 @@ const RADIAL = 6;
 export function Roots() {
   const ground = useWorld((s) => s.ground);
   const theme = useTheme();
-  const glow = useMemo(() => ({ value: 0.4 }), []);
+  const glow = useMemo(() => ({ value: 0 }), []);
+  // Theme glow strength; `glow.value` ramps up to it with the intro.
+  const baseGlow = useRef(0.4);
 
   const { geometry, ranges } = useMemo(() => {
     if (!ground || ground.roots.length === 0) return { geometry: null, ranges: [] as { start: number; count: number; category: number }[] };
@@ -57,13 +61,20 @@ export function Roots() {
       }
     }
     color.needsUpdate = true;
-    glow.value = theme.additiveGlow ? 0.55 : 0.12;
+    baseGlow.current = theme.additiveGlow ? 0.55 : 0.12;
+    glow.value = baseGlow.current * sceneIntro.value;
   }, [theme, geometry, ranges, glow]);
 
   useEffect(() => () => {
     geometry?.dispose();
     material.dispose();
   }, [geometry, material]);
+
+  useFrame(() => {
+    if (material.color.r === 1 && sceneIntro.value >= 1) return;
+    glow.value = baseGlow.current * sceneIntro.value;
+    material.color.setScalar(introBrightness(sceneIntro.value));
+  });
 
   if (!geometry) return null;
   return <mesh geometry={geometry} material={material} raycast={() => null} />;

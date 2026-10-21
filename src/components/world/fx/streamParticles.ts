@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Vec3 } from '../../../types/world';
 import { ParticlePool } from '../../../utils/crawlFlow';
 import { toUpdateRanges } from '../../../utils/canopyUpdate';
+import { withSceneIntro } from '../sceneIntro';
 
 const VERT = /* glsl */ `
   attribute vec2 corner;
@@ -134,7 +135,7 @@ export class StreamParticles {
     this.geometry.setAttribute('aColor', this.aColor);
     this.geometry.setAttribute('aShape', this.aShape);
     this.geometry.instanceCount = size;
-    this.material = new THREE.ShaderMaterial({
+    this.material = withSceneIntro(new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
       transparent: true,
@@ -155,7 +156,7 @@ export class StreamParticles {
         uTailMix: { value: 0 },
         uGain: { value: 1 },
       },
-    });
+    }));
     this.object = new THREE.Mesh(this.geometry, this.material);
     this.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, -40, 0), 120);
     this.object.frustumCulled = true;

@@ -13,6 +13,7 @@ import { PostFX } from './PostFX';
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { AnchorProjector } from './overlay/anchors';
 import { PerfSampler, PerfHUD } from './overlay/PerfHUD';
+import { SceneIntro } from './sceneIntro';
 import { SkyBackground } from './SkyBackground';
 import { AncientTree } from './tree/AncientTree';
 import { getPreset } from '../../utils/cameraPresets';
@@ -42,6 +43,7 @@ export default function WorldCanvas() {
           if (PERF_ENABLED) Object.assign(globalThis, { __rktGl: gl });
         }}
       >
+        <SceneIntro />
         <SkyBackground />
         <Lighting />
         <group name="ground">

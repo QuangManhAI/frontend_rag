@@ -201,6 +201,9 @@ describe('Layout Components', () => {
       // Test Chat closed
       useUi.setState({ chatOpen: false });
       rerender(<AppShell />);
+      // The panel slides out first; the reopen button appears once that animation ends.
+      expect(screen.queryByRole('button', { name: 'Mở chat' })).toBeNull();
+      fireEvent.animationEnd(screen.getByTestId('chat-dock'));
       expect(screen.getByRole('button', { name: 'Mở chat' })).toBeDefined();
 
       // Test Paper panel open

@@ -5,6 +5,7 @@ import { mulberry32 } from '../../../api/mock/rng';
 import { useUi } from '../../../store/uiStore';
 import { useTheme } from '../../../theme/useTheme';
 import { glowBlending, pointScale, SOFT_POINT_FRAG, toColor } from '../materials';
+import { withSceneIntro } from '../sceneIntro';
 
 const VERT = /* glsl */ `
   attribute float aPhase;
@@ -55,13 +56,13 @@ export function Fireflies({ count = 320 }: { count?: number }) {
   }, [count]);
   const material = useMemo(
     () =>
-      new THREE.ShaderMaterial({
+      withSceneIntro(new THREE.ShaderMaterial({
         vertexShader: VERT,
         fragmentShader: SOFT_POINT_FRAG,
         transparent: true,
         depthWrite: false,
         uniforms: { uTime: { value: 0 }, uScale: { value: 500 }, uPixelRatio: { value: 1 }, uColor: { value: new THREE.Color() } },
-      }),
+      })),
     [],
   );
 

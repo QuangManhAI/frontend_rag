@@ -10,6 +10,7 @@ import { useWorld } from '../../../store/worldStore';
 import { categoryColor } from '../../../theme/tokens';
 import { useTheme } from '../../../theme/useTheme';
 import { cellToWorld } from '../../../utils/groundLayout';
+import { sceneIntro } from '../sceneIntro';
 import { toColor } from '../materials';
 
 const TILE_H = 0.3;
@@ -73,6 +74,7 @@ export function GroundGrid() {
     return g;
   }, [cols, rows, tile]);
   const lineMaterial = useMemo(() => new THREE.LineBasicMaterial({ transparent: true, toneMapped: false }), []);
+  const lineOpacity = useRef(0);
 
   useLayoutEffect(() => {
     const m = mesh.current;
@@ -110,7 +112,8 @@ export function GroundGrid() {
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
     lineMaterial.color.copy(toColor(theme.groundLine));
     // 40% dimmer than before so the lines don't compete with the cables and glass blocks.
-    lineMaterial.opacity = (theme.additiveGlow ? 0.55 : 0.8) * 0.6;
+    lineOpacity.current = (theme.additiveGlow ? 0.55 : 0.8) * 0.6;
+    lineMaterial.opacity = lineOpacity.current * sceneIntro.value;
   }, [theme, ground, count, cellCrate, selected, lineMaterial]);
 
   useEffect(() => () => {
@@ -127,7 +130,8 @@ export function GroundGrid() {
     if (!m) return;
     // Opacity eases to the target in ~400 ms; see-through in "ground" mode.
     // While crawling, thin the ground a little so the streams underneath read through it.
-    const target = mode === 'ground' ? theme.groundSeeThrough : crawling ? Math.min(theme.groundOpacity, 0.62) : theme.groundOpacity;
+    const target = (mode === 'ground' ? theme.groundSeeThrough : crawling ? Math.min(theme.groundOpacity, 0.62) : theme.groundOpacity) * sceneIntro.value;
+    if (sceneIntro.value < 1) lineMaterial.opacity = lineOpacity.current * sceneIntro.value;
     material.opacity += (target - material.opacity) * Math.min(1, dt * 9);
     material.depthWrite = material.opacity > 0.8;
     // Pulse tiles of crates holding the retrieved papers.

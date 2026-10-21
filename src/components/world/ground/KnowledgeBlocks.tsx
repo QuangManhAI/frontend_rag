@@ -8,6 +8,7 @@ import { categoryColor } from '../../../theme/tokens';
 import { useTheme } from '../../../theme/useTheme';
 import { BLOCK_TOP_Y, buildBlocks, MAX_ZONES, zoneHeights, zonesOf } from '../../../utils/feedCables';
 import { toColor } from '../materials';
+import { withSceneIntro } from '../sceneIntro';
 
 /** Seconds for the light to rise from the bottom to the top of a block when a pulse lands. */
 const RISE_S = 0.6;
@@ -191,8 +192,8 @@ export function KnowledgeBlocks() {
       uniforms: { ...shared, uPlug: { value: Array.from({ length: MAX_ZONES }, () => new THREE.Vector2()) }, uBody: { value: 0.2 }, uRim: { value: 1 } },
     });
     const edges = new THREE.ShaderMaterial({ vertexShader: EDGE_VERT, fragmentShader: EDGE_FRAG, transparent: true, depthWrite: false, uniforms: { ...shared, uEdge: { value: 1 } } });
-    premultiplied(body);
-    premultiplied(edges);
+    premultiplied(withSceneIntro(body));
+    premultiplied(withSceneIntro(edges));
     return { body, edges };
   }, [shared]);
 

@@ -613,6 +613,52 @@ body {
     transform: translateX(12px);
   }
 }
+
+/* Page intro: chrome slides in from its own edge; set --intro-delay to stagger. */
+.intro-down,
+.intro-up {
+  animation: 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) var(--intro-delay, 0s) both;
+}
+.intro-down {
+  animation-name: intro-down;
+}
+.intro-up {
+  animation-name: intro-up;
+}
+@keyframes intro-down {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+}
+@keyframes intro-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* Chat column (docked left): slides slowly out past the left edge and back in.
+   The 3D scene follows 0.5 s later with the same duration (CameraDirector, CHAT_SLIDE_*). */
+.chat-slide-in {
+  animation: chat-in 1.5s cubic-bezier(0.65, 0, 0.35, 1) var(--intro-delay, 0s) both;
+}
+.chat-slide-out {
+  animation: chat-out 1.5s cubic-bezier(0.65, 0, 0.35, 1) both;
+  pointer-events: none;
+}
+@keyframes chat-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-100% - 1rem));
+  }
+}
+@keyframes chat-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-100% - 1rem));
+  }
+}
 .fade-in {
   animation: fade 0.25s ease-out both;
 }

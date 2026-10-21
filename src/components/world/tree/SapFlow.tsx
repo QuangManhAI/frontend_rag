@@ -11,6 +11,7 @@ import { hexToRgb } from '../../../utils/canopy';
 import { resamplePolyline } from '../../../utils/flight';
 import { buildSapParticles } from '../../../utils/treeGeometry';
 import { glowBlending, pointScale, SOFT_POINT_FRAG, toColor } from '../materials';
+import { withSceneIntro } from '../sceneIntro';
 
 const SAMPLES = 48;
 const PER_PATH = 5;
@@ -90,7 +91,7 @@ export function SapFlow() {
 
   const material = useMemo(
     () =>
-      new THREE.ShaderMaterial({
+      withSceneIntro(new THREE.ShaderMaterial({
         vertexShader: VERT,
         fragmentShader: SOFT_POINT_FRAG,
         transparent: true,
@@ -104,7 +105,7 @@ export function SapFlow() {
           uPixelRatio: { value: 1 },
           uSapColor: { value: new THREE.Color() },
         },
-      }),
+      })),
     [],
   );
 
