@@ -20,10 +20,52 @@ export interface AnchorItem {
   box?: { dx: number; dy: number; w: number; h: number; at: number };
   /** Translation last written (to measure the content box relative to it). */
   at?: { x: number; y: number };
+  /** Declutter priority (lower = placed first): the content is lifted via `--lift` until it clears the others. */
+  declutter?: number;
+  /** Last `--lift` written, in px. */
+  lift?: number;
+  /** Last measured content size for decluttering (refreshed ~1×/s). */
+  size?: { w: number; h: number; at: number };
 }
 
 /** Margins kept free around a `keepInView` element (top: the top bar). */
 const VIEW_MARGIN = { left: 12, right: 12, top: 72, bottom: 12 };
+
+/** Declutter geometry, in px: `STEM` must match `--stem` of `.topk-badge` (the content sits that far above the point). */
+const DECLUTTER = { stem: 16, gap: 4, maxLifts: 8 };
+
+interface Projected {
+  a: AnchorItem;
+  x: number;
+  y: number;
+}
+
+/**
+ * Greedy screen-space declutter: in priority order, each element is lifted one row at a time
+ * until its box clears every box already placed. The point itself never moves (the stem grows).
+ */
+function declutter(items: Projected[]): void {
+  items.sort((p, q) => (p.a.declutter ?? 0) - (q.a.declutter ?? 0));
+  const placed: { l: number; r: number; t: number; b: number }[] = [];
+  const now = performance.now();
+  const { stem, gap, maxLifts } = DECLUTTER;
+  for (const { a, x, y } of items) {
+    const child = a.el.firstElementChild;
+    if (child instanceof HTMLElement && (!a.size || now - a.size.at > 1000)) a.size = { w: child.offsetWidth, h: child.offsetHeight, at: now };
+    const w = a.size?.w ?? 0;
+    const h = a.size?.h ?? 0;
+    let lift = 0;
+    const boxAt = (l: number) => ({ l: x - w / 2, r: x + w / 2, t: y - stem - l - h, b: y - stem - l });
+    let box = boxAt(lift);
+    const hits = () => placed.some((p) => box.l < p.r + gap && box.r > p.l - gap && box.t < p.b + gap && box.b > p.t - gap);
+    for (let i = 0; i < maxLifts && hits(); i++) box = boxAt((lift += h + gap));
+    placed.push(box);
+    if ((a.lift ?? 0) !== lift) {
+      a.lift = lift;
+      a.el.style.setProperty('--lift', `${lift}px`);
+    }
+  }
+}
 
 export const anchors = new Set<AnchorItem>();
 /** Last camera seen by the projector, for DOM-side LOD decisions. */
@@ -32,6 +74,7 @@ export const overlayCamera: { current: THREE.Camera | null } = { current: null }
 const v = new THREE.Vector3();
 
 export function projectAnchors(camera: THREE.Camera, width: number, height: number): void {
+  const crowd: Projected[] = [];
   for (const a of anchors) {
     if (!a.visible) {
       a.el.style.visibility = 'hidden';
@@ -69,10 +112,12 @@ export function projectAnchors(camera: THREE.Camera, width: number, height: numb
         a.at.y = y;
       } else a.at = { x, y };
     }
+    if (a.declutter !== undefined) crowd.push({ a, x, y });
     if (a.el.style.visibility !== 'visible') a.el.style.visibility = 'visible';
     a.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
     a.el.style.zIndex = String(Math.round((1 - v.z) * 10000));
   }
+  if (crowd.length > 1 || crowd[0]?.a.lift) declutter(crowd);
 }
 
 /** Lives inside the Canvas. */
@@ -90,10 +135,11 @@ interface AnchorProps {
   distanceFactor?: number;
   visible?: boolean;
   keepInView?: boolean;
+  declutter?: number;
 }
 
 /** DOM element pinned to a world position (render it inside <WorldOverlay>). */
-export function Anchor({ position, children, distanceFactor, visible = true, keepInView = false }: AnchorProps) {
+export function Anchor({ position, children, distanceFactor, visible = true, keepInView = false, declutter }: AnchorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const item = useRef<AnchorItem | null>(null);
   useLayoutEffect(() => {
@@ -113,7 +159,8 @@ export function Anchor({ position, children, distanceFactor, visible = true, kee
     it.distanceFactor = distanceFactor;
     it.visible = visible;
     it.keepInView = keepInView;
-  }, [position, distanceFactor, visible, keepInView]);
+    it.declutter = declutter;
+  }, [position, distanceFactor, visible, keepInView, declutter]);
   return (
     <div ref={ref} className="absolute left-0 top-0" style={{ transformOrigin: '0 0', visibility: 'hidden', willChange: 'transform' }}>
       {children}

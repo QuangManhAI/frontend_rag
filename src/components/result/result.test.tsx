@@ -88,6 +88,30 @@ describe('Result Components & 3D Anchors', () => {
       anchors.delete(item);
     });
 
+    it('declutter lifts the lower-priority of two overlapping labels and keeps the anchor point', () => {
+      const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+      camera.position.set(0, 0, 10);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      camera.updateProjectionMatrix();
+      const now = performance.now();
+      const make = (declutter: number) => ({ el: document.createElement('div'), pos: new THREE.Vector3(0, 0, 0), visible: true, declutter, size: { w: 40, h: 20, at: now } });
+      const second = make(3);
+      const first = make(2);
+      anchors.add(second);
+      anchors.add(first);
+      projectAnchors(camera, 800, 600);
+      expect(first.el.style.getPropertyValue('--lift')).toBe('');
+      expect(second.el.style.getPropertyValue('--lift')).toBe('24px');
+      expect(second.el.style.transform).toBe(first.el.style.transform);
+
+      second.pos.set(3, 0, 0); // apart on screen: the lift drops back to 0
+      projectAnchors(camera, 800, 600);
+      expect(second.el.style.getPropertyValue('--lift')).toBe('0px');
+      anchors.delete(first);
+      anchors.delete(second);
+    });
+
     it('createManualAnchor shows and hides content', () => {
       const manual = createManualAnchor();
       const el = document.createElement('div');

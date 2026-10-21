@@ -472,19 +472,100 @@ body {
   }
 }
 
+/* Glass pill on a thin glowing stem down to its vector; `--lift` is written by the anchor declutter
+   (anchors.tsx), `--stem` must match DECLUTTER.stem there. */
 .topk-badge {
-  font-family: var(--font-mono);
+  --stem: 16px;
+  --glow: color-mix(in srgb, var(--accent) 38%, transparent);
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 10px 3px 9px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 6px;
-  color: var(--accent-ink);
-  background: var(--accent);
-  transform: translate(-50%, -170%);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background:
+    radial-gradient(120% 160% at 30% -20%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 65%),
+    var(--ui-surface-strong);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow:
+    0 0 14px var(--glow),
+    inset 0 1px 0 #ffffff1f;
+  backdrop-filter: blur(6px);
+  transform: translate(-50%, calc(-100% - var(--stem)));
+  translate: 0 calc(-1 * var(--lift, 0px));
+  transform-origin: 50% 100%;
+  transition:
+    translate 0.24s cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 0.2s,
+    box-shadow 0.2s;
+  animation: topk-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   cursor: pointer;
-  border: none;
   white-space: nowrap;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.topk-badge::before,
+.topk-badge::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  pointer-events: none;
+  transition: height 0.24s cubic-bezier(0.2, 0.8, 0.3, 1), top 0.24s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.topk-badge::before {
+  top: 100%;
+  width: 1px;
+  height: calc(var(--stem) + var(--lift, 0px));
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 70%, transparent), color-mix(in srgb, var(--accent) 10%, transparent));
+}
+.topk-badge::after {
+  top: calc(100% + var(--stem) + var(--lift, 0px));
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--orb);
+  box-shadow: 0 0 8px var(--orb-halo);
+  animation: topk-twinkle 2.4s ease-in-out infinite;
+}
+.topk-badge:hover,
+.topk-badge:focus-visible {
+  --glow: color-mix(in srgb, var(--accent) 65%, transparent);
+  border-color: var(--accent);
+  outline: none;
+}
+.topk-badge:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 18px var(--glow);
+}
+.topk-rank {
+  font-variant-numeric: tabular-nums;
+}
+.topk-hash {
+  margin-right: 1px;
+  color: var(--accent);
+  opacity: 0.75;
+}
+.topk-meta {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+@keyframes topk-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+@keyframes topk-twinkle {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 /* ---------- result card ---------- */
