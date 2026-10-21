@@ -1,7 +1,10 @@
-/** Small glowing SVG tree shown while the world (and the 3D bundle) loads. */
-export function LoadingTree({ error, onRetry }: { error?: string | null; onRetry?: () => void }) {
+/**
+ * Shown when the world fails to load. There is no loading screen: the chrome slides in right away
+ * and the scene lights up once it is ready (see sceneIntro).
+ */
+export function WorldError({ error, onRetry }: { error: string; onRetry?: () => void }) {
   return (
-    <div className="absolute inset-0 grid place-items-center z-30 bg-[radial-gradient(ellipse_at_center,var(--bg-horizon),var(--bg))]" data-testid="loading-tree">
+    <div className="absolute inset-0 grid place-items-center z-30 bg-[radial-gradient(ellipse_at_center,var(--bg-horizon),var(--bg))]" data-testid="world-error">
       <div className="flex flex-col items-center gap-4 text-center px-6">
         <svg viewBox="0 0 120 120" width="132" height="132" className="loading-tree" aria-hidden>
           <defs>
@@ -32,17 +35,11 @@ export function LoadingTree({ error, onRetry }: { error?: string | null; onRetry
             <circle key={i} className="leaf" cx={x} cy={y} r="3.4" fill={`var(--cat-${i}, var(--accent))`} style={{ animationDelay: `${i * 0.22}s` }} filter="url(#glow)" />
           ))}
         </svg>
-        {error ? (
-          <>
-            <p className="text-sm text-[var(--danger)]">Không tải được thế giới: {error}</p>
-            {onRetry && (
-              <button type="button" className="btn" onClick={onRetry}>
-                Thử lại
-              </button>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-[var(--ink-muted)]">Đang dựng cây tri thức…</p>
+        <p className="text-sm text-[var(--danger)]">Không tải được thế giới: {error}</p>
+        {onRetry && (
+          <button type="button" className="btn" onClick={onRetry}>
+            Thử lại
+          </button>
         )}
       </div>
     </div>

@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "bench": "vitest bench --run",
-    "dev:live": "VITE_USE_MOCK=false vite"
+    "dev:live": "VITE_USE_MOCK=false vite",
+    "test:perf": "node scripts/perf-chat-benchmark.cjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

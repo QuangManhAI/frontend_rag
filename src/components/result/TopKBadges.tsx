@@ -5,7 +5,7 @@ import { useWorld } from '../../store/worldStore';
 import { vectorPosition } from '../../utils/flight';
 import { Anchor } from '../world/overlay/anchors';
 
-/** Small rank badges (#2, #3…) on the other top-k vectors; click to move the focus there. */
+/** Small rank badges (#2, #3…) on the other top-k vectors, lifted apart by rank; click to move the focus there. */
 export function TopKBadges() {
   const topK = useFx((s) => s.topK);
   const vectors = useWorld((s) => s.vectors);
@@ -17,7 +17,7 @@ export function TopKBadges() {
       {topK
         .filter((t) => t.paper_id !== focused)
         .map((t) => (
-          <Anchor key={t.paper_id} position={vectorPosition(vectors, t.index)}>
+          <Anchor key={t.paper_id} position={vectorPosition(vectors, t.index)} declutter={t.rank}>
             <button
               type="button"
               className="topk-badge"
@@ -31,8 +31,11 @@ export function TopKBadges() {
                 });
               }}
             >
-              #{t.rank}
-              {t.chunkCount > 1 ? ` ×${t.chunkCount}` : ''}
+              <span className="topk-rank">
+                <span className="topk-hash">#</span>
+                {t.rank}
+              </span>
+              {t.chunkCount > 1 && <span className="topk-meta">×{t.chunkCount}</span>}
             </button>
           </Anchor>
         ))}

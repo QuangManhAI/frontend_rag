@@ -48,7 +48,7 @@ export const QueryOrb = forwardRef<THREE.Group, { size?: number }>(function Quer
     <group ref={ref} visible={false}>
       <Trail width={2.4 * size} length={8} color={opaqueHex(theme.queryOrbHalo)} attenuation={(w) => w * w} decay={1}>
         <mesh>
-          <sphereGeometry args={[1.05 * size, 28, 28]} />
+          <sphereGeometry args={[1.05 * size, 14, 14]} />
           <meshBasicMaterial color={core} toneMapped={false} />
         </mesh>
       </Trail>

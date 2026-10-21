@@ -1,8 +1,9 @@
-import { memo, type ComponentProps } from 'react';
+import { memo, useDeferredValue, type ComponentProps } from 'react';
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import 'katex/dist/katex.min.css';
 import type { CitationCheck } from '../../types/rag';
 import type { FocusContext } from '../../store/uiStore';
 import { remarkCitations } from '../../utils/remarkCitations';
@@ -14,6 +15,7 @@ interface Props {
   checks?: readonly CitationCheck[];
   context?: FocusContext | null;
   className?: string;
+  streaming?: boolean;
 }
 
 /**
@@ -27,8 +29,11 @@ export function normalizeDisplayMath(text: string): string {
     .replace(/^[ \t]*\$\$([^\n]+?)\$\$[ \t]*$/gm, (_m, body: string) => `$$\n${body}\n$$`);
 }
 
-/** Markdown + KaTeX renderer; never injects raw HTML (react-markdown escapes it). */
-export const Markdown = memo(function Markdown({ text, checks = [], context = null, className = '' }: Props) {
+/** Markdown + KaTeX renderer; uses React concurrent deferred value during streaming to protect 60 FPS 3D animations. */
+export const Markdown = memo(function Markdown({ text, checks = [], context = null, className = '', streaming = false }: Props) {
+  const deferredText = useDeferredValue(text);
+  const displayText = streaming ? deferredText : text;
+
   const components: Components = {
     cite: (props: ComponentProps<'cite'> & ExtraProps) => {
       const paperId = (props as Record<string, unknown>)['data-paper-id'];
@@ -42,10 +47,11 @@ export const Markdown = memo(function Markdown({ text, checks = [], context = nu
       </a>
     ),
   };
+
   return (
     <div className={`md ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath, remarkCitations]} rehypePlugins={[rehypeKatex]} components={components}>
-        {normalizeDisplayMath(text)}
+        {normalizeDisplayMath(displayText)}
       </ReactMarkdown>
     </div>
   );

@@ -55,13 +55,19 @@ export class WorldBridge {
   private vectorsOfTwig(twig: number): number[] {
     if (!this.twigVectors || this.twigVectorsCount !== this.world.vectors.count) {
       this.twigVectorsCount = this.world.vectors.count;
-      this.twigVectors = new Map();
+      const map = new Map<number, number[]>();
       const ids = this.world.vectors.twigIds;
-      for (let i = 0; i < this.world.vectors.count; i++) {
-        const list = this.twigVectors.get(ids[i]) ?? [];
+      const count = this.world.vectors.count;
+      for (let i = 0; i < count; i++) {
+        const id = ids[i];
+        let list = map.get(id);
+        if (!list) {
+          list = [];
+          map.set(id, list);
+        }
         list.push(i);
-        this.twigVectors.set(ids[i], list);
       }
+      this.twigVectors = map;
     }
     return this.twigVectors.get(twig) ?? [];
   }

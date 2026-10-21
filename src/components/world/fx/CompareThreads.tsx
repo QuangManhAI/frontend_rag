@@ -25,13 +25,13 @@ export const CompareThreads = forwardRef<CompareThreadsHandle>(function CompareT
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
     const line = new THREE.Line(g, new THREE.LineBasicMaterial({ transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false }));
-    line.frustumCulled = false;
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 60, 0), 120);
     line.visible = false;
     const tg = new THREE.BufferGeometry();
     tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRACE * 6), 3));
     tg.setDrawRange(0, 0);
     const trace = new THREE.LineSegments(tg, new THREE.LineBasicMaterial({ transparent: true, opacity: 0.28, toneMapped: false, depthWrite: false }));
-    trace.frustumCulled = false;
+    tg.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 60, 0), 120);
     return { line, trace };
   }, []);
 

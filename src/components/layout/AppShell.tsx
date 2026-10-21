@@ -1,5 +1,5 @@
 import { Filter, X } from 'lucide-react';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useUi } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
 import { ChatPanel, ChatReopenButton } from '../chat/ChatPanel';
@@ -9,11 +9,13 @@ import { WorldOverlay } from '../world/overlay/WorldOverlay';
 import { useCrawl } from '../../store/crawlStore';
 import { CategoryLegend } from './CategoryLegend';
 import { HealthBanner, useHealth } from './HealthBanner';
-import { LoadingTree } from './LoadingTree';
 import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
+import { WorldError } from './WorldError';
 
-const WorldCanvas = lazy(() => import('../world/WorldCanvas'));
+// Preload WorldCanvas chunk in parallel during initial paint
+const worldCanvasPromise = import('../world/WorldCanvas');
+const WorldCanvas = lazy(() => worldCanvasPromise);
 
 function useIsMobile(): boolean {
   const query = '(max-width: 767px)';
@@ -26,6 +28,45 @@ function useIsMobile(): boolean {
     return () => mq.removeEventListener('change', on);
   }, []);
   return mobile;
+}
+
+const introDelay = (s: number) => ({ '--intro-delay': `${s}s` }) as CSSProperties;
+
+/**
+ * Desktop chat column. Stays mounted while it slides out so the close is animated too;
+ * the first open (page load) waits a beat so it follows the top bar in.
+ */
+function ChatDock() {
+  const chatOpen = useUi((s) => s.chatOpen);
+  const [mounted, setMounted] = useState(chatOpen);
+  const firstOpen = useRef(true);
+  useEffect(() => {
+    if (chatOpen) setMounted(true);
+  }, [chatOpen]);
+  const closing = mounted && !chatOpen;
+
+  if (!mounted) {
+    return (
+      <div className="self-start fade-in">
+        <ChatReopenButton />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`glass w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
+      style={firstOpen.current && !closing ? introDelay(0.15) : undefined}
+      aria-hidden={closing || undefined}
+      data-testid="chat-dock"
+      onAnimationEnd={(e) => {
+        if (e.target !== e.currentTarget) return; // ignore animations of children
+        firstOpen.current = false;
+        if (closing) setMounted(false);
+      }}
+    >
+      <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
+    </div>
+  );
 }
 
 function FilterChip() {
@@ -47,7 +88,7 @@ function BottomSheet() {
   const [height, setHeight] = useState(42);
   const drag = useRef<{ y: number; h: number } | null>(null);
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 glass glass-strong !rounded-b-none flex flex-col" style={{ height: `${height}vh` }}>
+    <div className="absolute inset-x-0 bottom-0 z-20 glass glass-strong !rounded-b-none flex flex-col intro-up" style={{ height: `${height}vh`, ...introDelay(0.15) }}>
       <div
         className="py-2 grid place-items-center cursor-grab touch-none"
         role="slider"
@@ -86,7 +127,6 @@ function BottomSheet() {
 export function AppShell() {
   const status = useWorld((s) => s.status);
   const error = useWorld((s) => s.error);
-  const chatOpen = useUi((s) => s.chatOpen);
   const panelOpen = useUi((s) => s.panelPaperId !== null);
   const health = useHealth();
 
@@ -114,15 +154,15 @@ export function AppShell() {
     <div className="fixed inset-0 overflow-hidden bg-[var(--bg)] text-[var(--ink)]">
       <div className={`absolute inset-x-0 top-0 ${mobile ? 'bottom-[12vh]' : 'bottom-0'}`}>
         {status === 'ready' && (
-          <Suspense fallback={<LoadingTree />}>
+          <Suspense fallback={null}>
             <WorldCanvas />
             <WorldOverlay />
           </Suspense>
         )}
       </div>
-      {status !== 'ready' && <LoadingTree error={error} onRetry={() => void useWorld.getState().load()} />}
+      {status === 'error' && <WorldError error={error ?? 'lỗi không xác định'} onRetry={() => void useWorld.getState().load()} />}
 
-      <div className="absolute inset-x-3 top-3 z-20 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto">
+      <div className="absolute inset-x-3 top-3 z-20 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto intro-down">
         <TopBar health={health} />
         <div className="flex flex-wrap items-start gap-2">
           <HealthBanner health={health} />
@@ -135,15 +175,7 @@ export function AppShell() {
 
       {!mobile && (
         <div className="absolute left-3 top-[4.6rem] bottom-3 z-20 flex">
-          {chatOpen ? (
-            <div className="glass w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden slide-in-right">
-              <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
-            </div>
-          ) : (
-            <div className="self-start">
-              <ChatReopenButton />
-            </div>
-          )}
+          <ChatDock />
         </div>
       )}
       {mobile && <BottomSheet />}
@@ -156,7 +188,8 @@ export function AppShell() {
 
       {status === 'ready' && (
         <div
-          className={`absolute z-10 flex flex-col items-end gap-2 pointer-events-none [&>*]:pointer-events-auto ${mobile ? 'right-2 top-16' : 'bottom-3'} ${
+          style={introDelay(0.35)}
+          className={`absolute z-10 flex flex-col items-end gap-2 pointer-events-none [&>*]:pointer-events-auto intro-up ${mobile ? 'right-2 top-16' : 'bottom-3'} ${
             !mobile && panelOpen ? 'right-[calc(min(420px,34vw)+1.5rem)]' : !mobile ? 'right-3' : ''
           }`}
         >

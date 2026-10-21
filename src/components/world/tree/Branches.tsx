@@ -10,6 +10,7 @@ import { useTheme } from '../../../theme/useTheme';
 import { hexToRgb } from '../../../utils/canopy';
 import { tubeAlongPath } from '../../../utils/treeGeometry';
 import { toColor } from '../materials';
+import { introBrightness, sceneIntro } from '../sceneIntro';
 import { buildTrunk, TRUNK_TOP_RADIUS } from './Trunk';
 
 /**
@@ -40,6 +41,7 @@ export function Branches() {
       uVeinIntensity: { value: 1 },
       uSelfGlow: { value: 0.2 },
       uChosenColor: { value: new THREE.Color() },
+      uIntro: sceneIntro,
     }),
     [markTex, maxId],
   );
@@ -64,6 +66,7 @@ export function Branches() {
     }
     const merged = mergeGeometries(parts, false);
     parts.forEach((p) => p.dispose());
+    merged.computeBoundingSphere();
     return { geometry: merged, ranges };
   }, [tree, nodesById]);
 
@@ -96,6 +99,7 @@ export function Branches() {
           uniform float uVeinIntensity;
           uniform float uSelfGlow;
           uniform vec3 uChosenColor;
+          uniform float uIntro;
           varying float vMark;
           varying vec2 vBarkUv;`,
         )
@@ -114,7 +118,8 @@ export function Branches() {
           float flow = 0.45 + 0.55 * pow(0.5 + 0.5 * sin(vBarkUv.y * 34.0 - uTime * 2.6), 2.0);
           totalEmissiveRadiance += uVeinColor * uVeinIntensity * vein * flow * (1.0 + chosen * 1.2) * (1.0 - rejected * 0.85);
           totalEmissiveRadiance += vColor.rgb * uSelfGlow * (1.0 - rejected * 0.8);
-          totalEmissiveRadiance += uChosenColor * chosen * (0.3 + 0.15 * sin(uTime * 5.0));`,
+          totalEmissiveRadiance += uChosenColor * chosen * (0.3 + 0.15 * sin(uTime * 5.0));
+          totalEmissiveRadiance *= uIntro;`,
         );
     };
     m.customProgramCacheKey = () => 'ancient-tree';
@@ -157,6 +162,8 @@ export function Branches() {
 
   useFrame((_, dt) => {
     if (!reduce) uniforms.uTime.value += dt;
+    // Intro: dark silhouette → full color (the glow above is scaled by uIntro in the shader).
+    if (material.color.r !== 1 || sceneIntro.value < 1) material.color.setScalar(introBrightness(sceneIntro.value));
   });
 
   return <mesh geometry={geometry} material={material} raycast={() => null} />;

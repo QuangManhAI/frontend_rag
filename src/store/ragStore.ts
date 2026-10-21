@@ -72,8 +72,19 @@ export const useRag = create<RagState>((set, get) => {
     let visualPhase = s.visualPhase;
     if (next.phase === 'error') visualPhase = 'error';
     else if (visualPhase === 'idle' && next.phase !== 'idle') visualPhase = 'embedding';
+
+    // Batch message update with state update into a single set() call to eliminate double render passes per token
+    if (event.type === 'token') {
+      set((st) => ({
+        phase: next.phase,
+        current: next.current,
+        visualPhase,
+        messages: st.messages.map((m) => (m.role === 'assistant' && m.runId === runId ? { ...m, content: next.current.answer } : m)),
+      }));
+      return;
+    }
+
     set({ phase: next.phase, current: next.current, visualPhase });
-    if (event.type === 'token') patchAssistant(runId, { content: next.current.answer });
     if (event.type === 'retrieval') patchAssistant(runId, { expanded_terms: next.current.expanded_terms, grounded_chunks: next.current.grounded_chunks });
     if (next.phase === 'done' && s.phase !== 'done') {
       patchAssistant(runId, { status: 'done', content: next.current.answer, citationChecks: next.current.citationChecks, timings: next.current.timings });

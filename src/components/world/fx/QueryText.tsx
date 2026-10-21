@@ -50,6 +50,8 @@ export function QueryText({ text }: { text: string }) {
     g.setAttribute('position', new THREE.BufferAttribute(base, 3));
     g.setAttribute('aStart', new THREE.BufferAttribute(start, 3));
     g.setAttribute('aDelay', new THREE.BufferAttribute(delay, 1));
+    g.computeBoundingSphere();
+    if (g.boundingSphere) g.boundingSphere.radius += 35;
     return g;
   }, [text, count]);
   const material = useMemo(
@@ -79,7 +81,7 @@ export function QueryText({ text }: { text: string }) {
     material.uniforms.uPixelRatio.value = gl.getPixelRatio();
   });
 
-  return <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} />;
+  return <points geometry={geometry} material={material} raycast={() => null} />;
 }
 
 /** The question text itself (DOM overlay); CSS dissolves it while the particles converge. */

@@ -4,8 +4,9 @@ import { buildChatScript, buildIndex, buildMockPaper, mockPaperDetail, type Mock
 import { generateMockWorld } from './mock/mockWorld';
 import { parseSseBlock, SseBuffer } from './sseParser';
 import { parseVectors } from './vectorParser';
+import { useAuth } from '../store/authStore';
 
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api/v1').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api/v1').replace(/\/$/, '');
 /** World 3D and the crawl stream come from the UTH pipeline, not from RAG_TS. */
 export const PIPELINE_BASE = (import.meta.env.VITE_PIPELINE_BASE ?? '/pipeline').replace(/\/$/, '');
 /** Chat, papers and health: mock unless VITE_USE_MOCK=false (then RAG_TS at API_BASE). */
@@ -17,6 +18,11 @@ export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 export const MOCK_WORLD = import.meta.env.VITE_MOCK_WORLD !== 'false';
 
 const MOCK_SEED = 7;
+
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuth.getState().accessToken;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 function searchParam(name: string): string | null {
   try {
@@ -62,7 +68,13 @@ export function getMockContext(): MockContext {
 }
 
 async function getJson<T>(path: string, signal?: AbortSignal, base = API_BASE): Promise<T> {
-  const res = await fetch(`${base}${path}`, { signal });
+  const res = await fetch(`${base}${path}`, { 
+    signal,
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    }
+  });
   if (!res.ok) throw new HttpError(res.status, `${path} → HTTP ${res.status}`);
   return (await res.json()) as T;
 }
@@ -78,8 +90,8 @@ export class HttpError extends Error {
 
 /** Categories, ground, tree, vectors.bin and vector ids, fetched in parallel. */
 export async function loadWorld(signal?: AbortSignal): Promise<WorldData> {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   if (MOCK_WORLD) {
-    await sleep(400, signal);
     return getMockContext().world;
   }
   const [categories, ground, tree, buffer, vectorIds] = await Promise.all([
@@ -161,7 +173,7 @@ export async function* streamChat(req: RagRequest, signal: AbortSignal): AsyncGe
   try {
     res = await fetch(`${API_BASE}/rag/chat/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream',  ...getAuthHeaders()},
       body: JSON.stringify(req),
       signal,
     });

@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, CircleSlash } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, startTransition } from 'react';
 import { phaseIndex } from '../../store/pipeline';
 import { useRag, type ChatMessage } from '../../store/ragStore';
 import type { FocusContext } from '../../store/uiStore';
@@ -24,8 +24,10 @@ function useReveal(text: string, mode: RevealMode): string {
       return;
     }
     const id = setInterval(() => {
-      setShown((n) => (n >= text.length ? n : Math.min(text.length, n + Math.max(3, Math.ceil((text.length - n) / 45)))));
-    }, 30);
+      startTransition(() => {
+        setShown((n) => (n >= text.length ? n : Math.min(text.length, n + Math.max(3, Math.ceil((text.length - n) / 45)))));
+      });
+    }, 45);
     return () => clearInterval(id);
   }, [text, mode]);
   return mode === 'full' ? text : text.slice(0, Math.min(shown, text.length));
@@ -88,7 +90,13 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
             {VISUAL_LABEL[visual] ?? 'Đang sinh câu trả lời…'}
           </div>
         ) : (
-          <Markdown text={text} checks={checks} context={context} className={streaming && (message.status === 'streaming' || text.length < message.content.length) ? 'caret' : ''} />
+          <Markdown
+            text={text}
+            checks={checks}
+            context={context}
+            streaming={streaming}
+            className={streaming && (message.status === 'streaming' || text.length < message.content.length) ? 'caret' : ''}
+          />
         )}
         {message.status === 'error' && (
           <div role="alert" className="mt-2 flex items-start gap-2 text-xs text-[var(--danger)]">

@@ -1,0 +1,31 @@
+{
+  "label": "run",
+  "timestamp": "2026-10-20T16:41:47.642Z",
+  "targetUrl": "http://localhost:5174/?vectors=150000&bench&perf&nofx",
+  "totalFrames": 231,
+  "fps": {
+    "mean": 57.1,
+    "stdDev": 1.3,
+    "median": 57.1,
+    "min": 50.5,
+    "max": 59.5
+  },
+  "frameTime": {
+    "meanMs": 17.51,
+    "stdDevMs": 0.41,
+    "medianMs": 17.5,
+    "p95Ms": 18.2,
+    "p99Ms": 18.6,
+    "minMs": 16.8,
+    "maxMs": 19.8
+  },
+  "longTasks": {
+    "count": 0,
+    "maxDurationMs": 0,
+    "tasks": []
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

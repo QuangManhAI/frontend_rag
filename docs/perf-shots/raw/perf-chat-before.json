@@ -1,0 +1,132 @@
+{
+  "label": "before",
+  "timestamp": "2026-10-20T12:57:05.913Z",
+  "targetUrl": "http://localhost:5174/?vectors=150000&bench",
+  "totalFrames": 185,
+  "frameTime": {
+    "medianMs": 1,
+    "meanMs": 11.31,
+    "p95Ms": 113.7,
+    "p99Ms": 129.5,
+    "maxMs": 130
+  },
+  "fps": {
+    "median": 1000,
+    "min": 7.7
+  },
+  "longTasks": {
+    "count": 21,
+    "maxDurationMs": 9348,
+    "tasks": [
+      {
+        "duration": 82,
+        "startTime": 3841.89999999851,
+        "name": "self"
+      },
+      {
+        "duration": 82,
+        "startTime": 3924.7000000029802,
+        "name": "self"
+      },
+      {
+        "duration": 58,
+        "startTime": 4026.2000000029802,
+        "name": "self"
+      },
+      {
+        "duration": 81,
+        "startTime": 4086,
+        "name": "self"
+      },
+      {
+        "duration": 9348,
+        "startTime": 4206.70000000298,
+        "name": "self"
+      },
+      {
+        "duration": 153,
+        "startTime": 13555.80000000447,
+        "name": "self"
+      },
+      {
+        "duration": 129,
+        "startTime": 13969,
+        "name": "self"
+      },
+      {
+        "duration": 126,
+        "startTime": 14100,
+        "name": "self"
+      },
+      {
+        "duration": 107,
+        "startTime": 14226.20000000298,
+        "name": "self"
+      },
+      {
+        "duration": 129,
+        "startTime": 14333.89999999851,
+        "name": "self"
+      },
+      {
+        "duration": 117,
+        "startTime": 14463.80000000447,
+        "name": "self"
+      },
+      {
+        "duration": 113,
+        "startTime": 14581.10000000149,
+        "name": "self"
+      },
+      {
+        "duration": 116,
+        "startTime": 14695.10000000149,
+        "name": "self"
+      },
+      {
+        "duration": 118,
+        "startTime": 14811.30000000447,
+        "name": "self"
+      },
+      {
+        "duration": 115,
+        "startTime": 14930.20000000298,
+        "name": "self"
+      },
+      {
+        "duration": 104,
+        "startTime": 15046.20000000298,
+        "name": "self"
+      },
+      {
+        "duration": 117,
+        "startTime": 15150.30000000447,
+        "name": "self"
+      },
+      {
+        "duration": 111,
+        "startTime": 15268,
+        "name": "self"
+      },
+      {
+        "duration": 106,
+        "startTime": 15379.39999999851,
+        "name": "self"
+      },
+      {
+        "duration": 111,
+        "startTime": 15486.30000000447,
+        "name": "self"
+      },
+      {
+        "duration": 109,
+        "startTime": 15598.20000000298,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Median <= 16.6ms, P99 <= 33.3ms, LongTasks = 0)",
+    "passed": false
+  }
+}

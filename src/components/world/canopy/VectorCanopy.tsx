@@ -11,6 +11,7 @@ import { nowSec } from '../../../store/crawlFx';
 import { toUpdateRanges, updateFilterMask, updateOverlayStates } from '../../../utils/canopyUpdate';
 import { buildPointGrid, pickNearest, raycastGrid, raycastRange, type PointGrid, type RayHit } from '../../../utils/spatialGrid';
 import { glowBlending, pointScale, toColor } from '../materials';
+import { withSceneIntro } from '../sceneIntro';
 import { CANOPY_FRAG, CANOPY_VERT } from './canopyShader';
 import { LEGACY_FX, timed } from '../../../utils/perfProbe';
 
@@ -82,7 +83,7 @@ export function VectorCanopy() {
 
   const material = useMemo(
     () =>
-      new THREE.ShaderMaterial({
+      withSceneIntro(new THREE.ShaderMaterial({
         vertexShader: CANOPY_VERT,
         fragmentShader: CANOPY_FRAG,
         transparent: true,
@@ -102,9 +103,9 @@ export function VectorCanopy() {
           uDimRest: { value: 0 },
           uClock: { value: 0 },
           uFootprint: { value: LEGACY_FX ? 1 : 0.8 },
-          uAlphaCut: { value: LEGACY_FX ? 0 : 0.012 },
+          uAlphaCut: { value: LEGACY_FX ? 0 : 0.08 },
         },
-      }),
+      })),
     [],
   );
 

@@ -56,6 +56,8 @@ export function EssenceFlow() {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('aPhase', new THREE.BufferAttribute(phase, 1));
+    g.computeBoundingSphere();
+    if (g.boundingSphere) g.boundingSphere.radius += 15;
     return g;
   }, [topK, vectors]);
   const material = useMemo(
@@ -87,5 +89,5 @@ export function EssenceFlow() {
   });
 
   if (!geometry || !anchor) return null;
-  return <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} />;
+  return <points geometry={geometry} material={material} raycast={() => null} />;
 }

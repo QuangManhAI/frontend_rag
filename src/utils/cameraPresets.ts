@@ -23,7 +23,8 @@ export function getPreset(mode: CameraMode, ctx: PresetContext = {}): CameraPres
   const widen = ctx.aspect !== undefined && ctx.aspect < 1 ? 1.45 : 1;
   switch (mode) {
     case 'overview': {
-      const d = 205 * widen;
+      // Far enough that the whole canopy and the knowledge blocks sit comfortably in frame.
+      const d = 228 * widen;
       const pitch = (30 * Math.PI) / 180;
       const target: Vec3 = [0, 48, 0];
       return { position: [d * Math.cos(pitch) * 0.5, target[1] + d * Math.sin(pitch), d * Math.cos(pitch) * 0.87], target };

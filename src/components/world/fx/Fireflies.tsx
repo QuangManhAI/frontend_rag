@@ -5,6 +5,7 @@ import { mulberry32 } from '../../../api/mock/rng';
 import { useUi } from '../../../store/uiStore';
 import { useTheme } from '../../../theme/useTheme';
 import { glowBlending, pointScale, SOFT_POINT_FRAG, toColor } from '../materials';
+import { withSceneIntro } from '../sceneIntro';
 
 const VERT = /* glsl */ `
   attribute float aPhase;
@@ -49,17 +50,19 @@ export function Fireflies({ count = 320 }: { count?: number }) {
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('aPhase', new THREE.BufferAttribute(phase, 1));
     g.setAttribute('aSpeed', new THREE.BufferAttribute(speed, 1));
+    g.computeBoundingSphere();
+    if (g.boundingSphere) g.boundingSphere.radius += 10;
     return g;
   }, [count]);
   const material = useMemo(
     () =>
-      new THREE.ShaderMaterial({
+      withSceneIntro(new THREE.ShaderMaterial({
         vertexShader: VERT,
         fragmentShader: SOFT_POINT_FRAG,
         transparent: true,
         depthWrite: false,
         uniforms: { uTime: { value: 0 }, uScale: { value: 500 }, uPixelRatio: { value: 1 }, uColor: { value: new THREE.Color() } },
-      }),
+      })),
     [],
   );
 
@@ -79,5 +82,5 @@ export function Fireflies({ count = 320 }: { count?: number }) {
     material.uniforms.uPixelRatio.value = gl.getPixelRatio();
   });
 
-  return <points geometry={geometry} material={material} frustumCulled={false} />;
+  return <points geometry={geometry} material={material}  />;
 }

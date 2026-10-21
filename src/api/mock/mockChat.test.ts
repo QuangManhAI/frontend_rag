@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RagStreamEvent } from '../../types/rag';
 import type { WorldData } from '../../types/world';
 import { parseVectors } from '../vectorParser';
-import { buildChatScript, buildIndex, COMPARE_SIZE, mockPaperDetail, type MockContext } from './mockChat';
+import { buildChatScript, buildIndex, mockPaperDetail, type MockContext } from './mockChat';
 import { generateMockWorld } from './mockWorld';
 
 const raw = generateMockWorld(7, { vectorCount: 8000 });
@@ -40,7 +40,8 @@ describe('mockChat', () => {
 
   it('compare vectors belong to chosen twigs, sorted by score desc', () => {
     const twigs = new Set(route.steps.find((s) => s.depth === 2)?.chosen);
-    expect(compare.candidates.length).toBe(COMPARE_SIZE);
+    expect(compare.candidates.length).toBe(5);
+    expect(find(events('x', 8), 'compare').candidates).toHaveLength(8);
     compare.candidates.forEach((c, i) => {
       const idx = ctx.indexByPaperId.get(c.paper_id);
       expect(idx).toBeDefined();

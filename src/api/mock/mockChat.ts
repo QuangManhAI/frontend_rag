@@ -15,8 +15,6 @@ export interface ScriptedEvent {
   event: RagStreamEvent;
 }
 
-export const COMPARE_SIZE = 30;
-
 export function buildIndex(ids: readonly string[]): Map<string, number> {
   const m = new Map<string, number>();
   ids.forEach((id, i) => m.set(id, i));
@@ -131,7 +129,7 @@ const round3 = (x: number) => Math.round(x * 1000) / 1000;
 /**
  * Full event script for one question, consistent with the mock world:
  * route uses real nodes, compare holds vectors from chosen twigs (score desc),
- * grounded chunks are the top_k of compare, citations include one paper NOT in context.
+ * compare holds top_k vectors (one comparing stop each), grounded chunks come from them, citations include one paper NOT in context.
  */
 export function buildChatScript(req: RagRequest, ctx: MockContext): ScriptedEvent[] {
   const { world } = ctx;
@@ -187,7 +185,7 @@ export function buildChatScript(req: RagRequest, ctx: MockContext): ScriptedEven
     pool.push({ i, s: 0.46 + (v.categories[i] === aff ? 0.2 : 0) + h * 0.3 });
   }
   pool.sort((a, b) => b.s - a.s);
-  const compare: CompareCandidate[] = pool.slice(0, COMPARE_SIZE).map((p) => ({ paper_id: world.vectorIds[p.i], score: round3(Math.min(0.97, p.s)) }));
+  const compare: CompareCandidate[] = pool.slice(0, topK).map((p) => ({ paper_id: world.vectorIds[p.i], score: round3(Math.min(0.97, p.s)) }));
   out.push({ delayMs: phaseGap(), event: { type: 'phase', phase: 'comparing' } });
   out.push({ delayMs: 40, event: { type: 'compare', candidates: compare } });
 
