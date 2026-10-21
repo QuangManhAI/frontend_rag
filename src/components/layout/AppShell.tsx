@@ -13,7 +13,9 @@ import { LoadingTree } from './LoadingTree';
 import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
 
-const WorldCanvas = lazy(() => import('../world/WorldCanvas'));
+// Preload WorldCanvas chunk in parallel during initial paint
+const worldCanvasPromise = import('../world/WorldCanvas');
+const WorldCanvas = lazy(() => worldCanvasPromise);
 
 function useIsMobile(): boolean {
   const query = '(max-width: 767px)';

@@ -78,8 +78,8 @@ export class HttpError extends Error {
 
 /** Categories, ground, tree, vectors.bin and vector ids, fetched in parallel. */
 export async function loadWorld(signal?: AbortSignal): Promise<WorldData> {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   if (MOCK_WORLD) {
-    await sleep(400, signal);
     return getMockContext().world;
   }
   const [categories, ground, tree, buffer, vectorIds] = await Promise.all([

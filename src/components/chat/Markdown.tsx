@@ -3,6 +3,7 @@ import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown'
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import 'katex/dist/katex.min.css';
 import type { CitationCheck } from '../../types/rag';
 import type { FocusContext } from '../../store/uiStore';
 import { remarkCitations } from '../../utils/remarkCitations';
