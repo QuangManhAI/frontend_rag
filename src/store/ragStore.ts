@@ -7,6 +7,7 @@ import { useUi } from './uiStore';
 import { useWorld } from './worldStore';
 import { useSessionStore } from './sessionStore';
 import { uuidv7 } from '../utils/uuid';
+import { chatDb } from '../db/chatDb';
 
 export interface ChatMessage {
   id: string;
@@ -159,6 +160,7 @@ export const useRag = create<RagState>((set, get) => {
       const sessionId = await useSessionStore.getState().createOrGetSession(query);
       if (ctrl.signal.aborted) return;
 
+      const session = await chatDb.sessions.get(sessionId);
       const req: RagRequest = {
         query,
         top_k: st.top_k,
@@ -166,12 +168,15 @@ export const useRag = create<RagState>((set, get) => {
         use_authority_boost: st.use_authority_boost,
         expand_query: st.expand_query,
         ...(st.category ? { category: st.category } : {}),
-        session_id: sessionId,
+        ...(session?.synced ? { session_id: sessionId } : {}),
       };
 
       try {
         for await (const ev of chatEvents(req, ctrl.signal)) {
           if (controller !== ctrl) return;
+          if (ev.type === 'done' && ev.session_id) {
+            await useSessionStore.getState().confirmBackendSession(sessionId, ev.session_id);
+          }
           dispatch(runId, ev);
         }
       } catch (err) {
@@ -186,10 +191,11 @@ export const useRag = create<RagState>((set, get) => {
         const finalS = get();
         const userMsg = finalS.messages.find((m) => m.id === userMsgId);
         const assistantMsg = finalS.messages.find((m) => m.id === assistantMsgId);
-        if (userMsg && assistantMsg && sessionId) {
+        const targetSessionId = useSessionStore.getState().currentSessionId || sessionId;
+        if (userMsg && assistantMsg && targetSessionId) {
           const finalStatus = assistantMsg.status === 'streaming' ? 'stopped' : assistantMsg.status;
           void useSessionStore.getState().saveExchangeToDb(
-            sessionId,
+            targetSessionId,
             { id: userMsg.id, content: userMsg.content, created_at: new Date().toISOString() },
             {
               id: assistantMsg.id,

@@ -34,6 +34,7 @@ interface SessionState {
       created_at: string;
     },
   ) => Promise<void>;
+  confirmBackendSession: (localId: string, backendId: string) => Promise<void>;
   checkBackendHealth: () => Promise<boolean>;
 }
 
@@ -245,34 +246,8 @@ export const useSessionStore = create<SessionState>()(
 
         const title = firstQuery.trim().slice(0, 48) || 'Đoạn chat mới';
         const now = new Date().toISOString();
-        let sessionId = uuidv7();
-        let synced = false;
-
-        // Try backend create if online & authenticated
-        const token = useAuth.getState().accessToken;
+        const sessionId = uuidv7();
         const user = useAuth.getState().user;
-        if (token && !USE_MOCK && !get().isOffline) {
-          try {
-            const res = await fetch(`${API_BASE}/chat-sessions`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ title }),
-              signal: AbortSignal.timeout(3000),
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data.id) {
-                sessionId = data.id;
-                synced = true;
-              }
-            }
-          } catch (err) {
-            console.warn('[sessionStore] Backend session create failed, using local offline session:', err);
-          }
-        }
 
         const newSession: LocalChatSession = {
           id: sessionId,
@@ -282,7 +257,7 @@ export const useSessionStore = create<SessionState>()(
           updated_at: now,
           last_message_at: now,
           message_count: 0,
-          synced,
+          synced: false,
         };
 
         await chatDb.sessions.put(newSession);
@@ -293,6 +268,52 @@ export const useSessionStore = create<SessionState>()(
         });
 
         return sessionId;
+      },
+
+      confirmBackendSession: async (localId: string, backendId: string) => {
+        if (!backendId) return;
+        const session = await chatDb.sessions.get(localId);
+        if (!session) return;
+
+        const user = useAuth.getState().user;
+        const token = useAuth.getState().accessToken;
+
+        if (localId !== backendId) {
+          // 1. Migrate local messages to the backend session id
+          const localMsgs = await chatDb.messages.where('sessionId').equals(localId).toArray();
+          for (const m of localMsgs) {
+            await chatDb.messages.delete(m.id);
+            await chatDb.messages.put({ ...m, sessionId: backendId });
+          }
+          // 2. Replace local session with confirmed backend session
+          await chatDb.sessions.delete(localId);
+          await chatDb.sessions.put({
+            ...session,
+            id: backendId,
+            userId: user?.id ?? session.userId,
+            synced: true,
+          });
+          set((s) => ({
+            currentSessionId: s.currentSessionId === localId ? backendId : s.currentSessionId,
+          }));
+        } else {
+          await chatDb.sessions.update(backendId, { synced: true });
+        }
+
+        const updatedSessions = await chatDb.sessions.orderBy('last_message_at').reverse().toArray();
+        set({ sessions: updatedSessions });
+
+        // 3. Sync prompt title to backend via PATCH /chat-sessions/:id
+        if (token && !USE_MOCK && session.title) {
+          fetch(`${API_BASE}/chat-sessions/${backendId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title: session.title }),
+          }).catch((err) => console.warn('[sessionStore] Remote title sync failed:', err));
+        }
       },
 
       saveExchangeToDb: async (sessionId, userMsg, assistantMsg) => {
