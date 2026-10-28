@@ -8,6 +8,7 @@ export interface RagRequest {
   category?: string;
   use_authority_boost?: boolean;
   expand_query?: boolean;
+  session_id?: string;
 }
 
 /** A chunk retrieved as context for the answer, with real backend scores. */
