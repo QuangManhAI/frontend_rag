@@ -23,10 +23,10 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
   const sessions = useSessionStore((s) => s.sessions);
   const currentSessionId = useSessionStore((s) => s.currentSessionId);
 
-  // Initialize Dexie cache and background sync on mount
+  // Initialize Dexie cache and background sync on mount & on auth changes
   useEffect(() => {
     void useSessionStore.getState().init();
-  }, []);
+  }, [isAuthenticated]);
 
   const activeSession = sessions.find((s) => s.id === currentSessionId);
 

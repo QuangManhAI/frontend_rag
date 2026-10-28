@@ -123,10 +123,10 @@ export const useRag = create<RagState>((set, get) => {
       const maxRunId = messages.reduce((max, m) => Math.max(max, m.runId), 0);
       set({
         messages,
-        phase: 'idle',
-        visualPhase: 'idle',
+        phase: 'done',
+        visualPhase: 'done',
         current: emptyRun(),
-        runId: maxRunId,
+        runId: maxRunId + 1,
       });
     },
 
