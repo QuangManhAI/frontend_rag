@@ -35,10 +35,12 @@ test('c. a question streams an answer, frames the best result, then pulls back a
   await expect(status).toHaveAttribute('data-visual-phase', /embedding|flying/);
   // The best result is framed with its card while "found"…
   await expect(page.getByTestId('result-card')).toBeVisible({ timeout: 60_000 });
+  // The answer is already complete by the time the card shows (D-026), so assert it rendered
+  // with citations instead of requiring it to still be growing.
   const answer = page.getByTestId('assistant-message').last().locator('.md');
   await expect(answer).toBeVisible({ timeout: 60_000 });
-  const firstLen = (await answer.innerText()).length;
-  await expect.poll(async () => (await answer.innerText()).length, { timeout: 20_000 }).toBeGreaterThan(firstLen);
+  await expect(answer).not.toBeEmpty();
+  await expect(answer.locator('.cite-chip').first()).toBeVisible();
   await expect(status).toHaveAttribute('data-visual-phase', 'done', { timeout: 60_000 });
   await expect(status.getByText('Xong')).toBeVisible();
   // …then the view pulls back: the card closes, every rank (incl. #1) gets a badge, the canopy dims.

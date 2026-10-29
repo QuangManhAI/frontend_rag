@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T00:30:00+07:00
+- **Last Updated**: 2026-10-30T00:45:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -118,8 +118,8 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | `check:design` không tăng so với P15 | ✅ (alpha trắng 12 → 14 vì token mới 0.08/0.24 — sẽ gộp ở P18) |
 | typecheck, unit, build | ✅ 0 lỗi · 218/218 · build OK |
 
-## Còn tồn tại (sau P15)
-- E2E c lệch hành vi stream hiện tại (không do P15).
+## Còn tồn tại (sau P16)
+- E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.
 - `npm test` cần `NODE_OPTIONS=--no-experimental-webstorage` trên Node ≥ 25.
 - `scripts/perf-chat-benchmark.cjs` mặc định dùng Edge (`msedge`); trên macOS chạy với `BROWSER_CHANNEL=chromium`.
 
