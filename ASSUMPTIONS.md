@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T00:30:00+07:00
+- **Last Updated**: 2026-10-30T01:05:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -98,4 +98,8 @@
 - [P16] Chưa thêm alias `--radius: var(--radius-lg)` của Phụ lục A.3 — `--radius-lg` mặc định của Tailwind là 8px nên alias sẽ đổi `.glass` từ 14 → 8px; alias vào cùng lúc với thang bo góc ở P18.
 - [P16] "0 pixel" trong `test:visual` được hiểu là ≤ 600 px khác (`NOISE_PX`): đo trên Apple M4, rasterize chữ lệch tới 428 px giữa hai lần chạy giống hệt (cả GPU lẫn `--disable-gpu`); thay đổi thật nhỏ nhất quan sát được là 907 px. Thêm `retries: 1` cho riêng bộ visual vì khoảng 1/9 lần có nhãn DOM neo theo phép chiếu 3D trễ một khung (13.620 px) — thay đổi thật fail cả hai lần.
 - [P16] Ảnh mốc P15 được chụp lại (từ code P15, `git stash` phần `src/`) sau khi thêm bước chờ font hai nhịp — ảnh P15 ban đầu chụp khi glyph tiếng Việt có thể chưa tải xong.
+- [P17] HistoryDrawer dùng class mới `.surface-opaque` (`--ui-surface-strong` chồng lên `--bg`) thay vì `--ui-surface-strong` như bảng §2.3 ban đầu — α 0.9 để lộ chữ khung chat bên dưới (ảnh 06); không thêm giá trị mới, đã bổ sung vào `FE_DESIGN_SYSTEM.md` §2.3 và §4.1.
+- [P17] Hàng session đang chọn `bg-[var(--accent)]/15` → `/16` cho khớp thang pha màu §2.4 (modifier opacity của Tailwind tương đương `color-mix … 16%`).
+- [P17] Nút "Đoạn chat mới" và nút lịch sử đang bật đổi chữ trắng → `--accent-ink` (chữ tối trên nền cyan) — trắng trên `#7fe8ff` chỉ đạt ~1.4:1.
+- [P17] `--ui-border` 0.12 → 0.14 không vượt ngưỡng 600 px ở ảnh nào (viền 1px, chênh 0.02 alpha nằm dưới ngưỡng màu từng pixel của Playwright) — thay đổi có thật nhưng không đo được bằng ảnh.
 

@@ -37,7 +37,7 @@ export function HistoryDrawer() {
 
   return (
     <div
-      className="absolute inset-0 z-30 flex flex-col bg-[var(--ui-panel-bg,rgba(18,20,28,0.96))] backdrop-blur-md border-r border-[var(--ui-border)] transition-all animate-fadeIn"
+      className="absolute inset-0 z-30 flex flex-col surface-opaque backdrop-blur-md border-r border-[var(--ui-border)] transition-all animate-fadeIn"
       role="dialog"
       aria-label="Lịch sử trò chuyện"
     >
@@ -62,7 +62,7 @@ export function HistoryDrawer() {
         <button
           type="button"
           onClick={startNewChat}
-          className="btn w-full justify-center gap-2 !py-2 text-xs font-medium !bg-[var(--accent)] hover:!brightness-110 !text-white transition-all shadow-sm"
+          className="btn w-full justify-center gap-2 !py-2 text-xs font-medium !bg-[var(--accent)] hover:!brightness-110 !text-[var(--accent-ink)] transition-all shadow-sm"
         >
           <Plus size={15} />
           Đoạn chat mới
@@ -87,8 +87,8 @@ export function HistoryDrawer() {
                 key={session.id}
                 className={`group relative flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors cursor-pointer ${
                   isActive
-                    ? 'bg-[var(--accent)]/15 border border-[var(--accent)]/40 text-[var(--ink)] font-medium shadow-xs'
-                    : 'hover:bg-[var(--ui-hover,rgba(255,255,255,0.05))] text-[var(--ink-secondary,#cbd5e1)]'
+                    ? 'bg-[var(--accent)]/16 border border-[var(--accent)]/40 text-[var(--ink)] font-medium shadow-xs'
+                    : 'hover:bg-[var(--glass-fill-hover)] text-[var(--ink-muted)]'
                 }`}
                 onClick={() => {
                   if (!isConfirming) {
@@ -109,11 +109,11 @@ export function HistoryDrawer() {
                 {/* Inline Delete & 2-Step Confirmation */}
                 <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {isConfirming ? (
-                    <div className="flex items-center gap-1 bg-red-950/80 border border-red-500/50 rounded px-1.5 py-0.5 animate-fadeIn">
-                      <span className="text-[10px] text-red-300 font-semibold mr-0.5">Xóa?</span>
+                    <div className="flex items-center gap-1 bg-[color-mix(in_srgb,var(--danger)_16%,var(--ui-surface-strong))] border border-[color-mix(in_srgb,var(--danger)_40%,transparent)] rounded px-1.5 py-0.5 animate-fadeIn">
+                      <span className="text-[10px] text-[var(--danger)] font-semibold mr-0.5">Xóa?</span>
                       <button
                         type="button"
-                        className="p-1 text-red-300 hover:text-red-100 hover:bg-red-800/60 rounded"
+                        className="p-1 text-[var(--danger)] hover:text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--danger)_24%,transparent)] rounded"
                         title="Xác nhận xoá"
                         onClick={() => {
                           setConfirmDeleteId(null);
@@ -124,7 +124,7 @@ export function HistoryDrawer() {
                       </button>
                       <button
                         type="button"
-                        className="p-1 text-gray-400 hover:text-gray-200 hover:bg-gray-700/60 rounded"
+                        className="p-1 text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-fill-hover)] rounded"
                         title="Huỷ"
                         onClick={() => setConfirmDeleteId(null)}
                       >
@@ -134,7 +134,7 @@ export function HistoryDrawer() {
                   ) : (
                     <button
                       type="button"
-                      className="opacity-0 group-hover:opacity-100 p-1 text-[var(--ink-faint)] hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-[var(--ink-faint)] hover:text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] rounded transition-all"
                       title="Xoá đoạn chat"
                       aria-label="Xoá đoạn chat"
                       onClick={() => setConfirmDeleteId(session.id)}

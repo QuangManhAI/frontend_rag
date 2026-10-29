@@ -20,11 +20,11 @@ export interface ThemeTokens {
   trunk: string;
   trunkVein: string;
   veinIntensity: number;
-  /** Strength of the vector halo; outline drawn around points (light theme). */
+  /** Strength of the vector halo; optional dark outline drawn around points. */
   vectorGlow: number;
   vectorOutline: string;
   vectorOutlineStrength: number;
-  /** Additive blending looks right on dark backgrounds only. */
+  /** Additive blending for glows (the shipped theme is dark). */
   additiveGlow: boolean;
   queryOrb: string;
   queryOrbHalo: string;
@@ -60,7 +60,7 @@ export interface ThemeTokens {
   glassLowlight: string;
   /** Border on hover and under prefers-contrast: more. */
   glassStrokeStrong: string;
-  /** 12 category colors (neon in dark, pastel in light) + fallback. */
+  /** 12 neon category colors + fallback. */
   categoryPalette: readonly string[];
   categoryOther: string;
 }
@@ -96,7 +96,7 @@ export const darkTheme: ThemeTokens = {
   sun: 0.9,
   uiSurface: '#120f2499',
   uiSurfaceStrong: '#151129e6',
-  uiBorder: '#ffffff1f',
+  uiBorder: '#ffffff24', // 0.14 — also the glass edge (FE_DESIGN_SYSTEM §2.2)
   uiInk: '#ece9ff',
   uiInkMuted: '#a29cc4',
   uiAccent: '#7fe8ff',

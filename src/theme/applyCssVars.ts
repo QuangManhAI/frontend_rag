@@ -19,6 +19,7 @@ const CSS_VARS: ReadonlyArray<readonly [string, keyof ThemeTokens]> = [
   ['--orb-halo', 'queryOrbHalo'],
   ['--trunk-vein', 'trunkVein'],
   ['--cat-other', 'categoryOther'],
+  ['--ink-faint', 'uiInkFaint'],
   ['--glass-tint', 'glassTint'],
   ['--glass-fill', 'glassFill'],
   ['--glass-fill-hover', 'glassFillHover'],

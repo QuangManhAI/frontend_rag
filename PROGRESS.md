@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T00:45:00+07:00
+- **Last Updated**: 2026-10-30T01:05:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -117,6 +117,18 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Không đổi pixel (`test:visual`, ngưỡng nhiễu 600 px) | ✅ 8/8 hai lần liên tiếp |
 | `check:design` không tăng so với P15 | ✅ (alpha trắng 12 → 14 vì token mới 0.08/0.24 — sẽ gộp ở P18) |
 | typecheck, unit, build | ✅ 0 lỗi · 218/218 · build OK |
+
+## P17 — Sửa lỗi lệch token (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `check:design:strict --rules=unknown-var,var-fallback,tw-palette,raw-color` | ✅ 0 (trước: 10 · 4 · 8 · 4 dòng) |
+| `--ink-faint` được định nghĩa; `--ink-secondary`/`--ui-hover`/`--ui-panel-bg` thay bằng token có sẵn; màu Tailwind (`red/amber/gray/white`) trong ChatPanel, HistoryDrawer → `--danger`/`--warn`/`--ink*`/`--accent-ink` | ✅ |
+| `.glass` dùng `--glass-tint`, `--glass-stroke`, `--shadow-panel`, `--glass-edge` (giá trị y hệt) | ✅ `css-raw-color` 20 → 16 |
+| `uiBorder` 0.12 → 0.14 (Phụ lục A #1, người duyệt đồng ý) | ✅ dưới ngưỡng phát hiện ở mọi ảnh |
+| Xoá CSS/comment theme sáng | ✅ |
+| Chữ đọc được: "Xóa?" danger trên danger 16%, badge offline warn trên warn 16%, ink-muted trên hover fill | ✅ `contrast.test.ts` ≥ 4.5 |
+| Ảnh: chỉ `06-history-drawer` đổi (1.430 px) | ✅ người duyệt chấp nhận, baseline 06 đã cập nhật |
+| Unit, E2E, typecheck | ✅ 221/221 · 6/6 · 0 lỗi |
 
 ## Còn tồn tại (sau P16)
 - E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.

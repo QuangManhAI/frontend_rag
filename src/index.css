@@ -10,7 +10,7 @@
   --bg-horizon: #24123f;
   --ui-surface: #120f2499;
   --ui-surface-strong: #151129e6;
-  --ui-border: #ffffff1f;
+  --ui-border: #ffffff24;
   --ink: #ece9ff;
   --ink-muted: #a29cc4;
   --accent: #7fe8ff;
@@ -21,6 +21,7 @@
   --orb: #e6fbff;
   --orb-halo: #7fe8ff;
   --radius: 14px;
+  --ink-faint: #64607e;
   --glass-tint: #0c0a183d;
   --glass-fill: #ffffff0a;
   --glass-fill-hover: #ffffff14;
@@ -98,21 +99,20 @@ body {
 
 /* ---------- glass surfaces ---------- */
 .glass {
-  background: rgba(12, 10, 24, 0.24);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--glass-tint);
+  border: 1px solid var(--glass-stroke);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   border-radius: var(--radius);
-  box-shadow:
-    0 12px 36px -12px rgb(0 0 0 / 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-}
-[data-theme="light"] .glass {
-  box-shadow: 0 10px 40px -16px rgb(60 40 120 / 0.25);
+  box-shadow: var(--shadow-panel), var(--glass-edge);
 }
 .glass-strong {
   background: var(--ui-surface-strong);
+}
+/* Strong surface that covers text (drawers over the chat): stacked on the page color so
+   nothing underneath shows through (FE_DESIGN_SYSTEM.md §4.1). */
+.surface-opaque {
+  background: linear-gradient(var(--ui-surface-strong), var(--ui-surface-strong)), var(--bg);
 }
 
 .btn {
@@ -482,9 +482,6 @@ body {
 }
 .query-text.dissolve {
   animation: dissolve 1.5s ease-in forwards;
-}
-[data-theme="light"] .query-text {
-  text-shadow: 0 0 12px var(--ui-surface-strong);
 }
 @keyframes dissolve {
   0% {

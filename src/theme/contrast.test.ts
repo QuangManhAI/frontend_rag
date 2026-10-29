@@ -38,3 +38,21 @@ describe('contrast', () => {
     expect(contrastRatio(darkTheme.uiAccentInk, darkTheme.uiAccent)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe('P17 color fixes stay legible', () => {
+  const panel = composite(darkTheme.uiSurfaceStrong, darkTheme.bg);
+  /** color-mix(in srgb, <c> <pct>%, <base>) for an opaque base. */
+  const mix = (c: string, pct: number, base: string) => composite(`${c}${Math.round((pct / 100) * 255).toString(16).padStart(2, '0')}`, base);
+
+  it('"Xóa?" confirmation: danger text on danger 16% over the strong surface', () => {
+    expect(contrastRatio(darkTheme.uiDanger, mix(darkTheme.uiDanger, 16, panel))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('offline badge: warn text on warn 16% over the glass panel', () => {
+    expect(contrastRatio(darkTheme.uiWarn, mix(darkTheme.uiWarn, 16, panel))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('history rows: muted ink on the hover fill', () => {
+    expect(contrastRatio(darkTheme.uiInkMuted, composite(darkTheme.glassFillHover, panel))).toBeGreaterThanOrEqual(4.5);
+  });
+});

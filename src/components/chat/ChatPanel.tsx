@@ -36,7 +36,7 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
         <button
           type="button"
           className={`btn btn-icon !p-1.5 transition-colors ${
-            isHistoryOpen ? '!bg-[var(--accent)] !text-white' : 'text-[var(--ink-secondary,#cbd5e1)] hover:text-[var(--ink)]'
+            isHistoryOpen ? '!bg-[var(--accent)] !text-[var(--accent-ink)]' : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
           }`}
           onClick={() => toggleHistory()}
           title="Lịch sử trò chuyện"
@@ -47,7 +47,7 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
 
         <button
           type="button"
-          className="btn btn-icon !p-1.5 text-[var(--ink-secondary,#cbd5e1)] hover:text-[var(--ink)]"
+          className="btn btn-icon !p-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)]"
           onClick={startNewChat}
           title="Đoạn chat mới"
           aria-label="Đoạn chat mới"
@@ -63,7 +63,7 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
           {USE_MOCK && <span className="tag mono !text-[10px] !py-0 !px-1">mock</span>}
           {isOffline && !USE_MOCK && (
             <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[color-mix(in_srgb,var(--warn)_16%,transparent)] text-[var(--warn)] border border-[color-mix(in_srgb,var(--warn)_40%,transparent)]"
               title="Máy chủ ngoại tuyến. Bạn vẫn có thể xem toàn bộ lịch sử trò chuyện đã lưu."
             >
               <WifiOff size={10} />
