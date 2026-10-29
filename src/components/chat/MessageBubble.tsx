@@ -66,10 +66,16 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
   const visual = useRag((s) => s.visualPhase);
   const isCurrent = message.runId === runId;
   // Text appears once the animation reaches "generating", so chat and 3D stay in sync.
-  const isFinished = message.status === 'done' || message.status === 'stopped' || message.status === 'error';
-  const gated = isCurrent && !isFinished && phaseIndex(visual) >= 0 && phaseIndex(visual) < phaseIndex('generating');
-  const streaming = isCurrent && !isFinished && (message.status === 'streaming' || visual === 'generating');
-  const text = useReveal(message.content, isFinished || !isCurrent ? 'full' : gated ? 'hidden' : 'reveal');
+  const isFinished =
+    !isCurrent ||
+    visual === 'done' ||
+    visual === 'idle' ||
+    visual === 'error' ||
+    message.status === 'stopped' ||
+    message.status === 'error';
+  const gated = !isFinished && phaseIndex(visual) >= 0 && phaseIndex(visual) < phaseIndex('generating');
+  const streaming = !isFinished && (message.status === 'streaming' || visual === 'generating');
+  const text = useReveal(message.content, isFinished ? 'full' : gated ? 'hidden' : 'reveal');
   const context: FocusContext = useMemo(
     () => ({ citationChecks: message.citationChecks ?? [], grounded: message.grounded_chunks ?? [] }),
     [message.citationChecks, message.grounded_chunks],

@@ -3,7 +3,20 @@ import { expect, test, type Page } from '@playwright/test';
 // Small world + no bloom keeps software-GL CI runs fast; the flow is identical.
 const APP = '/?vectors=8000&nofx';
 
+const MOCK_AUTH_STATE = JSON.stringify({
+  state: {
+    user: { id: 'e2e-user', email: 'e2e@rag.local', display_name: 'E2E Researcher', roles: ['user'] },
+    accessToken: 'e2e-mock-access-token',
+    refreshToken: 'e2e-mock-refresh-token',
+    isAuthenticated: true,
+  },
+  version: 0,
+});
+
 async function openWorld(page: Page) {
+  await page.addInitScript((authJson) => {
+    window.localStorage.setItem('rag-auth-storage', authJson);
+  }, MOCK_AUTH_STATE);
   await page.goto(APP);
   await expect(page.getByTestId('category-legend')).toBeVisible({ timeout: 30_000 });
 }
