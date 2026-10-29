@@ -19,6 +19,13 @@ const CSS_VARS: ReadonlyArray<readonly [string, keyof ThemeTokens]> = [
   ['--orb-halo', 'queryOrbHalo'],
   ['--trunk-vein', 'trunkVein'],
   ['--cat-other', 'categoryOther'],
+  ['--glass-tint', 'glassTint'],
+  ['--glass-fill', 'glassFill'],
+  ['--glass-fill-hover', 'glassFillHover'],
+  ['--glass-highlight', 'glassHighlight'],
+  ['--glass-highlight-strong', 'glassHighlightStrong'],
+  ['--glass-lowlight', 'glassLowlight'],
+  ['--glass-stroke-strong', 'glassStrokeStrong'],
 ];
 
 /** Write theme tokens to :root as CSS variables and stamp data-theme. */

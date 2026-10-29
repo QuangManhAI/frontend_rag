@@ -26,6 +26,30 @@ describe('theme tokens', () => {
     expect(el.dataset.theme).toBe('dark');
   });
 
+  it('glass tokens are #rrggbbaa and reach the DOM (FE_DESIGN_SYSTEM §2.2)', async () => {
+    const { applyCssVars } = await import('./applyCssVars');
+    const el = document.createElement('div');
+    applyCssVars(darkTheme, el);
+    const expected: Record<string, string> = {
+      '--glass-tint': '#0c0a183d',
+      '--glass-fill': '#ffffff0a',
+      '--glass-fill-hover': '#ffffff14',
+      '--glass-highlight': '#ffffff29',
+      '--glass-highlight-strong': '#ffffff3d',
+      '--glass-lowlight': '#ffffff0a',
+      '--glass-stroke-strong': '#ffffff38',
+    };
+    for (const [name, value] of Object.entries(expected)) expect(el.style.getPropertyValue(name)).toBe(value);
+    // --ink-faint is already referenced by HistoryDrawer; defining it is a visible fix → P17.
+    expect(el.style.getPropertyValue('--ink-faint')).toBe('');
+  });
+
+  it('existing UI tokens are unchanged by the design-system groundwork (P16)', () => {
+    expect(darkTheme.uiBorder).toBe('#ffffff1f');
+    expect(darkTheme.uiSurface).toBe('#120f2499');
+    expect(darkTheme.uiSurfaceStrong).toBe('#151129e6');
+  });
+
   it('useThemeSync writes the dark theme to the document', async () => {
     const { renderHook } = await import('@testing-library/react');
     const { useThemeSync, useTheme } = await import('./useTheme');

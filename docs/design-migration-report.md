@@ -6,7 +6,7 @@
 - **Detailed Plan**: §1 Bảng tổng; §2 Cách đo; §3 Chi tiết từng prompt.
 - **References**: [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE_DESIGN_AUDIT.md`](../../docs/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
 - **Created**: 2026-10-29T23:55:00+07:00
-- **Last Updated**: 2026-10-29T23:55:00+07:00
+- **Last Updated**: 2026-10-30T00:30:00+07:00
 
 [STATUS: IN_PROGRESS]
 
@@ -19,7 +19,8 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 
 | Prompt | Ngày | check-design (14 rule) | STATS radius · blur · alpha trắng · cỡ chữ | Visual diff | Frame median (p95) | E2E | Quyết định |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| **P15** (baseline) | 2026-10-29 | 4 · 8 · 26 · 13 · 4 · 10 · 5 · 19 · 20 · 11 · 18 · 20 · 21 · 8 | 8 · 5 · 12 · 19 | baseline 8 ảnh (ổn định 2/2 lần) | 2.2 ms (3.4 ms) | 5/6 (c fail sẵn có) | chờ duyệt |
+| **P15** (baseline) | 2026-10-29 | 4 · 8 · 26 · 13 · 4 · 10 · 5 · 19 · 20 · 11 · 18 · 20 · 21 · 8 | 8 · 5 · 12 · 19 | baseline 8 ảnh (chụp lại ở P16 với bước chờ font; ổn định 5/5) | 2.2 ms (3.4 ms) | 5/6 (c fail sẵn có) | chờ duyệt |
+| **P16** token | 2026-10-30 | không đổi | 8 · 5 · **14** · 19 (thêm 0.08, 0.24) | **0** (≤ 600 px nhiễu, 2/2) | không chạm 3D/kính — không đo | 5/6 (không đổi) | chờ duyệt |
 
 ---
 
@@ -28,7 +29,7 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | Đại lượng | Lệnh | Điều kiện |
 | :-- | :-- | :-- |
 | Vi phạm + STATS | `npm run check:design` | Toàn bộ `src/**/*.tsx` (trừ test, `PerfHUD.tsx`) và `src/index.css` |
-| Ảnh giao diện | `VISUAL_THRESHOLD=<ngưỡng> npm run test:visual` | Mock, `?vectors=8000&nofx`, reduce motion, 1440×900 (mobile 390×844), canvas + PerfHUD bị ẩn (`e2e/visual.css`), `pipeline-status` bị che |
+| Ảnh giao diện | `VISUAL_THRESHOLD=<tỷ lệ> npm run test:visual` (bỏ trống = "không đổi": ≤ 600 px nhiễu) | Mock, `?vectors=8000&nofx`, reduce motion, 1440×900 (mobile 390×844), canvas + PerfHUD bị ẩn (`e2e/visual.css`), `pipeline-status` bị che |
 | Hiệu năng | `BROWSER_CHANNEL=chromium node scripts/perf-chat-benchmark.cjs 'http://localhost:5174/?vectors=150000&bench&perf'` | Dev server mock (`VITE_USE_MOCK=true npx vite --port 5174`), headless Chromium không vsync, Apple M4, 3 lần, lấy median |
 | Unit test | `NODE_OPTIONS=--no-experimental-webstorage npm test -- --run` | Node 26 (xem `ASSUMPTIONS.md` [P15]) |
 
@@ -48,3 +49,9 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
   - cỡ chữ: 10 · 10.4 · 10.88 · 11 · 11.2 · 11.52 · 12 · 12.48 · 12.8 · 13 · 13.12 · 13.28 · 13.6 · 14 · 14.4 · 16 · 22 px + 0.72em · 0.85em
 - **Ảnh baseline:** `e2e/visual.spec.ts-snapshots/` — 01 overview, 02 chat thu gọn, 03 trả lời xong, 04 PaperPanel (verified), 05 Cài đặt, 06 Lịch sử, 07 Đăng nhập, 08 mobile.
 - **Phát hiện ngoài phạm vi:** E2E c fail sẵn có; unit test cần cờ Node trên Node ≥ 25; benchmark mặc định dùng Edge.
+
+### P16 — Nền tảng token
+
+- **Ngưỡng nhiễu ảnh:** hai lần chạy giống hệt lệch tới 428 px (chữ); định nghĩa `--ink-faint` (thay đổi thật nhỏ nhất) lệch 907 px → `NOISE_PX = 600`. Hiếm (≈1/9) có nhãn neo 3D trễ một khung (13.620 px) → `retries: 1`.
+- **`--ink-faint` hoãn sang P17** (xem `ASSUMPTIONS.md` [P16]).
+

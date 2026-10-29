@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-29T23:55:00+07:00
+- **Last Updated**: 2026-10-30T00:30:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -107,6 +107,16 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Unit test | ⚠️ 200/210 trên Node 26 (lỗi môi trường `localStorage`, xem ASSUMPTIONS [P15]); ✅ 210/210 với `NODE_OPTIONS=--no-experimental-webstorage` |
 | E2E `knowledge-tree.spec.ts` | ⚠️ 5/6. a, b, f pass; d, e pass sau khi E2E nạp sẵn user (form đăng nhập che ô chat từ `3fdb69e`); **c fail sẵn có**: kỳ vọng câu trả lời còn đang chạy chữ khi ResultCard hiện, nhưng câu trả lời đã đủ (1067 ký tự) — chờ người duyệt quyết định |
 | Mốc hiệu năng `test:perf` (dev, headless Chromium, 150k) | median frame 2.1 / 2.2 / 2.2 ms; p95 3.4–3.6 ms; long task 4–6 (lúc tải + stream) |
+
+## P16 — Nền tảng token (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Token mới: `glassTint/Fill/FillHover/Highlight/HighlightStrong/Lowlight/StrokeStrong`, `uiInkFaint`; CSS alias `--glass-stroke`, `--glass-saturate`, `--glass-edge(-strong)`, `--shadow-panel`, `--glow-accent`, `--dur-*`, `--lg-*` (Cấp 1, tắt) | ✅ |
+| Class Tailwind mới `text-micro/caption/control/display`, `ease-standard/spring/scene` được sinh từ `src/index.css` | ✅ (kiểm bằng `@tailwindcss/node`) |
+| `contrastRatio` (WCAG): ink ≥ 7, ink-muted ≥ 4.5, ink-faint ∈ [3, 4.5), accent-ink trên accent ≥ 4.5 | ✅ `contrast.test.ts` 6/6 |
+| Không đổi pixel (`test:visual`, ngưỡng nhiễu 600 px) | ✅ 8/8 hai lần liên tiếp |
+| `check:design` không tăng so với P15 | ✅ (alpha trắng 12 → 14 vì token mới 0.08/0.24 — sẽ gộp ở P18) |
+| typecheck, unit, build | ✅ 0 lỗi · 218/218 · build OK |
 
 ## Còn tồn tại (sau P15)
 - E2E c lệch hành vi stream hiện tại (không do P15).

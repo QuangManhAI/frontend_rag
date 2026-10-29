@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-29T23:55:00+07:00
+- **Last Updated**: 2026-10-30T00:30:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -94,4 +94,8 @@
 - [P15] Ảnh `02` là "chat thu gọn" (không phải "chat trống" như pseudocode 15.2) vì cột chat mở sẵn khi tải trang — trạng thái đó đã có ở `01`.
 - [P15] `check-design` coi `var(--x, fallback)` là vi phạm chỉ khi `--x` không tồn tại hoặc fallback là màu thô — `var(--lift, 0px)`, `var(--cat-1, var(--accent))` là mặc định hợp lệ. Thêm 2 rule ngoài pseudocode: `css-raw-duration`, `css-raw-easing` (Design System §7, cần cho P18); animation lặp (`infinite`) và `0.001ms` của reduced-motion được miễn.
 - [P15] `check-design` đếm cả `text-[0.65rem]`, `text-[0.7rem]`, `text-[0.78rem]`, `text-[0.8rem]`, `text-[0.82rem]` (không có trong Phụ lục B.4 của Design System) — P18 cần bổ sung quy đổi cho các giá trị này trước khi làm.
+- [P16] `uiInkFaint` có trong `tokens.ts` nhưng **chưa** xuất ra `--ink-faint` (applyCssVars, `:root`) — `HistoryDrawer` đã gọi `var(--ink-faint)` từ trước; định nghĩa biến làm đổi màu chữ (907 px trong ảnh 06), trái yêu cầu "0 pixel" của P16 → chuyển sang P17 (bước có người duyệt ảnh).
+- [P16] Chưa thêm alias `--radius: var(--radius-lg)` của Phụ lục A.3 — `--radius-lg` mặc định của Tailwind là 8px nên alias sẽ đổi `.glass` từ 14 → 8px; alias vào cùng lúc với thang bo góc ở P18.
+- [P16] "0 pixel" trong `test:visual` được hiểu là ≤ 600 px khác (`NOISE_PX`): đo trên Apple M4, rasterize chữ lệch tới 428 px giữa hai lần chạy giống hệt (cả GPU lẫn `--disable-gpu`); thay đổi thật nhỏ nhất quan sát được là 907 px. Thêm `retries: 1` cho riêng bộ visual vì khoảng 1/9 lần có nhãn DOM neo theo phép chiếu 3D trễ một khung (13.620 px) — thay đổi thật fail cả hai lần.
+- [P16] Ảnh mốc P15 được chụp lại (từ code P15, `git stash` phần `src/`) sau khi thêm bước chờ font hai nhịp — ảnh P15 ban đầu chụp khi glyph tiếng Việt có thể chưa tải xong.
 

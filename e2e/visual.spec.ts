@@ -10,6 +10,16 @@ import { APP, askAndFinish, openWorld, seedAuth, seedReducedMotion } from './hel
  */
 const THRESHOLD = Number(process.env.VISUAL_THRESHOLD ?? 0);
 
+/**
+ * Text rasterisation flips up to ~430 anti-aliased glyph pixels between identical runs (GPU or CPU),
+ * so "no visual change" means at most NOISE_PX differing pixels (largest flake seen: 428; smallest real change seen — defining --ink-faint in HistoryDrawer: 907).
+ */
+const NOISE_PX = 600;
+
+// Rarely (~1 in 9 runs) a DOM label anchored to the 3D projection lands a frame late; a real
+// change fails both attempts, a flake passes the retry.
+test.describe.configure({ retries: 1 });
+
 /** Hides the WebGL canvas and PerfHUD during the shot (a mask would paint over the whole UI). */
 const STYLE = fileURLToPath(new URL('./visual.css', import.meta.url));
 
@@ -19,13 +29,18 @@ function volatile(page: Page): Locator[] {
 }
 
 async function shoot(page: Page, name: string): Promise<void> {
-  await page.evaluate(() => document.fonts.ready);
+  // Vietnamese glyphs live in a separate webfont subset that may start loading after layout.
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await document.fonts.ready;
+  });
   await expect(page).toHaveScreenshot(`${name}.png`, {
     animations: 'disabled',
     caret: 'hide',
     mask: volatile(page),
     stylePath: STYLE,
-    maxDiffPixelRatio: THRESHOLD,
+    ...(THRESHOLD > 0 ? { maxDiffPixelRatio: THRESHOLD } : { maxDiffPixels: NOISE_PX }),
   });
 }
 

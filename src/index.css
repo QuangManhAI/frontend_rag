@@ -21,12 +21,59 @@
   --orb: #e6fbff;
   --orb-halo: #7fe8ff;
   --radius: 14px;
+  --glass-tint: #0c0a183d;
+  --glass-fill: #ffffff0a;
+  --glass-fill-hover: #ffffff14;
+  --glass-highlight: #ffffff29;
+  --glass-highlight-strong: #ffffff3d;
+  --glass-lowlight: #ffffff0a;
+  --glass-stroke-strong: #ffffff38;
+
+  /* semantic aliases (docs/FE_DESIGN_SYSTEM.md §4.3) */
+  --glass-stroke: var(--ui-border);
+  --glass-saturate: 1.2;
+  --glass-edge: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);
+  --glass-edge-strong: inset 0 1px 0 var(--glass-highlight-strong), inset 0 -1px 0 var(--glass-lowlight);
+  --shadow-panel: 0 12px 36px -12px rgb(0 0 0 / 0.45);
+  --glow-accent: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent);
+
+  /* motion (§7.1) */
+  --dur-press: 120ms;
+  --dur-hover: 160ms;
+  --dur-enter: 240ms;
+  --dur-reveal: 480ms;
+  --dur-scene: 1500ms; /* must match CHAT_SLIDE_S in CameraDirector */
+
+  /* Liquid Glass — level 1 defaults, all off (§10.3) */
+  --lg-refraction: 0px;
+  --lg-bezel: 0px;
+  --lg-chroma: 0px;
+  --lg-specular: 0;
+  --lg-specular-size: 60%;
+  --lg-light-x: 0;
+  --lg-light-y: -1;
+  --lg-dim: 0;
   color-scheme: dark;
 }
 
 @theme {
   --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* type — text-xs (12), text-sm (14), text-base (16) keep Tailwind defaults (§5.2) */
+  --text-micro: 10px;
+  --text-micro--line-height: 14px;
+  --text-caption: 11px;
+  --text-caption--line-height: 16px;
+  --text-control: 13px;
+  --text-control--line-height: 18px;
+  --text-display: 22px;
+  --text-display--line-height: 28px;
+
+  /* easing (§7.2) */
+  --ease-standard: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --ease-scene: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 html,
