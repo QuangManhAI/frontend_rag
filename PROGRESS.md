@@ -1,4 +1,16 @@
-# PROGRESS
+# PROGRESS.md — Nhật ký tiến độ Frontend `frontend_rag`
+
+- **Motivation/Background**: Mỗi prompt (P1–P14 trong [`../docs/prompt_fe_3d.md`](../docs/prompt_fe_3d.md), P15+ trong [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md)) phải ghi lại kết quả kiểm chứng để người duyệt dò vết.
+- **Purpose**: Bảng tiến độ theo prompt: module, kiểm chứng, kết quả, vấn đề tồn tại.
+- **Overview Pipeline**: Cập nhật cuối mỗi prompt sau khi chạy mục "Kiểm chứng".
+- **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
+- **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
+- **Created**: 2026-10-19T18:48:02+07:00
+- **Last Updated**: 2026-10-29T23:55:00+07:00
+
+[STATUS: ACTIVE]
+
+---
 
 Trạng thái: **P1–P11 xong ở chế độ mock** (chưa nối backend thật). Cập nhật 2026-10-19.
 
@@ -73,3 +85,31 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Không giật | ✅ M4, bản build 150k, 1440×900: 0–1% khung > 25 ms ở mọi giai đoạn (2 lượt đo) |
 | Sau khi tìm xong: camera về góc ban đầu, tán mờ, rank nổi bật | ✅ (E2E c: camera `overview`, `dim = 1`, có huy hiệu #1) |
 | Unit + E2E | ✅ 188/188, 6/6 |
+
+## Giai đoạn 2026-10-20 → 2026-10-28 (bổ sung từ `git log`, không có spec)
+| Chủ đề | Commit | Ghi chú |
+| :-- | :-- | :-- |
+| Hiệu năng 3D/FPS, PerfHUD | `199c14e`, `b368cc5`, `718b049`, `e8cb552`, `20026ee`, `0888b74`, `f6300f8` | Báo cáo: [`docs/perf-chat-report.md`](docs/perf-chat-report.md) |
+| Hiệu năng tải trang (LCP/FCP) | `9457e1c` | [`docs/perf-report.md`](docs/perf-report.md) |
+| TopK badge, mock chat | `181761e`, `86e72c5` | |
+| Auth "Liquid Glass" | `85b3e35` → `3fdb69e` → `5871b26` → `6fb7906` → `26fa96b` → `85962c2` | Sửa 6 lần, không có spec — xem [`../docs/FE_DESIGN_AUDIT.md`](../docs/FE_DESIGN_AUDIT.md) |
+| FPS_LOCK (thêm rồi gỡ) | `f8a483b`, `20a1c26` | |
+| tsconfig | `bc48609`, `90e5299` | |
+| Intro / loading / WorldError | `050879c`, `1ba3e20`, `538ae7f` | |
+| Chat offline (Dexie) + đồng bộ | `7762d3d`, `59f781f`, `d035b48` | [`docs/STATE_AND_STREAMING_ARCHITECTURE.md`](docs/STATE_AND_STREAMING_ARCHITECTURE.md) |
+
+## P15 — Baseline ảnh, check-design & quản trị tài liệu (2026-10-29)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Không sửa `src/` | ✅ `git diff --stat -- src/` rỗng |
+| `npm run test:visual` (8 ảnh, ngưỡng 0) ổn định 2 lần liên tiếp | ✅ 8/8, 8/8 |
+| `npm run check:design` khớp audit | ✅ unknown-var: 4 tên (`--ink-secondary`, `--ui-hover`, `--ui-panel-bg`, `--ink-faint`); STATS radius 8 · blur 5 · alpha trắng 12 · cỡ chữ 19 (audit đếm tay ~14 vì bỏ sót `text-[0.65rem]`…) |
+| Unit test | ⚠️ 200/210 trên Node 26 (lỗi môi trường `localStorage`, xem ASSUMPTIONS [P15]); ✅ 210/210 với `NODE_OPTIONS=--no-experimental-webstorage` |
+| E2E `knowledge-tree.spec.ts` | ⚠️ 5/6. a, b, f pass; d, e pass sau khi E2E nạp sẵn user (form đăng nhập che ô chat từ `3fdb69e`); **c fail sẵn có**: kỳ vọng câu trả lời còn đang chạy chữ khi ResultCard hiện, nhưng câu trả lời đã đủ (1067 ký tự) — chờ người duyệt quyết định |
+| Mốc hiệu năng `test:perf` (dev, headless Chromium, 150k) | median frame 2.1 / 2.2 / 2.2 ms; p95 3.4–3.6 ms; long task 4–6 (lúc tải + stream) |
+
+## Còn tồn tại (sau P15)
+- E2E c lệch hành vi stream hiện tại (không do P15).
+- `npm test` cần `NODE_OPTIONS=--no-experimental-webstorage` trên Node ≥ 25.
+- `scripts/perf-chat-benchmark.cjs` mặc định dùng Edge (`msedge`); trên macOS chạy với `BROWSER_CHANNEL=chromium`.
+

@@ -1,22 +1,9 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { ask, askAndFinish, openWorld, seedAuth } from './helpers';
 
-// Small world + no bloom keeps software-GL CI runs fast; the flow is identical.
-const APP = '/?vectors=8000&nofx';
-
-async function openWorld(page: Page) {
-  await page.goto(APP);
-  await expect(page.getByTestId('category-legend')).toBeVisible({ timeout: 30_000 });
-}
-
-async function ask(page: Page, question: string) {
-  await page.getByLabel('Câu hỏi').fill(question);
-  await page.getByLabel('Câu hỏi').press('Enter');
-}
-
-async function askAndFinish(page: Page) {
-  await ask(page, 'LoRA giúp fine-tune transformer hiệu quả như thế nào?');
-  await expect(page.getByTestId('pipeline-status')).toHaveAttribute('data-visual-phase', 'done', { timeout: 60_000 });
-}
+test.beforeEach(async ({ page }) => {
+  await seedAuth(page);
+});
 
 test('a. world loads and the legend lists every category', async ({ page }) => {
   await openWorld(page);

@@ -15,7 +15,10 @@
     "lint": "eslint .",
     "bench": "vitest bench --run",
     "dev:live": "VITE_USE_MOCK=false vite",
-    "test:perf": "node scripts/perf-chat-benchmark.cjs"
+    "test:perf": "node scripts/perf-chat-benchmark.cjs",
+    "test:visual": "playwright test e2e/visual.spec.ts",
+    "check:design": "node scripts/check-design.cjs --report",
+    "check:design:strict": "node scripts/check-design.cjs --strict"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

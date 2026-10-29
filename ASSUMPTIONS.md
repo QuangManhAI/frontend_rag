@@ -1,4 +1,16 @@
-# ASSUMPTIONS
+# ASSUMPTIONS.md — Giả định khi triển khai Frontend `frontend_rag`
+
+- **Motivation/Background**: Spec không thể nói hết mọi chi tiết; mọi giả định AI agent tự đặt ra phải được ghi lại để người duyệt kiểm tra.
+- **Purpose**: Danh sách giả định theo prompt, dạng `[P<số>] <giả định> — <lý do>`.
+- **Overview Pipeline**: Ghi trong lúc thực thi từng prompt của [`../docs/prompt_fe_3d.md`](../docs/prompt_fe_3d.md) và [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md).
+- **Detailed Plan**: P1–P11, Trig, P15+.
+- **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
+- **Created**: 2026-10-19T18:48:02+07:00
+- **Last Updated**: 2026-10-29T23:55:00+07:00
+
+[STATUS: ACTIVE]
+
+---
 
 Định dạng: `[P<số prompt>] <giả định> — <lý do>`
 
@@ -75,3 +87,11 @@
 - [Live] Backend thật + world mock: `src/api/worldBridge.ts` đặt paper thật lên vector mock (ổn định trong phiên, đổi `vectorIds[i]` thành id thật) và dựng lại `route` rỗng từ vị trí các paper `compare` (nprobe cành, mỗi cành 1 twig đông vector nhất). Điểm cành/twig = similarity thật của paper tốt nhất đặt ở đó, KHÔNG phải điểm centroid. Tạm thời tới khi pipeline xuất world (Phụ lục B P1); tự tắt khi `VITE_MOCK_WORLD=false` hoặc backend trả route thật.
 - [Live] `getPaper` khi chat thật mà world mock: backend trả 404 cho id mock (vector chưa được bridge) ➔ dùng paper mock để tooltip vẫn có tiêu đề.
 - [Live] Event `done` có thêm `session_id`, `message_id` (optional) — FE chưa có đăng nhập nên luôn null.
+- [P15] Unit test trên Node ≥ 25 cần `NODE_OPTIONS=--no-experimental-webstorage`: Node 25+ có `localStorage` toàn cục riêng, đè lên của jsdom và trả `undefined` khi không có `--localstorage-file` → 10 test lỗi `Cannot read properties of undefined (reading 'setItem')`. Không sửa cấu hình vitest vì cờ này không tồn tại trên Node 20 — để nhóm chốt phiên bản Node.
+- [P15] E2E nạp sẵn user giả vào `localStorage['rag-auth-storage']` (`e2e/helpers.ts → seedAuth`) — từ khi có form đăng nhập trong ChatPanel, chế độ mock không có endpoint auth nên ô "Câu hỏi" không hiện; chỉ sửa test, không sửa `src/`.
+- [P15] E2E c giữ nguyên dù fail — kỳ vọng "câu trả lời còn dài thêm sau khi ResultCard hiện" không còn đúng với luồng stream hiện tại; nới lỏng test là trái quy tắc, cần người duyệt chọn sửa test hay sửa hành vi.
+- [P15] Ảnh baseline ẩn `<canvas>` và PerfHUD bằng `stylePath` (`e2e/visual.css`) thay vì `mask` — canvas phủ toàn màn hình nên `mask` che cả giao diện; khi ẩn canvas, kính làm mờ nền trang trơn nên ảnh ổn định. Cảnh 3D kiểm riêng ở P20.
+- [P15] Ảnh `02` là "chat thu gọn" (không phải "chat trống" như pseudocode 15.2) vì cột chat mở sẵn khi tải trang — trạng thái đó đã có ở `01`.
+- [P15] `check-design` coi `var(--x, fallback)` là vi phạm chỉ khi `--x` không tồn tại hoặc fallback là màu thô — `var(--lift, 0px)`, `var(--cat-1, var(--accent))` là mặc định hợp lệ. Thêm 2 rule ngoài pseudocode: `css-raw-duration`, `css-raw-easing` (Design System §7, cần cho P18); animation lặp (`infinite`) và `0.001ms` của reduced-motion được miễn.
+- [P15] `check-design` đếm cả `text-[0.65rem]`, `text-[0.7rem]`, `text-[0.78rem]`, `text-[0.8rem]`, `text-[0.82rem]` (không có trong Phụ lục B.4 của Design System) — P18 cần bổ sung quy đổi cho các giá trị này trước khi làm.
+

@@ -3,10 +3,10 @@
 - **Motivation/Background**: `frontend_rag` combines a 100+ FPS procedural 3D WebGL Knowledge Tree (`React Three Fiber` / `Three.js` / custom GLSL shaders) with an Offline-First scientific RAG chat interface (`React 19`, `Zustand`, `Dexie.js` IndexedDB, `KaTeX` math rendering, and SSE token streaming). AI agents modifying `frontend_rag` need explicit rules on the R3F reconciler boundary, main-thread streaming deferral, and IndexedDB synchronization.
 - **Purpose**: Provide AI coding agents with the complete component/store directory, 3D WebGL performance guardrails, Offline-First state synchronization rules, and verification commands for `frontend_rag`.
 - **Overview Pipeline**: User Interaction / Query → `useSessionStore` (`Dexie.js` Cache-First write + background `/api/v1/chat-sessions` sync) → `useRagStore` (`POST /api/v1/rag/chat/stream` with `30ms` micro-batched token buffer) → Deferred `Markdown.tsx` (`useDeferredValue` + `KaTeX`) + 3D `WorldCanvas.tsx` (`TopKThreads` & `VectorCanopy` shader activation).
-- **Detailed Plan**: Section 1 maps the `src/` Directory Structure; Section 2 enforces the 6 Non-Negotiable Frontend & WebGL Invariants; Section 3 summarizes State Stores & Offline Persistence; Section 4 lists Typecheck, Vitest, and Performance Benchmark Commands.
-- **References**: [../AGENTS.md](../AGENTS.md), [../docs/INDEX.md](../docs/INDEX.md), [docs/STATE_AND_STREAMING_ARCHITECTURE.md](docs/STATE_AND_STREAMING_ARCHITECTURE.md), [docs/perf-chat-report.md](docs/perf-chat-report.md), [docs/perf-report.md](docs/perf-report.md), [../docs/AI_chat_log/Vuong_chat_logs.md](../docs/AI_chat_log/Vuong_chat_logs.md).
+- **Detailed Plan**: Section 1 maps the `src/` Directory Structure; Section 2 enforces the 8 Non-Negotiable Frontend & WebGL Invariants; Section 3 summarizes State Stores & Offline Persistence; Section 4 lists Typecheck, Vitest, and Performance Benchmark Commands.
+- **References**: [../AGENTS.md](../AGENTS.md), [../docs/INDEX.md](../docs/INDEX.md), [docs/STATE_AND_STREAMING_ARCHITECTURE.md](docs/STATE_AND_STREAMING_ARCHITECTURE.md), [docs/perf-chat-report.md](docs/perf-chat-report.md), [docs/perf-report.md](docs/perf-report.md), [../docs/FE_DESIGN_SYSTEM.md](../docs/FE_DESIGN_SYSTEM.md), [../docs/FE3d_prompt_v2.md](../docs/FE3d_prompt_v2.md), [../docs/AI_chat_log/Vuong_chat_logs.md](../docs/AI_chat_log/Vuong_chat_logs.md).
 - **Created**: 2026-10-20T19:00:00+07:00
-- **Last Updated**: 2026-10-29T19:44:00+07:00
+- **Last Updated**: 2026-10-29T23:55:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -26,7 +26,7 @@
 
 ---
 
-## 2. Six Non-Negotiable Frontend & WebGL Invariants
+## 2. Eight Non-Negotiable Frontend & WebGL Invariants
 
 1. **R3F Reconciler Boundary (`D-013`)**:
    - **Never** render raw HTML DOM elements (`<div>`, `<span>`, `<p>`) inside `<Canvas>` in [`WorldCanvas.tsx`](src/components/world/WorldCanvas.tsx). Doing so crashes React Three Fiber with `R3F: <Tag> is not part of the THREE namespace!`.
@@ -44,6 +44,12 @@
 6. **Unicode NFC Normalization for Vietnamese Text (`D-018`)**:
    - Always ensure Vietnamese UI strings (e.g., `+ Đoạn chat mới`, `Ngoại tuyến`, `Xóa?`, `Huỷ`) use composed **Unicode NFC** normalization to avoid detached diacritic rendering on Windows.
 
+7. **Design Tokens Only (`FE_DESIGN_SYSTEM.md`)**:
+   - Before any UI change read [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md) and [`src/theme/tokens.ts`](src/theme/tokens.ts). Colors, radius, blur, alpha, font sizes and motion come from tokens only — no hex/`rgba()` in components, no Tailwind palette colors (`red-500`, `text-white`…), no raw arbitrary values (`rounded-[12px]`, `text-[11px]`), no new CSS variables.
+   - Run `npm run check:design` (report) and `npm run test:visual` (screenshots vs. baseline) for every UI change; refresh baselines only after a human reviewed the diff. Migration plan: [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md).
+8. **Rotation Math via Complex Numbers / Quaternions (`FE_DESIGN_SYSTEM.md` §9)**:
+   - Rotations use [`src/utils/rotation.ts`](src/utils/rotation.ts) (`makeRotor`, `rotateComplex`, `mulRotor`, `stepRotation`, `slerpQuat`). `Math.sin/cos` only build rotors or appear in the measured exceptions of [`docs/trig-audit.md`](docs/trig-audit.md), annotated `// trig-ok: <reason>`. No Euler-angle animation.
+
 ---
 
 ## 3. Verification & Benchmark Commands (`frontend_rag/`)
@@ -59,19 +65,14 @@ npm test -- --run
 npm run build
 
 # 4. Realtime WebGL + Chat Streaming FPS & LongTask Benchmark
+#    (defaults to Edge; on macOS/Linux: BROWSER_CHANNEL=chromium)
 npm run test:perf
+
+# 5. Design-token guard and UI screenshot regression
+npm run check:design
+npm run test:visual
 ```
 
+> On Node ≥ 25 run Vitest with `NODE_OPTIONS=--no-experimental-webstorage` (Node's own `localStorage` shadows jsdom's; see `ASSUMPTIONS.md` [P15]).
+
 For a deep architectural walkthrough of `ragStore`, `sessionStore`, `Dexie.js` synchronization, and SSE token streaming, read [`docs/STATE_AND_STREAMING_ARCHITECTURE.md`](docs/STATE_AND_STREAMING_ARCHITECTURE.md).
-
----
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-## This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
