@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { mulberry32 } from '../../../api/mock/rng';
+import { randomDirection } from '../../../utils/rotation';
 import { useUi } from '../../../store/uiStore';
 import { useTheme } from '../../../theme/useTheme';
 import { glowBlending, pointScale, SOFT_POINT_FRAG, toColor } from '../materials';
@@ -40,9 +41,9 @@ export function Fireflies({ count = 320 }: { count?: number }) {
     const phase = new Float32Array(count);
     const speed = new Float32Array(count);
     for (let i = 0; i < count; i++) {
-      const a = rng() * Math.PI * 2;
+      const dir = randomDirection(rng);
       const r = 12 + Math.sqrt(rng()) * 62;
-      pos.set([Math.cos(a) * r, 40 + rng() * 80, Math.sin(a) * r], i * 3);
+      pos.set([dir.re * r, 40 + rng() * 80, dir.im * r], i * 3);
       phase[i] = rng();
       speed[i] = 0.25 + rng() * 0.5;
     }

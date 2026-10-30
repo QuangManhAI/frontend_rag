@@ -8,6 +8,7 @@ import { useWorld } from '../../../store/worldStore';
 import { categoryColor } from '../../../theme/tokens';
 import { useTheme } from '../../../theme/useTheme';
 import { hexToRgb } from '../../../utils/canopy';
+import { randomInDisk } from '../../../utils/rotation';
 import { BatchAggregator, particlesFor, POOL_SIZE } from '../../../utils/crawlFlow';
 import { BLOCK_TOP_Y, CABLE_FADE, CABLE_SAMPLES, cablePath, liftPath, MAX_ZONES, PulseTrain, zoneHeights, zonesOf } from '../../../utils/feedCables';
 import { glowBlending, pointScale } from '../materials';
@@ -16,6 +17,8 @@ import { StreamParticles } from './streamParticles';
 
 /** Streaks are spread uniformly over a disc of this radius around the stream's path. */
 const STREAM_RADIUS = 2.4;
+/** Scratch point for disk sampling (no allocation per emitted particle). */
+const DISK: [number, number] = [0, 0];
 /** Seconds for a resting streak to travel the whole stream; a pulse pack takes PULSE_S. */
 const BASE_DUR = 3.6;
 const PULSE_S = 2.2;
@@ -84,11 +87,10 @@ export function FeedCables() {
     const emit = (zi: number, start: number, speedUp: number, bright: number) => {
       const speed = (1 + (rng() * 2 - 1) * 0.4) * speedUp;
       const dur = BASE_DUR / speed;
-      const a = rng() * Math.PI * 2;
-      const d = Math.sqrt(rng()) * STREAM_RADIUS;
+      randomInDisk(rng, DISK); // uniform in the stream's cross-section, no trig
       const c = rgbOf[zi];
       const rgb: [number, number, number] = bright !== 1 ? [c[0] * bright, c[1] * bright, c[2] * bright] : c;
-      stream.emit(zi, rgb, start, dur, Math.cos(a) * d, Math.sin(a) * d, (1 + (rng() * 2 - 1) * 0.4) * (bright > 1 ? 1.3 : 1), 3 + rng() * 3);
+      stream.emit(zi, rgb, start, dur, DISK[0] * STREAM_RADIUS, DISK[1] * STREAM_RADIUS, (1 + (rng() * 2 - 1) * 0.4) * (bright > 1 ? 1.3 : 1), 3 + rng() * 3);
       return start + dur;
     };
     zones.forEach((z) => stream.setPath(z.index, liftPath(built.paths[z.index], scratch.lift[z.index])));
@@ -171,9 +173,8 @@ export function FeedCables() {
       if (zi >= zones.length) continue;
       const c = rgbOf[zi];
       for (let k = 0; k < PULSE_PACK[quality]; k++) {
-        const a = rng() * Math.PI * 2;
-        const d = Math.sqrt(rng()) * STREAM_RADIUS * 0.35;
-        stream.emit(zi, [c[0] * 2.2, c[1] * 2.2, c[2] * 2.2], now - rng() * 0.06, scratch.travel[zi], Math.cos(a) * d, Math.sin(a) * d, 1.5 + rng() * 0.5, 5 + rng() * 2);
+        randomInDisk(rng, DISK);
+        stream.emit(zi, [c[0] * 2.2, c[1] * 2.2, c[2] * 2.2], now - rng() * 0.06, scratch.travel[zi], DISK[0] * STREAM_RADIUS * 0.35, DISK[1] * STREAM_RADIUS * 0.35, 1.5 + rng() * 0.5, 5 + rng() * 2);
       }
     }
     if (pulses.started.length > 0) stream.commit();

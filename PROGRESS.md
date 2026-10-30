@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T10:45:00+07:00
+- **Last Updated**: 2026-10-30T12:10:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -153,9 +153,21 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Frame time (A/B xen kẽ, cổng riêng `127.0.0.1`) | ✅ P19 median 2.0 / 2.0 / 2.1 ms · P18 2.0 ms (p95 3.5–3.6, 4 long task cả hai) |
 | Unit, E2E, lint, build | ✅ 231/231 · 6/6 · 0 vi phạm · OK |
 
+## P20 — Toán Web3D bằng số phức (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Đổi theo §9.5: `treeGeometry` (ống, thân), `cameraPresets`, `feedCables`, `FeedCables` (runtime), `Fireflies`, `mockWorld` | ✅ chi tiết `docs/trig-audit.md` §7 |
+| Helper mới `ringRotors`, `powRotor`, `randomInDisk`, `randomDirection` + test (oracle cos/sin < 1e-12, thống kê 100k mẫu) | ✅ |
+| Sai lệch so với code cũ | ✅ max 1.4e-14 (ngưỡng 1e-3) |
+| Bench: không chỗ nào chậm hơn | ✅ ống 2.96×, thân 1.57×, đĩa (runtime) 1.65× nhanh hơn |
+| `check:design:strict` đủ mọi rule (gồm trig) trong `npm run lint` | ✅ 0 |
+| Frame time A/B P19 ↔ P20 | ✅ median 2.1–2.2 ms cả hai |
+| Ảnh canvas 3D | ✅ 0.18 % (nhiễu 0.06 %), chỉ đom đóm/hạt cáp |
+| Unit, E2E, visual, build | ✅ 236/236 · 6/6 · 9/9 · OK |
+
 ## Còn tồn tại (sau P16)
 - E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.
 - `npm test` cần `NODE_OPTIONS=--no-experimental-webstorage` trên Node ≥ 25.
 - `scripts/perf-chat-benchmark.cjs` mặc định dùng Edge (`msedge`); trên macOS chạy với `BROWSER_CHANNEL=chromium`.
-- Đo hiệu năng phải dùng cổng riêng và `127.0.0.1` (xem ASSUMPTIONS [P19]): `localhost:5174` có thể trúng dev server khác đang chạy.
+- Đo hiệu năng phải dùng cổng riêng và `127.0.0.1`, và **không chạy hai dev server cùng lúc** khi dùng worktree có `node_modules` symlink (xem ASSUMPTIONS [P19], [P20]).
 

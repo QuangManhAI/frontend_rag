@@ -150,7 +150,7 @@ export function GroundGrid() {
     for (const id of pulsing) {
       const cell = crateCell.get(id);
       if (cell === undefined) continue;
-      const k = 1 + (theme.additiveGlow ? 1.4 : 0.35) * (0.5 + 0.5 * Math.sin(t * 5 + id));
+      const k = 1 + (theme.additiveGlow ? 1.4 : 0.35) * (0.5 + 0.5 * Math.sin(t * 5 + id)); // trig-ok: scalar oscillation, rotor measured 1.08-1.31x slower (trig-audit §3)
       tmp.fromArray(baseColors.current, cell * 3).multiplyScalar(k);
       m.setColorAt(cell, tmp);
       dirty = true;

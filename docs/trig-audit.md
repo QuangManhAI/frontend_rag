@@ -1,4 +1,17 @@
-# Rà soát lượng giác, góc Euler và phép quay (trig audit)
+# trig-audit.md — Rà soát lượng giác, góc Euler và phép quay (trig audit)
+
+- **Motivation/Background**: Yêu cầu hạn chế `Math.sin/cos` cho phép quay trong 3D, thay bằng số phức / quaternion khi đo được lợi ích, không đổi hình ảnh.
+- **Purpose**: Bảng rà soát mọi chỗ gọi lượng giác, số đo trước/sau và quyết định giữ/đổi cho từng chỗ.
+- **Overview Pipeline**: Rà soát code → microbenchmark (`npm run bench`) + frame time 600 frame → giữ/đổi theo ngưỡng (§1–§6, 2026-10-19); chuyển sang rotor theo `FE_DESIGN_SYSTEM.md` §9 (§7, P20, 2026-10-30).
+- **Detailed Plan**: §1 Phương pháp; §2 Bảng rà soát; §3 Thử thay thế; §4 Nguồn lag; §5 Kết luận; §6 Tái hiện; §7 Chuyển sang rotor (P20).
+- **References**: [`../src/utils/rotation.ts`](../src/utils/rotation.ts), [`../src/utils/trig.bench.ts`](../src/utils/trig.bench.ts), [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE3d_prompt_v2.md`](../../docs/FE3d_prompt_v2.md).
+- **Created**: 2026-10-19T20:49:26+07:00
+- **Last Updated**: 2026-10-30T12:10:00+07:00
+
+[STATUS: ACTIVE]
+
+---
+
 
 Yêu cầu: hạn chế `Math.sin/cos` cho quay và chuyển động trong 3D, thay bằng số phức (2D) / quaternion (3D) nếu **đo được** lợi ích ≥ 5% ở chỗ đó, không thay đổi hình ảnh (sai lệch < 1e-3 đơn vị).
 
@@ -113,3 +126,49 @@ npm run bench                                   # microbenchmark §3 + §4 (CPU)
 npm test -- src/utils/rotation.test.ts          # 7 test rotor / slerp
 npm run dev -- --port 5199                       # rồi chạy script đo frame time bằng Playwright (mô tả ở §1)
 ```
+
+## 7. Chuyển sang rotor (P20, 2026-10-30)
+
+Theo [`FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md) §9: phép quay viết bằng rotor; `sin/cos` chỉ còn trong `makeRotor` và các ngoại lệ đã đo ở §3 (gắn `// trig-ok:`). `npm run lint` chặn mọi `Math.sin/cos/atan2` không có chú thích (`check-design`, rule `trig-in-frame`, `trig-any`).
+
+### 7.1 Chỗ đã đổi
+
+| Vị trí | Trước | Sau |
+| :-- | :-- | :-- |
+| `utils/treeGeometry.ts` `tubeAlongPath` | `sin/cos` cho mỗi đỉnh của mỗi hàng | `ringRotors(radial)` một lần, dùng lại cho mọi hàng |
+| `utils/treeGeometry.ts` `buildTrunkGeometry` | `cos/sin(a + twist)` mỗi đỉnh | vòng `ringRotors` × `makeRotor(twist)` mỗi hàng (`mulRotor`) |
+| `utils/cameraPresets.ts` | `cos/sin` của 30° và 35° mỗi lần gọi; ma trận quay viết tay | rotor hằng `OVERVIEW_PITCH`, `FOCUS_SWING` + `rotateComplex` |
+| `utils/feedCables.ts` | `cos/sin(k · 2.39996)` | `powRotor(GOLDEN, k)` |
+| `components/world/fx/FeedCables.tsx` (runtime) | `sqrt(u)·(cos, sin)` mỗi hạt | `randomInDisk(rng, DISK)` — loại bỏ, không trig, không cấp phát |
+| `components/world/fx/Fireflies.tsx` | `cos/sin` góc ngẫu nhiên | `randomDirection(rng)` |
+| `api/mock/mockWorld.ts` | `atan2` → `cos/sin`, góc → `cos/sin` | hướng nhánh là rotor (chuẩn hoá vị trí), `makeRotor` + `mulRotor` |
+
+Giữ (`// trig-ok:`): `QueryFlight.tsx` (thở), `GroundGrid.tsx` (nhấp sáng) — dao động vô hướng, §3; `treeGeometry.ts` `bark()` và `flare` — sóng làm nhiễu, không phải phép quay. `materials.ts` `Math.tan(fov/2)` không thuộc rule.
+
+### 7.2 Microbenchmark (`npx vitest bench --run src/utils/trig.bench.ts`, Apple M4)
+
+| Case | Trước → Sau |
+| :-- | :-- |
+| A · cả tiết diện ống, 25 hàng × 7 điểm (rễ, nhánh) | rotor **nhanh hơn 2.96×** |
+| A · cả tiết diện ống, 25 hàng × 11 điểm (cành) | rotor **nhanh hơn 2.96×** |
+| A · thân cây 50 hàng × 41 điểm | rotor **nhanh hơn 1.57×** |
+| A · một vòng 16 / 32 / 64 điểm (riêng `ringRotors`) | 1.10× chậm hơn / 1.71× / 2.06× nhanh hơn — vòng đơn lẻ 16 điểm chậm hơn vì cấp phát `Float64Array`, nhưng mỗi ống dùng lại một vòng cho mọi hàng nên tính cả ống vẫn nhanh hơn |
+| B/C · 1000 mẫu trong đĩa (`FeedCables`, runtime) | `randomInDisk` **nhanh hơn 1.65×** |
+
+### 7.3 Độ chính xác (so số liệu trước/sau, code cũ làm oracle)
+
+| Đầu ra | Số giá trị | max \|Δ\| |
+| :-- | --: | --: |
+| `tubeAlongPath` vị trí / pháp tuyến | 819 / 819 | 6.4e-16 / 6.4e-16 |
+| `buildTrunkGeometry` vị trí | 6 150 | 1.1e-15 |
+| Preset camera (overview, canopy, ground, 2 focus) | 30 | 0 |
+| Mock world: vị trí cây / ô đất / vector | 633 / 339 / 24 000 | 1.4e-14 / 0 / 0 |
+| `cablePath` | 1 440 | 0 |
+
+Ngưỡng của spec là 1e-3. Test cố định: `rotation.test.ts` (`ringRotors`, `powRotor` so với `cos/sin`; `randomInDisk`, `randomDirection` kiểm thống kê 100 000 / 50 000 mẫu).
+
+### 7.4 Frame time và ảnh 3D
+
+- **Frame time** (`test:perf`, 150k, dev, headless, server mock `127.0.0.1:5197` chạy **lần lượt**, xen kẽ P19 ↔ P20): P19 median 2.2 / 2.1 / 2.1 ms, P20 median 2.1 / 2.2 / 2.2 ms; p95 3.4 ms; 4 long task cả hai.
+- **Ảnh canvas** (`?vectors=8000&nofx`, reduce motion): P19 so với chính nó lệch 0.06 % (nhiễu); P20 so với P19 lệch 0.18 % (ngưỡng 0.5 %). Phần lệch là các điểm đom đóm/hạt cáp (chuỗi số ngẫu nhiên đổi vì lấy mẫu loại bỏ, phân bố giữ nguyên) và số FPS của PerfHUD; không có đường nào của thân/cành.
+

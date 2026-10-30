@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { advanceStepper, makeFixedStepper, makeRotationState, makeRotor, mulRotor, rotateComplex, slerpQuat, stepRotation } from './rotation';
+import { mulberry32 } from '../api/mock/rng';
+import { advanceStepper, makeFixedStepper, makeRotationState, makeRotor, mulRotor, powRotor, randomDirection, randomInDisk, ringRotors, rotateComplex, slerpQuat, stepRotation } from './rotation';
 
 describe('rotation (complex rotors)', () => {
   it('four 90° turns return to the starting point', () => {
@@ -64,5 +65,68 @@ describe('slerpQuat', () => {
     const out = new THREE.Quaternion();
     expect(slerpQuat(a, b, 0.5, out)).toBe(out);
     expect(out.length()).toBeCloseTo(1, 10);
+  });
+});
+
+describe('rotor helpers that replace sin/cos (FE_DESIGN_SYSTEM §9, P20)', () => {
+  it('powRotor(r, n) equals the angle multiplied by n', () => {
+    const golden = makeRotor(2.39996);
+    for (const n of [0, 1, 2, 7, 11, 12]) {
+      const r = powRotor(golden, n);
+      expect(Math.abs(r.re - Math.cos(n * 2.39996))).toBeLessThan(1e-12);
+      expect(Math.abs(r.im - Math.sin(n * 2.39996))).toBeLessThan(1e-12);
+    }
+  });
+
+  it('randomInDisk stays inside the unit disk with the same law as sqrt(u)·(cos, sin)', () => {
+    const rng = mulberry32(7);
+    const p: [number, number] = [0, 0];
+    const N = 100_000;
+    const sectors = new Array(8).fill(0);
+    let sumR = 0;
+    for (let i = 0; i < N; i++) {
+      randomInDisk(rng, p);
+      const r = Math.hypot(p[0], p[1]);
+      expect(r).toBeLessThanOrEqual(1);
+      sumR += r;
+      const a = Math.atan2(p[1], p[0]) + Math.PI; // test-only oracle
+      sectors[Math.min(7, Math.floor((a / (2 * Math.PI)) * 8))]++;
+    }
+    expect(Math.abs(sumR / N - 2 / 3)).toBeLessThan(0.01); // E|r| of a uniform disk
+    for (const c of sectors) expect(Math.abs(c / N - 0.125)).toBeLessThan(0.01);
+  });
+
+  it('randomDirection returns unit rotors spread evenly around the circle', () => {
+    const rng = mulberry32(11);
+    const N = 50_000;
+    const sectors = new Array(8).fill(0);
+    for (let i = 0; i < N; i++) {
+      const d = randomDirection(rng);
+      expect(Math.abs(Math.hypot(d.re, d.im) - 1)).toBeLessThan(1e-12);
+      const a = Math.atan2(d.im, d.re) + Math.PI;
+      sectors[Math.min(7, Math.floor((a / (2 * Math.PI)) * 8))]++;
+    }
+    for (const c of sectors) expect(Math.abs(c / N - 0.125)).toBeLessThan(0.01);
+  });
+
+  it('is deterministic for a seeded rng', () => {
+    const a = randomInDisk(mulberry32(3));
+    const b = randomInDisk(mulberry32(3));
+    expect(a).toEqual(b);
+  });
+});
+
+describe('ringRotors', () => {
+  it('matches cos/sin around the ring and closes the seam', () => {
+    for (const n of [8, 12, 40, 200]) {
+      const ring = ringRotors(n);
+      expect(ring).toHaveLength((n + 1) * 2);
+      for (let j = 0; j <= n; j++) {
+        const a = (j / n) * Math.PI * 2;
+        expect(Math.abs(ring[j * 2] - Math.cos(a))).toBeLessThan(1e-12); // old formula as oracle
+        expect(Math.abs(ring[j * 2 + 1] - Math.sin(a))).toBeLessThan(1e-12);
+      }
+      expect(Math.abs(ring[n * 2] - ring[0])).toBeLessThan(1e-12);
+    }
   });
 });

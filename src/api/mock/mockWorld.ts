@@ -1,5 +1,6 @@
 import type { Category, Crate, GroundLayout, Root, TreeNode, VectorTable, Vec3 } from '../../types/world';
 import { cellToWorld } from '../../utils/groundLayout';
+import { makeRotor, mulRotor } from '../../utils/rotation';
 import { encodeVectors } from '../vectorParser';
 import { gauss, mulberry32, pickWeighted } from './rng';
 
@@ -73,7 +74,8 @@ export function generateMockWorld(seed = 7, opts: MockWorldOptions = {}): MockWo
     const angle = (b / branchCount) * Math.PI * 2 + (rng() - 0.5) * 0.25;
     const y = 55 + rng() * 25;
     const reach = 26 + rng() * 14;
-    const dir: Vec3 = [Math.cos(angle), 0, Math.sin(angle)];
+    const fan = makeRotor(angle);
+    const dir: Vec3 = [fan.re, 0, fan.im];
     const pos: Vec3 = [dir[0] * reach, y, dir[2] * reach];
     const ctrl: Vec3 = [dir[0] * reach * 0.12, y - 4, dir[2] * reach * 0.12];
     const dominant = pickWeighted(rng, weights);
@@ -86,13 +88,15 @@ export function generateMockWorld(seed = 7, opts: MockWorldOptions = {}): MockWo
   }
   const twigs: TreeNode[] = [];
   for (const br of branches) {
-    const baseAngle = Math.atan2(br.position[2], br.position[0]);
+    // The branch direction itself is the base rotor: no atan2 → cos/sin round trip.
+    const h = Math.hypot(br.position[0], br.position[2]);
+    const base = { re: br.position[0] / h, im: br.position[2] / h };
     for (let k = 0; k < twigsPerBranch; k++) {
-      const a = baseAngle + (rng() - 0.5) * 1.5;
+      const twist = mulRotor(base, makeRotor((rng() - 0.5) * 1.5));
       const reach = 9 + rng() * 15;
       const y = Math.min(105, Math.max(75, br.position[1] + 8 + rng() * 26));
-      const pos: Vec3 = [br.position[0] + Math.cos(a) * reach, y, br.position[2] + Math.sin(a) * reach];
-      const ctrl: Vec3 = [br.position[0] + Math.cos(a) * reach * 0.25, br.position[1] + (y - br.position[1]) * 0.85, br.position[2] + Math.sin(a) * reach * 0.25];
+      const pos: Vec3 = [br.position[0] + twist.re * reach, y, br.position[2] + twist.im * reach];
+      const ctrl: Vec3 = [br.position[0] + twist.re * reach * 0.25, br.position[1] + (y - br.position[1]) * 0.85, br.position[2] + twist.im * reach * 0.25];
       const dominant = rng() < 0.6 ? br.dominant_category : pickWeighted(rng, weights);
       const node: TreeNode = {
         id: nextId++, parent_id: br.id, depth: 2, label: threeWords(rng, MOCK_CATEGORY_DEFS[dominant].words),
@@ -155,8 +159,9 @@ export function generateMockWorld(seed = 7, opts: MockWorldOptions = {}): MockWo
     const want = Math.max(1, Math.round(n / papersPerCrate));
     const angle = rank * 2.39996 + seed;
     const rad = rank === 0 ? 0 : 2.5 + Math.sqrt(rank) * 3.6;
-    const tx = center + Math.cos(angle) * rad;
-    const ty = center + Math.sin(angle) * rad;
+    const spiral = makeRotor(angle);
+    const tx = center + spiral.re * rad;
+    const ty = center + spiral.im * rad;
     let seedCell = -1;
     let best = Infinity;
     for (let c = 0; c < cells; c++) {

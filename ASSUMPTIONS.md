@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T10:45:00+07:00
+- **Last Updated**: 2026-10-30T12:10:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -117,4 +117,8 @@
 - [P19] Nút "Mở chat" bỏ class `.btn` (nền `.btn` đè lên lớp `::before`) — dùng `Glass` control + utility bố cục tương đương (`px-3 py-1.5 gap-1.5 text-control`).
 - [P19] Caveat Phụ lục A.4 (animation `opacity` làm `::before` mất blur): chụp giữa animation `chat-in` (t = 900 ms) trước/sau không thấy khác; nền phía sau cột chat lúc đó tối nên phép thử chưa đủ mạnh — cần người duyệt xem tay trên máy thật.
 - [P19] **Sự cố đo hiệu năng:** dev server của người dùng (`vite --host 127.0.0.1`, chạy từ 2026-10-29 04:28, `VITE_USE_MOCK=false`) chiếm `127.0.0.1:5174`; server mock của agent cũng mở "5174" (IPv6) nên `localhost:5174` lúc trúng server này lúc trúng server kia → 2 lượt đo "chậm" (median 4–19 ms, 300–400 long task) là đo nhầm, đã xoá. Từ P19 đo bằng cổng riêng gắn `--host 127.0.0.1` (5195/5196) và chạy xen kẽ A/B.
+- [P20] Thêm helper `ringRotors(n)` (vòng n+1 rotor, chuẩn hoá mỗi 64 bước) và `powRotor`, `randomDirection` ngoài `randomInDisk` của spec — cần cho ống/thân (tính vòng một lần), góc vàng của cáp và hướng đom đóm.
+- [P20] `randomInDisk`/`randomDirection` dùng nhiều lần gọi `rng` hơn công thức cực → vị trí cụ thể của hạt cáp và đom đóm khác trước (cùng phân bố, kiểm bằng test thống kê); không có test nào so khớp vị trí theo seed của hai chỗ này nên không phải sửa kỳ vọng.
+- [P20] Shader: không có góc đồng nhất cho mọi đỉnh (mọi `sin` trong GLSL phụ thuộc theo đỉnh/thời gian) → mục `uniform vec2 uRotor` "không áp dụng".
+- [P20] Sự cố đo A/B: hai dev server (worktree P19 + bản hiện tại) chạy song song dùng chung `node_modules/.vite` qua symlink → bản sau báo "Invalid hook call" (hai bản React) và không khởi tạo được cảnh; lượt P18 "không ra số" ở P19 cũng do đây. Từ P20 chạy một server mỗi lúc (cổng 5197), bật/tắt xen kẽ.
 

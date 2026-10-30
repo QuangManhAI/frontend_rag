@@ -1,4 +1,9 @@
 import type { Vec3 } from '../types/world';
+import { makeRotor, rotateComplex } from './rotation';
+
+/** Fixed camera angles as rotors (FE_DESIGN_SYSTEM §9): overview pitch 30°, focus swing 35°. */
+const OVERVIEW_PITCH = makeRotor((30 * Math.PI) / 180);
+const FOCUS_SWING = makeRotor((35 * Math.PI) / 180);
 
 export type CameraMode = 'overview' | 'canopy' | 'ground' | 'follow' | 'focus';
 
@@ -25,9 +30,9 @@ export function getPreset(mode: CameraMode, ctx: PresetContext = {}): CameraPres
     case 'overview': {
       // Far enough that the whole canopy and the knowledge blocks sit comfortably in frame.
       const d = 228 * widen;
-      const pitch = (30 * Math.PI) / 180;
       const target: Vec3 = [0, 48, 0];
-      return { position: [d * Math.cos(pitch) * 0.5, target[1] + d * Math.sin(pitch), d * Math.cos(pitch) * 0.87], target };
+      const { re: cos, im: sin } = OVERVIEW_PITCH;
+      return { position: [d * cos * 0.5, target[1] + d * sin, d * cos * 0.87], target };
     }
     case 'canopy':
       return { position: [0, 150 * widen, 118 * widen], target: [0, 98, 0] };
@@ -54,9 +59,7 @@ export function getPreset(mode: CameraMode, ctx: PresetContext = {}): CameraPres
         hx /= h;
         hz /= h;
       }
-      const a = (35 * Math.PI) / 180;
-      const rx = hx * Math.cos(a) - hz * Math.sin(a);
-      const rz = hx * Math.sin(a) + hz * Math.cos(a);
+      const [rx, rz] = rotateComplex(hx, hz, FOCUS_SWING);
       const up = 0.85;
       const n = Math.hypot(rx, up, rz);
       const k = (FOCUS_DISTANCE * widen) / n;
