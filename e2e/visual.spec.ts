@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { APP, askAndFinish, openWorld, seedAuth, seedReducedMotion } from './helpers';
+import { APP, askAndFinish, openWorld, seedAuth, seedReducedMotion, seedSettings } from './helpers';
 
 /**
  * UI screenshots used as the visual baseline for the design-system migration
@@ -144,4 +144,67 @@ test('backdrop-filter layers per state', async ({ page }) => {
 
   console.log(`backdrop-filter layers — auth: ${auth} · history: ${history} · answer: ${answer}`);
   expect(answer).toBeGreaterThan(0);
+});
+
+/** Liquid Glass level 2+ (P21): specular highlight on, light at rest above the screen (reduced motion). */
+test.describe('liquid glass', () => {
+  test.beforeEach(async ({ page }) => {
+    await seedReducedMotion(page, { glass: 'liquid' });
+    await seedAuth(page);
+  });
+
+  test('01 overview (lg2)', async ({ page }) => {
+    await openWorld(page);
+    await expect(page.locator('html')).toHaveAttribute('data-lg-level', /^[23]$/);
+    await shoot(page, '01-overview-lg2');
+  });
+
+  test('02 chat collapsed (lg2)', async ({ page }) => {
+    await openWorld(page);
+    await page.getByLabel('Thu gọn chat').click();
+    await expect(page.getByLabel('Mở chat')).toBeVisible();
+    await shoot(page, '02-chat-collapsed-lg2');
+  });
+
+  test('05 settings (lg2)', async ({ page }) => {
+    await openWorld(page);
+    await page.getByTestId('settings-toggle').click();
+    await expect(page.getByTestId('settings-panel')).toBeVisible();
+    await shoot(page, '05-settings-lg2');
+  });
+});
+
+test.describe('glass level behaviour', () => {
+  test('the setting drives data-lg-level and level 0 drops every backdrop-filter', async ({ page }) => {
+    await seedSettings(page, {});
+    await seedAuth(page);
+    await openWorld(page);
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('data-lg-level', /^[23]$/); // auto on Chromium
+    await page.getByTestId('settings-toggle').click();
+    await page.getByTestId('glass-frosted').click();
+    await expect(html).toHaveAttribute('data-lg-level', '1');
+    await page.getByTestId('glass-off').click();
+    await expect(html).toHaveAttribute('data-lg-level', '0');
+    expect(await backdropLayers(page)).toBe(0);
+    // Persisted for the next visit (a reload would re-run the seeding init script).
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('rkt.settings') ?? '{}').glass);
+    expect(stored).toBe('off');
+  });
+
+  test('the light follows the pointer, and stays put with reduced motion', async ({ page }) => {
+    await seedSettings(page, { glass: 'liquid' });
+    await seedAuth(page);
+    await openWorld(page);
+    const light = () => page.getByTestId('chat-dock').evaluate((el) => Number((el as HTMLElement).style.getPropertyValue('--lg-light-x') || 0));
+    await page.mouse.move(1430, 450);
+    await expect.poll(light).toBeGreaterThan(0.9);
+
+    await page.getByTestId('settings-toggle').click();
+    await page.getByLabel('Giảm chuyển động').check();
+    await expect.poll(light).toBe(0);
+    await page.mouse.move(10, 450);
+    await page.waitForTimeout(300);
+    expect(await light()).toBe(0);
+  });
 });

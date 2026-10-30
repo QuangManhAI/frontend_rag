@@ -26,11 +26,19 @@ export async function seedAuth(page: Page): Promise<void> {
   }, FAKE_AUTH);
 }
 
-/** Freeze CSS/JS motion so screenshots are reproducible (uiStore reads `rkt.settings`). */
-export async function seedReducedMotion(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    localStorage.setItem('rkt.settings', JSON.stringify({ reduceMotion: true }));
-  });
+/** Seed `rkt.settings` before boot (uiStore merges it over the defaults). */
+export async function seedSettings(page: Page, settings: Record<string, unknown>): Promise<void> {
+  await page.addInitScript((value) => {
+    localStorage.setItem('rkt.settings', JSON.stringify(value));
+  }, settings);
+}
+
+/**
+ * Freeze CSS/JS motion so screenshots are reproducible. Baselines are taken on frosted glass
+ * (level 1); Liquid Glass shots opt in with `{ glass: 'liquid' }`.
+ */
+export async function seedReducedMotion(page: Page, extra: Record<string, unknown> = { glass: 'frosted' }): Promise<void> {
+  await seedSettings(page, { reduceMotion: true, ...extra });
 }
 
 export async function openWorld(page: Page, url: string = APP): Promise<void> {

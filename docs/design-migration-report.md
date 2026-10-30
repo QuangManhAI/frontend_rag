@@ -6,7 +6,7 @@
 - **Detailed Plan**: §1 Bảng tổng; §2 Cách đo; §3 Chi tiết từng prompt.
 - **References**: [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE_DESIGN_AUDIT.md`](../../docs/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
 - **Created**: 2026-10-29T23:55:00+07:00
-- **Last Updated**: 2026-10-30T12:10:00+07:00
+- **Last Updated**: 2026-10-30T15:20:00+07:00
 
 [STATUS: IN_PROGRESS]
 
@@ -25,6 +25,7 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | **P18** thang | 2026-10-30 | 0 · 0 · 0 · 0 · 0 · 0 · 5 · 19 · 0 · 0 · 0 · 0 · 0 · 0 | **4 · 3 · 6 · 9** (7 + 2 em) | 6/8 ≤ 1.5 %; `03` 2.1 %, `04` 4.2 % (chữ xuống dòng lại) | 2.1 ms (3.4 ms) — ±3 % | 6/6 | **chấp nhận** — 8 baseline cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
 | **P19** Glass | 2026-10-30 | 0 (14 rule trừ trig) · trig 5 · 19 | 4 · 3 · 6 · 9 | 7/8 ≤ nhiễu; `07` 4.441 px | 2.0 ms (3.5 ms) — A/B = P18 | 6/6 | **chấp nhận** — baseline 07 cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
 | **P20** rotor | 2026-10-30 | **0 (cả 14 rule)** | 4 · 3 · 6 · 9 | 0 (UI); canvas 0.18 % (nhiễu 0.06 %) | 2.1–2.2 ms (3.4 ms) — A/B = P19 | 6/6 | không đổi ảnh mốc — xem `trig-audit.md` §7 |
+| **P21** LG cấp 2 | 2026-10-30 | 0 (cả 14 rule) | 4 · 3 · 6 · 9 | `05` 13.410 px (nhóm "Hiệu ứng kính"); 3 ảnh mới `-lg2` | 2.2–2.3 ms (3.4 ms); di chuột: median 2.5 vs 2.6 ms cấp 1, p95 4.4–5.1 vs 3.7 ms | 6/6 | **chấp nhận** — baseline 05 cập nhật, 3 ảnh lg2 nhận làm mốc sau khi người duyệt xem (2026-10-30) |
 
 ---
 
@@ -80,4 +81,17 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 
 - Chi tiết bench, độ chính xác và ảnh 3D: [`trig-audit.md`](trig-audit.md) §7.
 - Frame time A/B tuần tự (P19 ↔ P20): 2.2 / 2.1 / 2.1 ms ↔ 2.1 / 2.2 / 2.2 ms.
+
+### P21 — Liquid Glass Cấp 2
+
+- **Đo khi di chuột** (script riêng: 150k vector, chuột chạy vòng tròn 360 bước, 880 khoảng rAF, headless không vsync, server mock `127.0.0.1:5197`, 3 lượt xen kẽ):
+
+| Phương án | Cấp 1 median / p95 | Cấp 3 median / p95 |
+| :-- | :-- | :-- |
+| Ghi `--lg-light-x/y` lên `<html>` | 2.6 / 3.7 ms | 2.9–3.0 / 6.4–6.7 ms |
+| Ghi theo bề mặt (`@property inherits: false`) | 2.6–2.7 / 3.7–3.8 ms | 2.9–3.0 / 6.6–7.0 ms |
+| + `will-change: transform` trên `::after` | 2.6–2.7 / 3.7 ms | **2.5 / 4.4–5.1 ms** |
+| Chuột đứng yên (đối chứng) | 2.6–2.7 / 3.6 ms | 2.6 / 3.6–3.7 ms |
+
+- **Lỗi blur do `mix-blend-mode`:** thử nghiệm A/B trên panel Cài đặt — có `plus-lighter` thì legend phía sau lộ rõ (527 px khác), bỏ đi thì mờ đúng.
 

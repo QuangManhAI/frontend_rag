@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T12:10:00+07:00
+- **Last Updated**: 2026-10-30T15:20:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -121,4 +121,11 @@
 - [P20] `randomInDisk`/`randomDirection` dùng nhiều lần gọi `rng` hơn công thức cực → vị trí cụ thể của hạt cáp và đom đóm khác trước (cùng phân bố, kiểm bằng test thống kê); không có test nào so khớp vị trí theo seed của hai chỗ này nên không phải sửa kỳ vọng.
 - [P20] Shader: không có góc đồng nhất cho mọi đỉnh (mọi `sin` trong GLSL phụ thuộc theo đỉnh/thời gian) → mục `uniform vec2 uRotor` "không áp dụng".
 - [P20] Sự cố đo A/B: hai dev server (worktree P19 + bản hiện tại) chạy song song dùng chung `node_modules/.vite` qua symlink → bản sau báo "Invalid hook call" (hai bản React) và không khởi tạo được cảnh; lượt P18 "không ra số" ở P19 cũng do đây. Từ P20 chạy một server mỗi lúc (cổng 5197), bật/tắt xen kẽ.
+- [P21] Vệt sáng là **viền** (mask cắt dải 1.5px quanh mép) thay vì gradient phủ cả mặt như bản phác §10.4 — phủ cả mặt thành mảng sáng lớn trên TopBar; `--lg-specular` 0.35 → 0.6 vì dải mảnh.
+- [P21] Bỏ `mix-blend-mode: plus-lighter` của `::after`: làm `.glass` thành backdrop root, `::before` mất blur (legend lộ rõ qua panel Cài đặt) — đã thêm lại để kiểm chứng rồi gỡ.
+- [P21] `--lg-light-x/y` đăng ký `@property … inherits: false` và ghi lên từng bề mặt có viền sáng (không ghi lên `<html>` như spec); `::after` lấy giá trị bằng `inherit`; cấp ≥ 2 thêm `will-change: transform` cho `::after`. Đo khi di chuột: ghi lên `<html>` median +11 %, ghi theo bề mặt không đổi, thêm `will-change` → median −4 % so với cấp 1.
+- [P21] Ngân sách "+2 %" (Phụ lục A #2) áp vào **median**; p95 khi di chuột vẫn cao hơn cấp 1 (4.4–5.1 so với 3.7 ms) — ghi nhận, không chặn.
+- [P21] Cấp 3 trên Chromium hiện **trông giống cấp 2** (khúc xạ thuộc P22); `auto` đã trả 3 theo ví dụ của spec.
+- [P21] Ảnh mốc cấp 1 giữ bằng cách seed `glass: 'frosted'` (`seedReducedMotion` mặc định); ảnh Liquid tách thành `*-lg2.png`.
+- [P21] E2E "đã lưu" đọc `localStorage` thay vì `reload` — init script seed chạy lại ở mỗi lần tải và ghi đè thiết lập.
 

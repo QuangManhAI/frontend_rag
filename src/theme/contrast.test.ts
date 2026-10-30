@@ -56,3 +56,16 @@ describe('P17 color fixes stay legible', () => {
     expect(contrastRatio(darkTheme.uiInkMuted, composite(darkTheme.glassFillHover, panel))).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe('P21 clear glass stays legible (FE_DESIGN_SYSTEM §10.6)', () => {
+  // Clear controls sit inside a regular panel over the dark sky; --lg-dim is only needed if this fails.
+  const regularPanel = composite(darkTheme.glassTint, darkTheme.bg);
+  const clearControl = composite(darkTheme.glassFill, regularPanel);
+  const clearHover = composite(darkTheme.glassFillHover, regularPanel);
+
+  it('ink and muted ink on a clear control, at rest and on hover', () => {
+    expect(contrastRatio(darkTheme.uiInk, clearControl)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkTheme.uiInk, clearHover)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkTheme.uiInkMuted, clearControl)).toBeGreaterThanOrEqual(4.5);
+  });
+});

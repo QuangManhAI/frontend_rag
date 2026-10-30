@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T12:10:00+07:00
+- **Last Updated**: 2026-10-30T15:20:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -164,6 +164,19 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Frame time A/B P19 ↔ P20 | ✅ median 2.1–2.2 ms cả hai |
 | Ảnh canvas 3D | ✅ 0.18 % (nhiễu 0.06 %), chỉ đom đóm/hạt cáp |
 | Unit, E2E, visual, build | ✅ 236/236 · 6/6 · 9/9 · OK |
+
+## P21 — Liquid Glass Cấp 2: vệt sáng động, chọn cấp, trợ năng (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `theme/liquidGlass.ts`: `detectLevel`, `lightFromPointer`, `nlerp` (rotor, không góc), `readEnv` | ✅ 7 test (các ví dụ của spec) |
+| `theme/useLiquidLight.ts`: `useGlassLevel` (`<html data-lg-level>`), `useLiquidLight` (ghi `--lg-light-x/y` lên bề mặt có viền sáng, ≤ 1 lần/frame, không re-render) | ✅ test 1000 sự kiện → 1 frame, 2 lần ghi mỗi bề mặt, 0 render |
+| Cài đặt "Hiệu ứng kính": Tự động / Đục / Mờ / Liquid, lưu trong `rkt.settings`, settings cũ không có khoá vẫn chạy | ✅ E2E |
+| Cấp 0 → không phần tử nào có `backdrop-filter`; giảm chuyển động → ánh sáng đứng yên | ✅ E2E |
+| Chữ trên kính Clear ≥ 4.5:1 | ✅ `contrast.test.ts` |
+| Hiệu năng khi di chuột (median, cấp 1 ↔ cấp 3) | ✅ 2.6 ↔ 2.5 ms (ngân sách +2 %); p95 3.7 ↔ 4.4–5.1 ms |
+| `test:perf` chuẩn (cấp 3) | ✅ median 2.2–2.3 ms, p95 3.4 ms, 4 long task (P20: 2.1–2.2) |
+| Ảnh | ✅ 8 mốc cấp 1 giữ nguyên trừ `05` (thêm nhóm "Hiệu ứng kính"); 3 ảnh mới `01/02/05-lg2` — người duyệt chấp nhận |
+| Unit, E2E, build | ✅ 251/251 · 6/6 · OK |
 
 ## Còn tồn tại (sau P16)
 - E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.

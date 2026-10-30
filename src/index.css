@@ -51,8 +51,6 @@
   --lg-chroma: 0px;
   --lg-specular: 0;
   --lg-specular-size: 60%;
-  --lg-light-x: 0;
-  --lg-light-y: -1;
   --lg-dim: 0;
   color-scheme: dark;
 }
@@ -117,6 +115,18 @@ body {
    .glass::after        specular layer: hidden until Liquid Glass level 2 (P21)
    data-material        regular | strong | clear      data-shape   panel | control | chip
    data-nested="true"   inside another glass surface → no second backdrop-filter */
+/* Light direction (a unit rotor) is written per glass surface each frame by useLiquidLight.
+   Non-inherited, so an update restyles only that surface — not the whole document. */
+@property --lg-light-x {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --lg-light-y {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: -1;
+}
 @layer components {
   /* Layered so position utilities (absolute, fixed) on the same element still win. */
   .glass {
@@ -142,19 +152,26 @@ body {
   -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
 }
 .glass::after {
+  /* Rim light: the gradient only shows in a thin band along the edge (border box minus content box). */
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -1px;
   z-index: 1;
+  padding: 1.5px;
   border-radius: inherit;
   pointer-events: none;
   display: none;
+  --lg-light-x: inherit; /* non-inherited by default (@property above): take the surface's value */
+  --lg-light-y: inherit;
+  -webkit-mask: linear-gradient(white, white) content-box, linear-gradient(white, white);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(white, white) content-box exclude, linear-gradient(white, white);
   background: radial-gradient(
     circle at calc(50% + var(--lg-light-x) * 50%) calc(50% + var(--lg-light-y) * 50%),
     color-mix(in srgb, white calc(var(--lg-specular) * 100%), transparent),
     transparent var(--lg-specular-size)
   );
-  mix-blend-mode: plus-lighter;
+  /* No mix-blend-mode: a blended child turns .glass into a backdrop root and ::before stops blurring. */
 }
 .glass[data-material="strong"]::before {
   background: var(--ui-surface-strong);
@@ -163,7 +180,10 @@ body {
   box-shadow: var(--glass-edge);
 }
 .glass[data-material="clear"]::before {
-  background: var(--glass-fill);
+  /* --lg-dim darkens clear glass for legibility (prefers-contrast: more) */
+  background:
+    linear-gradient(color-mix(in srgb, var(--bg) calc(var(--lg-dim) * 100%), transparent), color-mix(in srgb, var(--bg) calc(var(--lg-dim) * 100%), transparent)),
+    var(--glass-fill);
   backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
 }
@@ -213,6 +233,44 @@ body {
 .glass[data-material="clear"][data-shape="control"]:focus-within::before {
   background: var(--glass-fill-hover);
 }
+/* ---------- Liquid Glass levels (<html data-lg-level>, theme/useLiquidLight.ts · §10.5–§10.6) ---------- */
+/* Level 2+: specular highlight on panels and interactive controls, lit from --lg-light-x/y. */
+:root:is([data-lg-level="2"], [data-lg-level="3"]) {
+  --lg-specular: 0.6;
+  --lg-specular-size: 60%;
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass:is([data-shape="panel"], [data-interactive="true"])::after {
+  display: block;
+  will-change: transform; /* own layer: repainting the rim must not re-run the ::before backdrop blur */
+}
+/* Level 0 (setting "Đục" or reduced transparency): no backdrop sampling anywhere, opaque surfaces. */
+:root[data-lg-level="0"] *,
+:root[data-lg-level="0"] *::before {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:root[data-lg-level="0"] .glass::before {
+  background: var(--ui-surface-strong);
+}
+@media (prefers-reduced-transparency: reduce) {
+  *,
+  *::before {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .glass::before {
+    background: var(--ui-surface-strong);
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --lg-dim: 0.35;
+  }
+  .glass {
+    border-color: var(--glass-stroke-strong);
+  }
+}
+
 /* Strong surface that covers text (drawers over the chat): stacked on the page color so
    nothing underneath shows through (FE_DESIGN_SYSTEM.md §4.1). */
 .surface-opaque {

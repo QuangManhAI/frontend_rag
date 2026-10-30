@@ -13,6 +13,7 @@ import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
 import { WorldError } from './WorldError';
 import { Glass } from '../ui/Glass';
+import { useGlassLevel, useLiquidLight } from '../../theme/useLiquidLight';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -126,6 +127,9 @@ function BottomSheet() {
 }
 
 export function AppShell() {
+  const glassLevel = useGlassLevel();
+  const reduceMotion = useUi((s) => s.settings.reduceMotion);
+  useLiquidLight(glassLevel >= 2 && !reduceMotion);
   const status = useWorld((s) => s.status);
   const error = useWorld((s) => s.error);
   const panelOpen = useUi((s) => s.panelPaperId !== null);

@@ -1,6 +1,8 @@
 import { RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import { useUi, type QualityMode, type Settings } from '../../store/uiStore';
+import type { GlassSetting } from '../../theme/liquidGlass';
+import { useGlassLevelValue } from '../../theme/useLiquidLight';
 import { useWorld } from '../../store/worldStore';
 import { CrawlSettings } from './CrawlSettings';
 import { YearSlider } from './YearSlider';
@@ -14,6 +16,13 @@ const QUALITY: ReadonlyArray<readonly [QualityMode, string]> = [
   ['low', 'Thấp'],
 ];
 const TIER_LABEL = ['đầy đủ', 'tắt MSAA', 'dpr 1.5 · bloom nhẹ', 'dpr 1 · tắt bloom'] as const;
+const GLASS: ReadonlyArray<readonly [GlassSetting, string]> = [
+  ['auto', 'Tự động'],
+  ['off', 'Đục'],
+  ['frosted', 'Mờ'],
+  ['liquid', 'Liquid'],
+];
+const LEVEL_LABEL = ['đục', 'kính mờ', 'phản chiếu', 'khúc xạ', 'WebGL'] as const;
 
 /** Retrieval, display and crawl settings; invalid numbers are rejected (shown inline, never applied). */
 export function SettingsPanel() {
@@ -21,6 +30,7 @@ export function SettingsPanel() {
   const settings = useUi((s) => s.settings);
   const categories = useWorld((s) => s.categories);
   const tier = useUi((s) => s.qualityTier);
+  const level = useGlassLevelValue();
   const [draft, setDraft] = useState<Record<NumKey, string>>({ top_k: String(settings.top_k), nprobe: String(settings.nprobe) });
   const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>({});
   if (!open) return null;
@@ -96,6 +106,27 @@ export function SettingsPanel() {
               className="btn justify-center !py-1"
               data-testid={`quality-${value}`}
               onClick={() => setFlag({ quality: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="mt-3 text-xs">
+        <legend className="text-[var(--ink-muted)] mb-1">
+          Hiệu ứng kính <span className="mono">· cấp {level}: {LEVEL_LABEL[level] ?? '—'}</span>
+        </legend>
+        <div className="grid grid-cols-4 gap-1" role="radiogroup" aria-label="Hiệu ứng kính">
+          {GLASS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={settings.glass === value}
+              aria-pressed={settings.glass === value}
+              className="btn justify-center !py-1 !px-1 whitespace-nowrap"
+              data-testid={`glass-${value}`}
+              onClick={() => setFlag({ glass: value })}
             >
               {label}
             </button>
