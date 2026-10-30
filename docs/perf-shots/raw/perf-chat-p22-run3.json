@@ -1,0 +1,52 @@
+{
+  "label": "p22-run3",
+  "timestamp": "2026-10-30T04:42:58.335Z",
+  "targetUrl": "http://127.0.0.1:5197/?vectors=150000&bench&perf",
+  "totalFrames": 4197,
+  "fps": {
+    "mean": 611.2,
+    "stdDev": 390.7,
+    "median": 500,
+    "min": 2.5,
+    "max": 5000
+  },
+  "frameTime": {
+    "meanMs": 2.41,
+    "stdDevMs": 9.55,
+    "medianMs": 2,
+    "p95Ms": 3.6,
+    "p99Ms": 4.3,
+    "minMs": 0.2,
+    "maxMs": 392.5
+  },
+  "longTasks": {
+    "count": 4,
+    "maxDurationMs": 393,
+    "tasks": [
+      {
+        "duration": 261,
+        "startTime": 3000,
+        "name": "self"
+      },
+      {
+        "duration": 268,
+        "startTime": 4334.600000023842,
+        "name": "self"
+      },
+      {
+        "duration": 393,
+        "startTime": 5803.399999976158,
+        "name": "self"
+      },
+      {
+        "duration": 294,
+        "startTime": 12624.399999976158,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

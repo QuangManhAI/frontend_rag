@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T15:20:00+07:00
+- **Last Updated**: 2026-10-30T18:30:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -149,6 +149,7 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | `.glass` → cấu trúc `::before` (nền + backdrop-filter) / `::after` (specular, ẩn tới P21); `backdrop-filter` chỉ còn ở `::before` | ✅ |
 | Chuyển sang `Glass`: TopBar, cột chat, chip lọc, bottom sheet, Settings, Legend, PaperPanel, ResultCard, HealthBanner, 2 tooltip 3D, nút mở chat, chip tên người dùng, emblem/ô nhập/CTA đăng nhập | ✅ `grep liquid- src` = 0, không còn `glass-strong` |
 | Kính không chồng kính: số lớp backdrop-filter | ✅ đăng nhập 7 → 3 · lịch sử 5 → 3 · trả lời 10 → 9 |
+| *(Ghi chú P22)* Blur đặt ở `::before` hóa ra không ổn định trong Chromium khi panel có nội dung — ảnh mốc với canvas ẩn không phát hiện được; đã sửa ở P22 | ⚠️ |
 | Ảnh | ✅ 7/8 ≤ nhiễu; `07` đổi 4.441 px (form đăng nhập: bỏ blur lồng, CTA viền strong) — người duyệt chấp nhận, baseline 07 đã cập nhật |
 | Frame time (A/B xen kẽ, cổng riêng `127.0.0.1`) | ✅ P19 median 2.0 / 2.0 / 2.1 ms · P18 2.0 ms (p95 3.5–3.6, 4 long task cả hai) |
 | Unit, E2E, lint, build | ✅ 231/231 · 6/6 · 0 vi phạm · OK |
@@ -177,6 +178,19 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | `test:perf` chuẩn (cấp 3) | ✅ median 2.2–2.3 ms, p95 3.4 ms, 4 long task (P20: 2.1–2.2) |
 | Ảnh | ✅ 8 mốc cấp 1 giữ nguyên trừ `05` (thêm nhóm "Hiệu ứng kính"); 3 ảnh mới `01/02/05-lg2` — người duyệt chấp nhận |
 | Unit, E2E, build | ✅ 251/251 · 6/6 · OK |
+
+## P22 — Liquid Glass Cấp 3: khúc xạ SVG cho cột chat (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `theme/refractionMap.ts` (SDF bo góc, pháp tuyến giải tích, bản đồ R/G) | ✅ 7 test (ví dụ (2,2) của spec nằm ngoài góc bo 14px → kiểm tra trung tính, dùng (5,5) cho góc) |
+| `components/ui/LiquidFilters.tsx`: `<svg>` ẩn ngoài `<Canvas>`, bản đồ sinh lúc rảnh, ResizeObserver 150 ms, cache ≤ 4 kích thước, `<html data-lg-refract="ready">` | ✅ E2E: cache ≤ 4 sau 10 lần đổi kích thước |
+| Khúc xạ hiển thị trên Chromium (ảnh nền sọc: dải mép trên/trái bị bẻ) | ✅ `glass-backdrop-liquid` |
+| Ngoài Chromium (giả lập Firefox): cấp 2, không có filter, console sạch | ✅ E2E |
+| **Lỗi P19 phát hiện ở P22:** blur đặt ở `::before` bị Chromium bỏ khi nội dung được composite (cột chat: hỏng 4/5 lần ở cấp Mờ) → đưa `backdrop-filter` về phần tử | ✅ 5/5 lần mờ đúng; test `glass backdrop` bắt được lỗi cũ (fail 2/2 khi đưa lại) |
+| Ngân sách cấp 3 (median khi di chuột ≤ +10 % so với cấp 1) | ✅ sau khi đặt `--lg-chroma: 0`: 2.5 vs 2.5–2.7 ms (có chroma: 4.3–4.6 ms, +65–77 %) |
+| FCP / LCP bản build (5 lần, median) | ✅ cấp 1: 232 / 248 ms · cấp 3: 244 / 244 ms (dao động giữa lần chạy 200–488 ms) |
+| `test:perf` chuẩn (cấp 3) | median 1.9–2.0 ms, p95 3.6 ms, 4 long task; trung bình 2.38 ms (P21: 2.13) |
+| Unit, E2E, visual, lint, build | ✅ 256/256 · 6/6 · 18/18 (2 lần) · 0 · OK |
 
 ## Còn tồn tại (sau P16)
 - E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.

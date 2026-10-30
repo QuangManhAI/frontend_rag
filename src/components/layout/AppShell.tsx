@@ -13,7 +13,8 @@ import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
 import { WorldError } from './WorldError';
 import { Glass } from '../ui/Glass';
-import { useGlassLevel, useLiquidLight } from '../../theme/useLiquidLight';
+import { useGlassLevel, useGlassLevelValue, useLiquidLight } from '../../theme/useLiquidLight';
+import { LiquidFilters } from '../ui/LiquidFilters';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -42,6 +43,8 @@ function ChatDock() {
   const chatOpen = useUi((s) => s.chatOpen);
   const [mounted, setMounted] = useState(chatOpen);
   const firstOpen = useRef(true);
+  const dock = useRef<HTMLDivElement>(null);
+  const glassLevel = useGlassLevelValue();
   useEffect(() => {
     if (chatOpen) setMounted(true);
   }, [chatOpen]);
@@ -55,19 +58,24 @@ function ChatDock() {
     );
   }
   return (
-    <Glass
-      className={`w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
-      style={firstOpen.current && !closing ? introDelay(0.15) : undefined}
-      aria-hidden={closing || undefined}
-      data-testid="chat-dock"
-      onAnimationEnd={(e) => {
-        if (e.target !== e.currentTarget) return; // ignore animations of children
-        firstOpen.current = false;
-        if (closing) setMounted(false);
-      }}
-    >
-      <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
-    </Glass>
+    <>
+      <Glass
+        ref={dock}
+        data-refract="chat"
+        className={`w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
+        style={firstOpen.current && !closing ? introDelay(0.15) : undefined}
+        aria-hidden={closing || undefined}
+        data-testid="chat-dock"
+        onAnimationEnd={(e) => {
+          if (e.target !== e.currentTarget) return; // ignore animations of children
+          firstOpen.current = false;
+          if (closing) setMounted(false);
+        }}
+      >
+        <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
+      </Glass>
+      {glassLevel === 3 && <LiquidFilters target={dock} />}
+    </>
   );
 }
 

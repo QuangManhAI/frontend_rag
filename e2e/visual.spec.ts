@@ -208,3 +208,62 @@ test.describe('glass level behaviour', () => {
     expect(await light()).toBe(0);
   });
 });
+
+/**
+ * Glass must blur what is behind it (regression guard for P19→P22): a high-contrast stripe layer is put
+ * between the 3D scene and the UI, so a surface that stops sampling its backdrop shows crisp stripes.
+ * The liquid shot also shows the level-3 refraction band along the chat column's edge.
+ */
+test.describe('glass backdrop', () => {
+  for (const glass of ['frosted', 'liquid'] as const) {
+    test(`chat column over stripes (${glass})`, async ({ page }) => {
+      await seedReducedMotion(page, { glass });
+      await seedAuth(page);
+      await openWorld(page);
+      if (glass === 'liquid') await expect(page.locator('html')).toHaveAttribute('data-lg-refract', 'ready', { timeout: 15_000 });
+      await page.evaluate(() => {
+        const stripes = document.createElement('div');
+        stripes.style.cssText = 'position:fixed;inset:0;z-index:15;pointer-events:none;background:repeating-linear-gradient(90deg,#fff 0 6px,#e0245e 6px 12px,#000 12px 18px)';
+        document.querySelector('[data-testid=chat-dock]')?.closest('.fixed')?.append(stripes);
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`glass-backdrop-${glass}.png`, {
+        clip: { x: 0, y: 60, width: 480, height: 300 },
+        animations: 'disabled',
+        caret: 'hide',
+        stylePath: STYLE,
+        maxDiffPixels: NOISE_PX,
+      });
+    });
+  }
+
+  test('outside Chromium: level 2, no refraction filter, clean console', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    await page.addInitScript(() => Object.defineProperty(navigator, 'userAgentData', { value: { brands: [{ brand: 'Firefox', version: '140' }] } }));
+    await seedReducedMotion(page, { glass: 'liquid' });
+    await seedAuth(page);
+    await openWorld(page);
+    await expect(page.locator('html')).toHaveAttribute('data-lg-level', '2');
+    await page.waitForTimeout(1000);
+    await expect(page.getByTestId('liquid-filters')).toHaveCount(0);
+    const filter = await page.getByTestId('chat-dock').evaluate((el) => getComputedStyle(el).backdropFilter);
+    expect(filter).not.toContain('url(');
+    expect(errors.filter((e) => /filter|refract|svg/i.test(e))).toEqual([]);
+  });
+
+  test('resizing the window keeps at most 4 refraction maps', async ({ page }) => {
+    await seedReducedMotion(page, { glass: 'liquid' });
+    await seedAuth(page);
+    await openWorld(page);
+    await expect(page.locator('html')).toHaveAttribute('data-lg-refract', 'ready', { timeout: 15_000 });
+    for (let i = 0; i < 10; i++) {
+      await page.setViewportSize({ width: 1200 + i * 20, height: 800 + i * 10 });
+      await page.waitForTimeout(450); // 150 ms debounce + idle build
+    }
+    const size = await page.evaluate(async () => (await import('/src/components/ui/LiquidFilters.tsx')).refractionCacheSize());
+    expect(size).toBeLessThanOrEqual(4);
+    const href = await page.locator('#lg-refract-chat feImage').getAttribute('href');
+    expect(href?.startsWith('data:image/png')).toBe(true);
+  });
+});

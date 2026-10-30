@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T15:20:00+07:00
+- **Last Updated**: 2026-10-30T18:30:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -128,4 +128,11 @@
 - [P21] Cấp 3 trên Chromium hiện **trông giống cấp 2** (khúc xạ thuộc P22); `auto` đã trả 3 theo ví dụ của spec.
 - [P21] Ảnh mốc cấp 1 giữ bằng cách seed `glass: 'frosted'` (`seedReducedMotion` mặc định); ảnh Liquid tách thành `*-lg2.png`.
 - [P21] E2E "đã lưu" đọc `localStorage` thay vì `reload` — init script seed chạy lại ở mỗi lần tải và ghi đè thiết lập.
+- [P22] Ví dụ "góc bo: pixel (2,2) có R, G > 128" của spec nằm **ngoài** góc bo bán kính 14 (sd = +2.26) nên phải trung tính; test dùng (5,5) cho góc và giữ (2,2) như kiểm tra trung tính.
+- [P22] `backdrop-filter` chuyển từ `.glass::before` về chính `.glass` (thay §10.4/P19): Chromium bỏ backdrop của pseudo-element khi nội dung được composite (cột chat 4/5 lần hỏng ở cấp 1, 5/5 ở cấp 3); trên phần tử 5/5 đúng. Không đổi hình ảnh trong bộ ảnh mốc (nền phẳng).
+- [P22] `--lg-chroma: 0` thay 0.5px của spec: tách màu tốn median +65–77 % khi di chuột (vượt ngân sách +10 %); không có tách màu, cấp 3 bằng cấp 1 → giữ "Tự động" = cấp 3 trên Chromium (Phụ lục A #3) thay vì phương án dự phòng "chỉ khi chọn Liquid".
+- [P22] Filter dùng `filterUnits/primitiveUnits="userSpaceOnUse"` kích thước bằng phần tử — đã thử cả `objectBoundingBox`; cả hai chạy đúng trên `backdrop-filter` (Chromium 156).
+- [P22] Cache bản đồ giới hạn 4 kích thước (LRU) — spec chỉ ghi "cache theo khoá"; không giới hạn thì mỗi lần đổi kích thước giữ thêm một PNG.
+- [P22] Kiểm tra Safari bằng giả lập `navigator.userAgentData` (Firefox) trong Chromium — không có WebKit trong Playwright của dự án; ảnh Safari thật cần người duyệt chụp tay.
+- [P22] FCP/LCP đo bằng PerformanceObserver trên `vite build` + `vite preview` (không có Lighthouse CLI).
 

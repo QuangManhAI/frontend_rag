@@ -6,7 +6,7 @@
 - **Detailed Plan**: §1 Bảng tổng; §2 Cách đo; §3 Chi tiết từng prompt.
 - **References**: [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE_DESIGN_AUDIT.md`](../../docs/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
 - **Created**: 2026-10-29T23:55:00+07:00
-- **Last Updated**: 2026-10-30T15:20:00+07:00
+- **Last Updated**: 2026-10-30T18:30:00+07:00
 
 [STATUS: IN_PROGRESS]
 
@@ -26,6 +26,7 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | **P19** Glass | 2026-10-30 | 0 (14 rule trừ trig) · trig 5 · 19 | 4 · 3 · 6 · 9 | 7/8 ≤ nhiễu; `07` 4.441 px | 2.0 ms (3.5 ms) — A/B = P18 | 6/6 | **chấp nhận** — baseline 07 cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
 | **P20** rotor | 2026-10-30 | **0 (cả 14 rule)** | 4 · 3 · 6 · 9 | 0 (UI); canvas 0.18 % (nhiễu 0.06 %) | 2.1–2.2 ms (3.4 ms) — A/B = P19 | 6/6 | không đổi ảnh mốc — xem `trig-audit.md` §7 |
 | **P21** LG cấp 2 | 2026-10-30 | 0 (cả 14 rule) | 4 · 3 · 6 · 9 | `05` 13.410 px (nhóm "Hiệu ứng kính"); 3 ảnh mới `-lg2` | 2.2–2.3 ms (3.4 ms); di chuột: median 2.5 vs 2.6 ms cấp 1, p95 4.4–5.1 vs 3.7 ms | 6/6 | **chấp nhận** — baseline 05 cập nhật, 3 ảnh lg2 nhận làm mốc sau khi người duyệt xem (2026-10-30) |
+| **P22** LG cấp 3 | 2026-10-30 | 0 (cả 14 rule) | 4 · 3 · 6 · 9 | 18/18 không đổi; 2 ảnh mới `glass-backdrop-*` (nền sọc) | test:perf median 1.9–2.0 ms; di chuột 2.5 vs 2.5–2.7 ms cấp 1 | 6/6 | **chấp nhận** — 2 ảnh `glass-backdrop-*` nhận làm mốc sau khi người duyệt xem (2026-10-30) |
 
 ---
 
@@ -94,4 +95,23 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | Chuột đứng yên (đối chứng) | 2.6–2.7 / 3.6 ms | 2.6 / 3.6–3.7 ms |
 
 - **Lỗi blur do `mix-blend-mode`:** thử nghiệm A/B trên panel Cài đặt — có `plus-lighter` thì legend phía sau lộ rõ (527 px khác), bỏ đi thì mờ đúng.
+
+### P22 — Liquid Glass Cấp 3
+
+- **Lỗi P19 (blur ở `::before`)** — đo độ lệch chuẩn độ sáng vùng trống cột chat trên nền sọc (≈ 4 = mờ, 80 = sọc rõ), 5 lần mỗi cấu hình:
+
+| Cấu hình | 5 lần |
+| :-- | :-- |
+| Cấp 1, blur ở `::before` | 80 · 3.7 · 80 · 80 · 80 |
+| Cấp 3, blur ở `::before` | 80 · 80 · 80 · 80 · 80 |
+| Cấp 3, blur trên phần tử (đã sửa) | 6.1 × 5 (dải khúc xạ ở mép) |
+| Cấp 1, blur trên phần tử (đã sửa) | 3.7 × 5 |
+
+- **Hiệu năng khi di chuột** (median / p95, 3 lượt xen kẽ):
+
+| | Cấp 1 | Cấp 2 | Cấp 3 có chroma 0.5px | Cấp 3 chroma 0 |
+| :-- | :-- | :-- | :-- | :-- |
+| ms | 2.5–2.7 / 3.6–4.0 | 2.4–2.5 / 4.1–4.9 | 4.3–4.6 / 5.6–6.7 | **2.5 / 4.4–5.0** |
+
+- **FCP/LCP** (build production, 5 lần): cấp 1 median 232 / 248 ms; cấp 3 244 / 244 ms.
 
