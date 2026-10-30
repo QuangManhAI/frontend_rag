@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T01:05:00+07:00
+- **Last Updated**: 2026-10-30T09:30:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -102,4 +102,12 @@
 - [P17] Hàng session đang chọn `bg-[var(--accent)]/15` → `/16` cho khớp thang pha màu §2.4 (modifier opacity của Tailwind tương đương `color-mix … 16%`).
 - [P17] Nút "Đoạn chat mới" và nút lịch sử đang bật đổi chữ trắng → `--accent-ink` (chữ tối trên nền cyan) — trắng trên `#7fe8ff` chỉ đạt ~1.4:1.
 - [P17] `--ui-border` 0.12 → 0.14 không vượt ngưỡng 600 px ở ảnh nào (viền 1px, chênh 0.02 alpha nằm dưới ngưỡng màu từng pixel của Playwright) — thay đổi có thật nhưng không đo được bằng ảnh.
+- [P18] Cỡ chữ ngoài Phụ lục B.4 quy theo vai trò (người duyệt chọn 2026-10-30): `0.65rem` → `text-micro`, `0.68/0.7rem` → `text-caption`, `0.78/0.8/0.82rem` → `text-xs`; đã bổ sung vào Design System B.4.
+- [P18] Icon theo quy tắc "chữ + 2" (người duyệt chọn): nút ở header panel (Chat, Settings, PaperPanel) → 16 (`LogOut` 13 → 16, `ChevronsLeft`/`X` 15 → 16); icon cạnh chữ 12–13 px và trong nút → 14; cạnh chữ 10–11 px → 12 (`WifiOff` 10 → 12).
+- [P18] `<SendHorizonal size={0}>` trong nút CTA đăng nhập giữ nguyên — icon đang bị ẩn có chủ đích từ `85962c2`; bật lại là đổi hành vi, ngoài phạm vi.
+- [P18] Bubble chat `px-3.5` → `px-3` theo §6.1 (không có bậc 3.5); §8.1 ghi `8px 14px` mâu thuẫn → đã sửa §8.1 thành `8px 12px`.
+- [P18] `z-[1]` (WorldOverlay) → `z-10` theo §6.3 (lớp "Overlay 3D").
+- [P18] Thời lượng gộp theo B.5 làm vài animation ngắn lại: intro 0.6 → 0.48 s, `bar` 0.6 → 0.48 s, `score3d` 0.3/0.35 → 0.24 s; chuyển động camera (`CHAT_SLIDE_S`) không đổi.
+- [P18] `PerfHUD.tsx` (được miễn rule) vẫn được đổi `rounded-lg` → `rounded-md`, `rounded` → `rounded-xs`, `text-[10px]` → `text-micro` — sau `--radius-*: initial` các class cũ không còn được sinh, HUD sẽ mất bo góc.
+- [P18] `check-design` bỏ qua phần trong `var(...)` khi tìm thời lượng thô — `var(--intro-delay, 0s)` là mặc định của biến, không phải thời lượng.
 

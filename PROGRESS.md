@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T01:05:00+07:00
+- **Last Updated**: 2026-10-30T09:30:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -129,6 +129,18 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Chữ đọc được: "Xóa?" danger trên danger 16%, badge offline warn trên warn 16%, ink-muted trên hover fill | ✅ `contrast.test.ts` ≥ 4.5 |
 | Ảnh: chỉ `06-history-drawer` đổi (1.430 px) | ✅ người duyệt chấp nhận, baseline 06 đã cập nhật |
 | Unit, E2E, typecheck | ✅ 221/221 · 6/6 · 0 lỗi |
+
+## P18 — Quy đổi thang giá trị (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `check:design:strict --rules=all-except-trig` | ✅ 0 (đã nằm trong `npm run lint`) |
+| STATS: bo góc 4 + full · blur 3 · alpha trắng 6 · cỡ chữ 7 (+2 `em`) | ✅ 4 · 3 · 6 · 9 (= 7 + `0.72em`, `0.85em`) |
+| `@theme`: `--radius-*: initial` (xs 4 · sm 6 · md 10 · lg 14 · full), `--blur-*: initial` (sm 6 · md 12 · lg 16); `--radius` → alias `--radius-lg` | ✅ `scale.test.ts` |
+| `--dur-scene` = `CHAT_SLIDE_S` × 1000 (hằng số chuyển sang `utils/animationConfig.ts`) | ✅ `motionSync.test.ts` |
+| Không còn `rounded-xl/2xl/3xl`, `rounded` trần | ✅ (`retired-radius` = 0) |
+| Unit, E2E, typecheck, build | ✅ 227/227 · 6/6 · 0 lỗi · OK |
+| Frame time (dev, headless, 150k) | ✅ median 2.2 / 2.1 / 2.1 ms (P15: 2.2), p95 3.4 ms |
+| Ảnh (ngưỡng 1.5%) | ⚠️ 6/8 trong ngưỡng; `03` 2.1 %, `04` 4.2 % do chữ xuống dòng lại (Markdown 14.4 → 14 px, abstract/đoạn trích 13.1 → 12 px) — người duyệt chấp nhận, 8 baseline đã cập nhật |
 
 ## Còn tồn tại (sau P16)
 - E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.

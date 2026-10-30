@@ -4,11 +4,9 @@ import { useEffect, useRef } from 'react';
 import type * as THREE from 'three';
 import { flightProbe } from '../../store/fxStore';
 import { useUi } from '../../store/uiStore';
+import { CHAT_SLIDE_DELAY_S, CHAT_SLIDE_S } from '../../utils/animationConfig';
 import { getPreset } from '../../utils/cameraPresets';
 
-/** The scene slides with the chat column: same length as its CSS slide, starting a bit after it. */
-const CHAT_SLIDE_S = 1.5;
-const CHAT_SLIDE_DELAY_S = 0.5;
 const easeInOutCubic = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
 /** Moves CameraControls to the preset of the current camera mode; users can orbit freely afterwards. */

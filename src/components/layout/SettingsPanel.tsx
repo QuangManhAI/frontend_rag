@@ -37,7 +37,7 @@ export function SettingsPanel() {
       <div className="flex items-center mb-3">
         <h2 className="font-semibold">Cài đặt</h2>
         <button type="button" className="btn btn-icon ml-auto" aria-label="Đóng cài đặt" onClick={() => useUi.getState().setSettingsOpen(false)}>
-          <X size={14} />
+          <X size={16} />
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -62,7 +62,7 @@ export function SettingsPanel() {
               onChange={(e) => setNum(key, e.target.value)}
             />
             {errors[key] && (
-              <span id={`${key}-err`} role="alert" className="text-[var(--danger)] text-[0.7rem]">
+              <span id={`${key}-err`} role="alert" className="text-[var(--danger)] text-caption">
                 {errors[key]}
               </span>
             )}
@@ -128,7 +128,7 @@ export function SettingsPanel() {
           setErrors({});
         }}
       >
-        <RotateCcw size={13} /> Đặt lại
+        <RotateCcw size={14} /> Đặt lại
       </button>
     </div>
   );

@@ -83,27 +83,27 @@ function PaperPanelBody({ paperId }: { paperId: string }) {
           {p ? `${categories[p.category_index]?.code ?? 'other'} · ${p.year}` : '…'} · {paperId}
         </span>
         <button ref={closeBtn} type="button" className="btn btn-icon ml-auto" aria-label="Đóng panel" onClick={() => useUi.getState().closeFocus()}>
-          <X size={15} />
+          <X size={16} />
         </button>
       </header>
 
       <div className="flex-1 overflow-y-auto scroll-thin px-4 py-3 flex flex-col gap-3">
         {kind === 'unverified' && (
-          <div role="alert" className="rounded-xl border border-[var(--warn)] bg-[color-mix(in_srgb,var(--warn)_12%,transparent)] px-3 py-2 text-xs flex gap-2">
-            <AlertTriangle size={15} className="text-[var(--warn)] flex-none mt-0.5" />
+          <div role="alert" className="rounded-md border border-[var(--warn)] bg-[color-mix(in_srgb,var(--warn)_12%,transparent)] px-3 py-2 text-xs flex gap-2">
+            <AlertTriangle size={14} className="text-[var(--warn)] flex-none mt-0.5" />
             <span>
               <strong>{UNVERIFIED_WARNING}.</strong> Hãy kiểm tra lại thông tin này trước khi dùng.
             </span>
           </div>
         )}
         {kind === 'grounded' && (
-          <div className="used-band rounded-xl px-3 py-2 text-xs flex items-center gap-2">
+          <div className="used-band rounded-md px-3 py-2 text-xs flex items-center gap-2">
             <CheckCircle2 size={14} className="text-[var(--success)]" />
             {USED_NOTE} · {grounded.length} đoạn
           </div>
         )}
         {kind === 'browse' && (
-          <div className="rounded-xl border border-[var(--ui-border)] px-3 py-2 text-xs flex items-center gap-2 text-[var(--ink-muted)]">
+          <div className="rounded-md border border-[var(--ui-border)] px-3 py-2 text-xs flex items-center gap-2 text-[var(--ink-muted)]">
             <Info size={14} /> {BROWSE_NOTE}
           </div>
         )}
@@ -128,7 +128,7 @@ function PaperPanelBody({ paperId }: { paperId: string }) {
             <div className="flex flex-wrap gap-2">
               {arxiv && (
                 <a className="btn !text-xs" href={arxiv} target="_blank" rel="noreferrer noopener">
-                  arXiv <ExternalLink size={12} />
+                  arXiv <ExternalLink size={14} />
                 </a>
               )}
               {p.has_fulltext && <span className="tag">full text</span>}
@@ -136,7 +136,7 @@ function PaperPanelBody({ paperId }: { paperId: string }) {
             </div>
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-1">Abstract</h3>
-              <Markdown text={p.abstract} className="!text-[0.82rem]" />
+              <Markdown text={p.abstract} className="!text-xs" />
             </section>
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-2">Các đoạn</h3>

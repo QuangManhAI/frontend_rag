@@ -34,7 +34,7 @@ export function PipelineStatus() {
             <li key={s.phase} className="step" data-state={state} aria-current={state === 'active' ? 'step' : undefined}>
               <span className="step-dot" aria-hidden />
               <span className="truncate">{s.label}</span>
-              {showTimings && <span className="mono ml-auto text-[0.65rem] text-[var(--ink-muted)]">{timings[s.timing]}ms</span>}
+              {showTimings && <span className="mono ml-auto text-micro text-[var(--ink-muted)]">{timings[s.timing]}ms</span>}
             </li>
           );
         })}
@@ -42,7 +42,7 @@ export function PipelineStatus() {
       <div className="flex items-center gap-2 mt-2 min-h-6">
         {failed && <span className="text-xs text-[var(--danger)]">✕ {errorAt ?? 'Lỗi'}</span>}
         {running && (
-          <button type="button" className="btn ml-auto !py-0.5 !text-[0.7rem]" onClick={() => useRag.getState().skipAnimation()}>
+          <button type="button" className="btn ml-auto !py-0.5 !text-caption" onClick={() => useRag.getState().skipAnimation()}>
             <FastForward size={12} /> Bỏ qua animation
           </button>
         )}

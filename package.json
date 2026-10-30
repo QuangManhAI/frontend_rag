@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/check-design.cjs --strict --rules=all-except-trig",
     "bench": "vitest bench --run",
     "dev:live": "VITE_USE_MOCK=false vite",
     "test:perf": "node scripts/perf-chat-benchmark.cjs",

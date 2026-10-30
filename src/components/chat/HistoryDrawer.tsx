@@ -53,7 +53,7 @@ export function HistoryDrawer() {
           title="Đóng lịch sử"
           aria-label="Đóng lịch sử"
         >
-          <X size={15} />
+          <X size={16} />
         </button>
       </div>
 
@@ -64,7 +64,7 @@ export function HistoryDrawer() {
           onClick={startNewChat}
           className="btn w-full justify-center gap-2 !py-2 text-xs font-medium !bg-[var(--accent)] hover:!brightness-110 !text-[var(--accent-ink)] transition-all shadow-sm"
         >
-          <Plus size={15} />
+          <Plus size={14} />
           Đoạn chat mới
         </button>
       </div>
@@ -85,7 +85,7 @@ export function HistoryDrawer() {
             return (
               <div
                 key={session.id}
-                className={`group relative flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors cursor-pointer ${
+                className={`group relative flex items-center justify-between rounded-md px-2.5 py-2 text-xs transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-[var(--accent)]/16 border border-[var(--accent)]/40 text-[var(--ink)] font-medium shadow-xs'
                     : 'hover:bg-[var(--glass-fill-hover)] text-[var(--ink-muted)]'
@@ -100,7 +100,7 @@ export function HistoryDrawer() {
                   <div className="truncate font-medium leading-tight">
                     {session.title || 'Đoạn chat mới'}
                   </div>
-                  <div className="text-[10px] text-[var(--ink-faint)] mt-0.5">
+                  <div className="text-micro text-[var(--ink-faint)] mt-0.5">
                     {formatRelativeTime(session.last_message_at || session.created_at)}
                     {session.message_count > 0 && ` • ${session.message_count} tin nhắn`}
                   </div>
@@ -109,11 +109,11 @@ export function HistoryDrawer() {
                 {/* Inline Delete & 2-Step Confirmation */}
                 <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {isConfirming ? (
-                    <div className="flex items-center gap-1 bg-[color-mix(in_srgb,var(--danger)_16%,var(--ui-surface-strong))] border border-[color-mix(in_srgb,var(--danger)_40%,transparent)] rounded px-1.5 py-0.5 animate-fadeIn">
-                      <span className="text-[10px] text-[var(--danger)] font-semibold mr-0.5">Xóa?</span>
+                    <div className="flex items-center gap-1 bg-[color-mix(in_srgb,var(--danger)_16%,var(--ui-surface-strong))] border border-[color-mix(in_srgb,var(--danger)_40%,transparent)] rounded-xs px-1.5 py-0.5 animate-fadeIn">
+                      <span className="text-micro text-[var(--danger)] font-semibold mr-0.5">Xóa?</span>
                       <button
                         type="button"
-                        className="p-1 text-[var(--danger)] hover:text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--danger)_24%,transparent)] rounded"
+                        className="p-1 text-[var(--danger)] hover:text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--danger)_24%,transparent)] rounded-xs"
                         title="Xác nhận xoá"
                         onClick={() => {
                           setConfirmDeleteId(null);
@@ -124,7 +124,7 @@ export function HistoryDrawer() {
                       </button>
                       <button
                         type="button"
-                        className="p-1 text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-fill-hover)] rounded"
+                        className="p-1 text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-fill-hover)] rounded-xs"
                         title="Huỷ"
                         onClick={() => setConfirmDeleteId(null)}
                       >
@@ -134,12 +134,12 @@ export function HistoryDrawer() {
                   ) : (
                     <button
                       type="button"
-                      className="opacity-0 group-hover:opacity-100 p-1 text-[var(--ink-faint)] hover:text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] rounded transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-[var(--ink-faint)] hover:text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] rounded-xs transition-all"
                       title="Xoá đoạn chat"
                       aria-label="Xoá đoạn chat"
                       onClick={() => setConfirmDeleteId(session.id)}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>

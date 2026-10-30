@@ -17,7 +17,7 @@ export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null
         </svg>
         <div className="min-w-0">
           <h1 className="text-sm font-semibold leading-tight truncate">Cây Tri Thức Vector</h1>
-          <p className="text-[0.65rem] text-[var(--ink-muted)] leading-tight truncate hidden sm:block">RAG trực quan · tài liệu khoa học</p>
+          <p className="text-micro text-[var(--ink-muted)] leading-tight truncate hidden sm:block">RAG trực quan · tài liệu khoa học</p>
         </div>
       </div>
       <span className="ml-auto" />

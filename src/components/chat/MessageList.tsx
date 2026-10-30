@@ -33,7 +33,7 @@ export function MessageList() {
       <div className="flex-1 overflow-y-auto scroll-thin px-4 py-5 flex flex-col gap-4">
         <div className="text-sm text-[var(--ink-muted)] leading-relaxed">
           <p className="text-[var(--ink)] font-medium flex items-center gap-2 mb-1">
-            <Sparkles size={15} className="text-[var(--accent)]" /> Hỏi cây tri thức
+            <Sparkles size={16} className="text-[var(--accent)]" /> Hỏi cây tri thức
           </p>
           Mỗi điểm sáng trên tán là một bài báo. Gửi câu hỏi để xem quả cầu vector bay theo cành, so sánh và tìm ra các bài gần nhất.
         </div>

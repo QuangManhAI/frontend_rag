@@ -56,17 +56,17 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
         </button>
 
         <div className="flex items-center gap-1.5 min-w-0 mr-auto pl-1">
-          <MessagesSquare size={15} className="text-[var(--accent)] shrink-0" />
+          <MessagesSquare size={14} className="text-[var(--accent)] shrink-0" />
           <h2 className="text-xs font-semibold truncate max-w-[140px]" title={activeSession?.title || 'Hỏi đáp RAG'}>
             {activeSession?.title || 'Hỏi đáp RAG'}
           </h2>
-          {USE_MOCK && <span className="tag mono !text-[10px] !py-0 !px-1">mock</span>}
+          {USE_MOCK && <span className="tag mono !text-micro !py-0 !px-1">mock</span>}
           {isOffline && !USE_MOCK && (
             <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[color-mix(in_srgb,var(--warn)_16%,transparent)] text-[var(--warn)] border border-[color-mix(in_srgb,var(--warn)_40%,transparent)]"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs text-micro font-medium bg-[color-mix(in_srgb,var(--warn)_16%,transparent)] text-[var(--warn)] border border-[color-mix(in_srgb,var(--warn)_40%,transparent)]"
               title="Máy chủ ngoại tuyến. Bạn vẫn có thể xem toàn bộ lịch sử trò chuyện đã lưu."
             >
-              <WifiOff size={10} />
+              <WifiOff size={12} />
               Ngoại tuyến
             </span>
           )}
@@ -76,7 +76,7 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
           {isAuthenticated && user && (
             <>
               <span
-                className="liquid-badge-chip max-w-[110px] truncate !text-[var(--ink)] text-[11px]"
+                className="liquid-badge-chip max-w-[110px] truncate !text-[var(--ink)] text-caption"
                 title={user.email}
               >
                 {user.display_name || user.email}
@@ -88,13 +88,13 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
                 title="Đăng xuất"
                 onClick={logout}
               >
-                <LogOut size={13} />
+                <LogOut size={16} />
               </button>
             </>
           )}
           {onCollapse && (
             <button type="button" className="btn btn-icon !p-1.5" aria-label="Thu gọn chat" onClick={onCollapse}>
-              <ChevronsLeft size={15} />
+              <ChevronsLeft size={16} />
             </button>
           )}
         </div>
@@ -118,7 +118,7 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
 
 export function ChatReopenButton() {
   return (
-    <button type="button" className="btn glass !rounded-xl" onClick={() => useUi.getState().setChatOpen(true)} aria-label="Mở chat">
+    <button type="button" className="btn glass" onClick={() => useUi.getState().setChatOpen(true)} aria-label="Mở chat">
       <MessagesSquare size={16} /> Chat
     </button>
   );

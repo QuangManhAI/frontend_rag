@@ -20,7 +20,7 @@
   --success: #58f0a7;
   --orb: #e6fbff;
   --orb-halo: #7fe8ff;
-  --radius: 14px;
+  --radius: var(--radius-lg); /* deprecated alias */
   --ink-faint: #64607e;
   --glass-tint: #0c0a183d;
   --glass-fill: #ffffff0a;
@@ -43,7 +43,7 @@
   --dur-hover: 160ms;
   --dur-enter: 240ms;
   --dur-reveal: 480ms;
-  --dur-scene: 1500ms; /* must match CHAT_SLIDE_S in CameraDirector */
+  --dur-scene: 1500ms; /* = CHAT_SLIDE_S (utils/animationConfig.ts), see motionSync.test.ts */
 
   /* Liquid Glass — level 1 defaults, all off (§10.3) */
   --lg-refraction: 0px;
@@ -60,6 +60,20 @@
 @theme {
   --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* radius — replaces Tailwind's scale (§3.1); rounded-xl/2xl/3xl and bare `rounded` no longer exist */
+  --radius-*: initial;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* backdrop blur (§4.2) */
+  --blur-*: initial;
+  --blur-sm: 6px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
 
   /* type — text-xs (12), text-sm (14), text-base (16) keep Tailwind defaults (§5.2) */
   --text-micro: 10px;
@@ -101,9 +115,9 @@ body {
 .glass {
   background: var(--glass-tint);
   border: 1px solid var(--glass-stroke);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  border-radius: var(--radius);
+  backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel), var(--glass-edge);
 }
 .glass-strong {
@@ -119,14 +133,14 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 0.4rem 0.7rem;
-  font-size: 0.8rem;
+  font-size: var(--text-control);
   font-weight: 500;
   color: var(--ink);
   border: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-surface) 60%, transparent);
-  transition: background 0.15s, border-color 0.15s, transform 0.1s, color 0.15s;
+  transition: background var(--dur-hover), border-color var(--dur-hover), transform var(--dur-press), color var(--dur-hover);
   cursor: pointer;
 }
 .btn:hover {
@@ -168,12 +182,12 @@ body {
 
 .field {
   width: 100%;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--bg) 55%, transparent);
   color: var(--ink);
   padding: 0.45rem 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--text-control);
 }
 .field[aria-invalid="true"] {
   border-color: var(--danger);
@@ -183,9 +197,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.1rem 0.5rem;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   border: 1px solid var(--ui-border);
   color: var(--ink-muted);
 }
@@ -193,7 +207,7 @@ body {
 .dot {
   width: 0.55rem;
   height: 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   flex: none;
   box-shadow: 0 0 8px currentColor;
 }
@@ -206,7 +220,7 @@ body {
   vertical-align: baseline;
   margin: 0 0.12rem;
   padding: 0 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-family: var(--font-mono);
   font-size: 0.72em;
   line-height: 1.6;
@@ -215,7 +229,7 @@ body {
   color: var(--ink);
   cursor: pointer;
   position: relative;
-  transition: background 0.15s, transform 0.1s;
+  transition: background var(--dur-hover), transform var(--dur-press);
 }
 .cite-chip:hover {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
@@ -231,15 +245,15 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   padding: 0.3rem 0.55rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--ui-surface-strong);
   border: 1px solid var(--warn);
   color: var(--ink);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-hover);
   z-index: 5;
 }
 .cite-chip:hover .cite-tip,
@@ -249,7 +263,7 @@ body {
 
 /* ---------- markdown ---------- */
 .md {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   line-height: 1.65;
   overflow-wrap: anywhere;
 }
@@ -272,7 +286,7 @@ body {
 }
 .md strong {
   color: var(--ink);
-  font-weight: 650;
+  font-weight: 600;
 }
 .md em {
   color: var(--accent);
@@ -282,7 +296,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.85em;
   padding: 0.05rem 0.3rem;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: color-mix(in srgb, var(--ink) 9%, transparent);
 }
 .md blockquote {
@@ -291,7 +305,7 @@ body {
   padding: 0.2rem 0.7rem;
   color: var(--ink-muted);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .md .katex-display {
   overflow-x: auto;
@@ -314,14 +328,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   color: var(--ink-muted);
-  transition: color 0.2s;
+  transition: color var(--dur-hover);
 }
 .step-dot {
   width: 0.6rem;
   height: 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1.5px solid currentColor;
   flex: none;
 }
@@ -363,7 +377,7 @@ body {
   width: 6px;
   height: 6px;
   margin-right: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent);
   animation: blink 1.2s infinite ease-in-out;
 }
@@ -403,34 +417,34 @@ body {
   pointer-events: none;
   white-space: nowrap;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-caption);
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   color: var(--ink);
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--blur-sm));
   transform: translate(-50%, -140%);
   user-select: none;
 }
 .label3d.small {
-  font-size: 10px;
+  font-size: var(--text-micro);
   opacity: 0.85;
 }
 .score3d {
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   padding: 1px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   transform: translate(-50%, -160%);
   white-space: nowrap;
   border: 1px solid var(--ui-border);
   background: var(--ui-surface-strong);
   color: var(--ink-muted);
-  transition: opacity 0.3s, color 0.3s, border-color 0.3s;
-  animation: score-in 0.35s ease-out both;
+  transition: opacity var(--dur-enter), color var(--dur-enter), border-color var(--dur-enter);
+  animation: score-in var(--dur-enter) var(--ease-standard) both;
 }
 .score3d[data-chosen="true"] {
   color: var(--accent);
@@ -450,7 +464,7 @@ body {
 .compare-score {
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-control);
   font-weight: 700;
   color: var(--accent);
   text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
@@ -458,7 +472,7 @@ body {
   white-space: nowrap;
 }
 .compare-score.flash {
-  animation: flash 0.25s ease-out;
+  animation: flash var(--dur-enter) var(--ease-standard);
 }
 @keyframes flash {
   from {
@@ -470,7 +484,7 @@ body {
 .query-text {
   pointer-events: none;
   transform: translate(-50%, -50%);
-  font-size: 22px;
+  font-size: var(--text-display);
   font-weight: 600;
   color: var(--orb);
   text-shadow: 0 0 18px var(--orb-halo);
@@ -481,7 +495,7 @@ body {
   letter-spacing: 0.01em;
 }
 .query-text.dissolve {
-  animation: dissolve 1.5s ease-in forwards;
+  animation: dissolve var(--dur-scene) ease-in forwards;
 }
 @keyframes dissolve {
   0% {
@@ -504,12 +518,12 @@ body {
 .digits-ring {
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-micro);
   color: var(--accent);
   white-space: nowrap;
   transform: translate(-50%, 140%);
   opacity: 0.9;
-  animation: digits-in 0.6s ease-out both;
+  animation: digits-in var(--dur-reveal) var(--ease-standard) both;
 }
 @keyframes digits-in {
   from {
@@ -528,9 +542,9 @@ body {
   align-items: baseline;
   gap: 5px;
   padding: 3px 10px 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--ink);
@@ -540,16 +554,16 @@ body {
   border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   box-shadow:
     0 0 14px var(--glow),
-    inset 0 1px 0 #ffffff1f;
-  backdrop-filter: blur(6px);
+    inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(var(--blur-sm));
   transform: translate(-50%, calc(-100% - var(--stem)));
   translate: 0 calc(-1 * var(--lift, 0px));
   transform-origin: 50% 100%;
   transition:
-    translate 0.24s cubic-bezier(0.2, 0.8, 0.3, 1),
-    border-color 0.2s,
-    box-shadow 0.2s;
-  animation: topk-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+    translate var(--dur-enter) var(--ease-standard),
+    border-color var(--dur-hover),
+    box-shadow var(--dur-hover);
+  animation: topk-in var(--dur-reveal) var(--ease-spring) both;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -559,7 +573,7 @@ body {
   position: absolute;
   left: 50%;
   pointer-events: none;
-  transition: height 0.24s cubic-bezier(0.2, 0.8, 0.3, 1), top 0.24s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: height var(--dur-enter) var(--ease-standard), top var(--dur-enter) var(--ease-standard);
 }
 .topk-badge::before {
   top: 100%;
@@ -572,7 +586,7 @@ body {
   top: calc(100% + var(--stem) + var(--lift, 0px));
   width: 5px;
   height: 5px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   transform: translate(-50%, -50%);
   background: var(--orb);
   box-shadow: 0 0 8px var(--orb-halo);
@@ -598,7 +612,7 @@ body {
   opacity: 0.75;
 }
 .topk-meta {
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 500;
   color: var(--ink-muted);
 }
@@ -618,7 +632,7 @@ body {
 .result-card {
   width: 300px;
   transform: translate(28px, -50%);
-  animation: card-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: card-in var(--dur-reveal) var(--ease-spring) both;
 }
 @keyframes card-in {
   from {
@@ -629,7 +643,7 @@ body {
 
 .bar {
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--ink) 12%, transparent);
   overflow: hidden;
 }
@@ -637,7 +651,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  transition: width 0.6s ease-out;
+  transition: width var(--dur-reveal) var(--ease-standard);
 }
 
 .clamp-3 {
@@ -649,7 +663,7 @@ body {
 
 /* ---------- panels ---------- */
 .slide-in-right {
-  animation: slide-right 0.25s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  animation: slide-right var(--dur-enter) var(--ease-standard) both;
 }
 @keyframes slide-right {
   from {
@@ -661,7 +675,7 @@ body {
 /* Page intro: chrome slides in from its own edge; set --intro-delay to stagger. */
 .intro-down,
 .intro-up {
-  animation: 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) var(--intro-delay, 0s) both;
+  animation: var(--dur-reveal) var(--ease-standard) var(--intro-delay, 0s) both;
 }
 .intro-down {
   animation-name: intro-down;
@@ -685,10 +699,10 @@ body {
 /* Chat column (docked left): slides slowly out past the left edge and back in.
    The 3D scene follows 0.5 s later with the same duration (CameraDirector, CHAT_SLIDE_*). */
 .chat-slide-in {
-  animation: chat-in 1.5s cubic-bezier(0.65, 0, 0.35, 1) var(--intro-delay, 0s) both;
+  animation: chat-in var(--dur-scene) var(--ease-scene) var(--intro-delay, 0s) both;
 }
 .chat-slide-out {
-  animation: chat-out 1.5s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation: chat-out var(--dur-scene) var(--ease-scene) both;
   pointer-events: none;
 }
 @keyframes chat-in {
@@ -704,7 +718,7 @@ body {
   }
 }
 .fade-in {
-  animation: fade 0.25s ease-out both;
+  animation: fade var(--dur-enter) var(--ease-standard) both;
 }
 @keyframes fade {
   from {
@@ -713,7 +727,7 @@ body {
 }
 
 .skeleton {
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(90deg, color-mix(in srgb, var(--ink) 8%, transparent) 25%, color-mix(in srgb, var(--ink) 16%, transparent) 50%, color-mix(in srgb, var(--ink) 8%, transparent) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.3s infinite linear;
@@ -781,7 +795,7 @@ input[type="range"] {
 
 /* labels: smaller and quieter so 14 branch labels don't shout */
 .label3d {
-  font-size: 10px;
+  font-size: var(--text-micro);
   opacity: 0.82;
 }
 
@@ -803,40 +817,34 @@ input[type="range"] {
   position: relative;
   width: 3rem;
   height: 3rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
   margin: 0 auto 0.7rem;
   color: var(--accent);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-stroke);
+  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-edge-strong);
 }
 
 .liquid-input-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  border-radius: var(--radius-md);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-stroke);
+  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-edge);
+  transition: border-color var(--dur-hover) var(--ease-standard), background var(--dur-hover) var(--ease-standard), box-shadow var(--dur-hover) var(--ease-standard);
 }
 .liquid-input-wrap:focus-within {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  background: var(--glass-fill-hover);
+  box-shadow: var(--glass-edge-strong);
 }
 
 .liquid-input {
@@ -845,7 +853,7 @@ input[type="range"] {
   border: none;
   outline: none;
   color: var(--ink);
-  font-size: 0.83rem;
+  font-size: var(--text-control);
   padding: 0.68rem 0.75rem 0.68rem 0.55rem;
 }
 .liquid-input::placeholder {
@@ -863,22 +871,20 @@ input[type="range"] {
   justify-content: center;
   gap: 0.45rem;
   padding: 0.7rem 1rem;
-  border-radius: 12px;
-  font-size: 0.83rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-control);
   font-weight: 600;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-stroke-strong);
+  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-edge-strong);
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+  transition: background var(--dur-hover) var(--ease-standard), border-color var(--dur-hover) var(--ease-standard), transform var(--dur-press) var(--ease-standard);
 }
 .liquid-cta-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-fill-hover);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .liquid-cta-btn:active:not(:disabled) {
@@ -894,13 +900,13 @@ input[type="range"] {
   align-items: center;
   gap: 0.32rem;
   padding: 0.22rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-caption);
   font-weight: 500;
   color: var(--ink-muted);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(10px);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
 }
 

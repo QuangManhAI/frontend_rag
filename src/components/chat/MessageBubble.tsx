@@ -43,7 +43,7 @@ export function MessageBubble({ message, expandedTerms }: Props) {
   if (message.role === 'user') {
     return (
       <div className="flex flex-col items-end gap-1 fade-in">
-        <div className="max-w-[88%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] border border-[color-mix(in_srgb,var(--accent)_35%,transparent)] whitespace-pre-wrap">
+        <div className="max-w-[88%] rounded-lg rounded-br-sm px-3 py-2 text-sm bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] border border-[color-mix(in_srgb,var(--accent)_35%,transparent)] whitespace-pre-wrap">
           {message.content}
         </div>
         {expandedTerms && expandedTerms.length > 0 && (
@@ -80,7 +80,7 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
 
   return (
     <div className="flex flex-col gap-1.5 fade-in" data-testid="assistant-message" data-status={message.status}>
-      <div className="rounded-2xl rounded-bl-md px-3.5 py-2.5 bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] border border-[var(--ui-border)]">
+      <div className="rounded-lg rounded-bl-sm px-3 py-2.5 bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] border border-[var(--ui-border)]">
         {gated || (text === '' && message.status === 'streaming') ? (
           <div className="flex items-center gap-2 text-xs text-[var(--ink-muted)] py-1">
             <span className="typing" aria-hidden>
@@ -106,12 +106,12 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
         )}
         {message.status === 'stopped' && (
           <div className="mt-2 flex items-center gap-2 text-xs text-[var(--ink-muted)]">
-            <CircleSlash size={13} /> Đã dừng
+            <CircleSlash size={14} /> Đã dừng
           </div>
         )}
       </div>
       {message.status === 'done' && checks.length > 0 && !gated && (
-        <div className="flex flex-wrap items-center gap-2 px-1 text-[0.7rem] text-[var(--ink-muted)]">
+        <div className="flex flex-wrap items-center gap-2 px-1 text-caption text-[var(--ink-muted)]">
           <span className="inline-flex items-center gap-1 text-[var(--success)]">
             <CheckCircle2 size={12} /> {verified} trích dẫn xác minh
           </span>

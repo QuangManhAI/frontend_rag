@@ -32,9 +32,9 @@ export function ResultCard() {
       <article className="result-card glass glass-strong p-3 text-xs" data-testid="result-card" data-paper-id={paperId} aria-label="Thẻ kết quả">
         <header className="flex items-start gap-2">
           <span className="dot mt-1" style={{ background: color, color }} aria-hidden />
-          <h3 className="font-semibold text-[0.8rem] leading-snug flex-1 line-clamp-2">{title ?? <span className="skeleton inline-block h-3 w-44" />}</h3>
+          <h3 className="font-semibold text-xs leading-snug flex-1 line-clamp-2">{title ?? <span className="skeleton inline-block h-3 w-44" />}</h3>
           <button type="button" className="btn btn-icon !p-1 -mt-1 -mr-1" aria-label="Đóng thẻ" onClick={() => useUi.getState().closeFocus()}>
-            <X size={12} />
+            <X size={14} />
           </button>
         </header>
         <div className="mono text-[var(--ink-muted)] mt-1">
@@ -55,7 +55,7 @@ export function ResultCard() {
           <p className="mt-2 text-[var(--ink-muted)]">Không được dùng cho câu trả lời này.</p>
         )}
         <button type="button" className="btn btn-primary w-full justify-center mt-2.5 !py-1" onClick={() => useUi.getState().openPanel(paperId)}>
-          Xem chi tiết <ArrowUpRight size={13} />
+          Xem chi tiết <ArrowUpRight size={14} />
         </button>
       </article>
     </Anchor>

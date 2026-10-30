@@ -9,7 +9,7 @@ const ROWS: ReadonlyArray<{ key: 'similarity_score' | 'authority_score' | 'final
 /** Backend scores as small bars, numbers in monospace (3 decimals). */
 export function ScoreBars({ chunk, compact = false }: { chunk: GroundedChunk; compact?: boolean }) {
   return (
-    <dl className={`grid gap-1 ${compact ? 'text-[0.65rem]' : 'text-[0.7rem]'}`}>
+    <dl className={`grid gap-1 ${compact ? 'text-micro' : 'text-caption'}`}>
       {ROWS.map((r) => {
         const v = chunk[r.key];
         return (

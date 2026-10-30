@@ -16,7 +16,7 @@ export function WorldOverlay() {
   const labels = useUi((s) => s.settings.showBranchLabels);
   const embedding = visual === 'embedding' && query.length > 0;
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none [&_button]:pointer-events-auto [&_article]:pointer-events-auto z-[1]" data-testid="world-overlay">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none [&_button]:pointer-events-auto [&_article]:pointer-events-auto z-10" data-testid="world-overlay">
       {labels && <BranchLabels />}
       <RouteScores />
       {embedding && <QueryTextLabel key={`q${runId}`} text={query} />}

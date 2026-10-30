@@ -84,7 +84,7 @@ export function YearSlider() {
           }}
         />
         <button type="button" className="btn btn-icon" aria-label={playing ? 'Dừng phát' : 'Phát theo thời gian'} onClick={() => setPlaying(!playing)}>
-          {playing ? <Square size={12} /> : <Play size={12} />}
+          {playing ? <Square size={14} /> : <Play size={12} />}
         </button>
       </div>
     </section>

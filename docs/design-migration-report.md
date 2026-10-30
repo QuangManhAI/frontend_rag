@@ -6,7 +6,7 @@
 - **Detailed Plan**: §1 Bảng tổng; §2 Cách đo; §3 Chi tiết từng prompt.
 - **References**: [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE_DESIGN_AUDIT.md`](../../docs/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
 - **Created**: 2026-10-29T23:55:00+07:00
-- **Last Updated**: 2026-10-30T01:05:00+07:00
+- **Last Updated**: 2026-10-30T09:30:00+07:00
 
 [STATUS: IN_PROGRESS]
 
@@ -22,6 +22,7 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | **P15** (baseline) | 2026-10-29 | 4 · 8 · 26 · 13 · 4 · 10 · 5 · 19 · 20 · 11 · 18 · 20 · 21 · 8 | 8 · 5 · 12 · 19 | baseline 8 ảnh (chụp lại ở P16 với bước chờ font; ổn định 5/5) | 2.2 ms (3.4 ms) | 5/6 (c fail sẵn có) | chờ duyệt |
 | **P16** token | 2026-10-30 | không đổi | 8 · 5 · **14** · 19 (thêm 0.08, 0.24) | **0** (≤ 600 px nhiễu, 2/2) | không chạm 3D/kính — không đo | 5/6 (không đổi) | chờ duyệt |
 | **P17** màu | 2026-10-30 | **0 · 0** · 26 · 13 · **0 · 0** · 5 · 19 · 20 · 11 · 18 · **16** · 21 · 8 | 8 · 5 · 14 · 19 | `06` đổi 1.430 px (ngăn kéo đục, chữ faint/accent-ink); 7 ảnh còn lại ≤ nhiễu | không chạm 3D/kính — không đo | **6/6** (D-026) | **chấp nhận** — baseline 06 cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
+| **P18** thang | 2026-10-30 | 0 · 0 · 0 · 0 · 0 · 0 · 5 · 19 · 0 · 0 · 0 · 0 · 0 · 0 | **4 · 3 · 6 · 9** (7 + 2 em) | 6/8 ≤ 1.5 %; `03` 2.1 %, `04` 4.2 % (chữ xuống dòng lại) | 2.1 ms (3.4 ms) — ±3 % | 6/6 | **chấp nhận** — 8 baseline cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
 
 ---
 
@@ -60,4 +61,9 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 
 - **Ảnh 06 trước/sau:** `--ui-panel-bg` thay bằng `--ui-surface-strong` (α 0.9) làm lộ chữ khung chat dưới ngăn kéo → đổi sang `.surface-opaque` (strong chồng lên `--bg`). Chữ "LỊCH SỬ TRÒ CHUYỆN" và trạng thái trống dùng `--ink-faint` (trước đây biến không tồn tại → màu thừa kế); nút "Đoạn chat mới" chữ `--accent-ink`.
 - **`--ui-border` 0.14:** không vượt ngưỡng ở ảnh nào.
+
+### P18 — Quy đổi thang giá trị
+
+- **Sai khác ảnh (ngưỡng 1.5 %, 1440×900 = 1.296.000 px):** 01 5.974 · 02 902 · 03 27.156 (2.1 %) · 04 54.493 (4.2 %) · 05 12.325 · 06 2.500 · 07 5.118 · 08 3.094 px. 03/04 vượt ngưỡng vì đổi cỡ chữ theo vai trò làm văn bản dài xuống dòng lại; không có phần tử nào lệch bố cục.
+- **Hiệu năng (3 lần):** median 2.2 / 2.1 / 2.1 ms; p95 3.4 ms; long task 4 / 4 / 4.
 

@@ -27,9 +27,9 @@ export function useHealth(): HealthStatus | 'unreachable' | null {
 }
 
 export function HealthDots({ health }: { health: HealthStatus | 'unreachable' | null }) {
-  if (!health) return <span className="mono text-[0.65rem] text-[var(--ink-muted)]">health…</span>;
+  if (!health) return <span className="mono text-micro text-[var(--ink-muted)]">health…</span>;
   return (
-    <span className="hidden md:inline-flex items-center gap-2 text-[0.65rem] mono text-[var(--ink-muted)]" aria-label="Trạng thái hệ thống">
+    <span className="hidden md:inline-flex items-center gap-2 text-micro mono text-[var(--ink-muted)]" aria-label="Trạng thái hệ thống">
       {(Object.keys(LABEL) as (keyof HealthStatus)[]).map((k) => {
         const ok = health !== 'unreachable' && health[k];
         return (

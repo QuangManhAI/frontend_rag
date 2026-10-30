@@ -199,7 +199,8 @@ for (const d of cssDecls) {
   if (/backdrop-filter$/.test(d.prop) && /blur\(\s*[\d.]+px/.test(d.value)) add('css-raw-blur', where, d.line, decl);
   if (d.prop === 'font-size' && /^[\d.]+(?:px|rem)$/.test(d.value)) add('css-raw-size', where, d.line, decl);
   if (/rgba?\(|#[0-9a-fA-F]{3,8}\b/.test(d.value)) add('css-raw-color', where, d.line, decl);
-  if (/^(?:transition|animation)(?:-duration)?$/.test(d.prop) && /(?<![\w-])[\d.]+m?s\b/.test(d.value) && !LOOPING.test(d.value) && !/^0\.001ms/.test(d.value)) {
+  const noVars = d.value.replace(/var\([^()]*\)/g, ''); // `var(--intro-delay, 0s)` is a token default, not a raw duration
+  if (/^(?:transition|animation)(?:-duration)?$/.test(d.prop) && /(?<![\w-])[\d.]+m?s\b/.test(noVars) && !LOOPING.test(d.value) && !/^0\.001ms/.test(d.value)) {
     add('css-raw-duration', where, d.line, decl);
   }
   if (/^(?:transition|animation)(?:-timing-function)?$/.test(d.prop) && /cubic-bezier\(/.test(d.value)) add('css-raw-easing', where, d.line, decl);

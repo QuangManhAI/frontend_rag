@@ -67,7 +67,7 @@ export function AuthOverlay() {
         {error && (
           <div
             role="alert"
-            className="mb-4 flex items-start gap-2 rounded-xl border border-[color-mix(in_srgb,var(--danger)_50%,transparent)] bg-transparent backdrop-blur-md px-3.5 py-2.5 text-xs text-[var(--danger)] fade-in"
+            className="mb-4 flex items-start gap-2 rounded-md border border-[color-mix(in_srgb,var(--danger)_50%,transparent)] bg-transparent backdrop-blur-md px-3 py-2.5 text-xs text-[var(--danger)] fade-in"
           >
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span className="leading-snug">{error}</span>
@@ -75,14 +75,14 @@ export function AuthOverlay() {
         )}
 
         {/* Transparent glass form inputs with clean inline icons */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {!isLogin && (
             <div className="flex flex-col gap-1.5 fade-in">
-              <label htmlFor="auth-display-name" className="text-[11px] font-medium text-[var(--ink-muted)] px-1">
+              <label htmlFor="auth-display-name" className="text-caption font-medium text-[var(--ink-muted)] px-1">
                 Tên hiển thị
               </label>
               <div className="liquid-input-wrap">
-                <User size={15} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
+                <User size={14} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
                 <input
                   id="auth-display-name"
                   type="text"
@@ -99,11 +99,11 @@ export function AuthOverlay() {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="auth-email" className="text-[11px] font-medium text-[var(--ink-muted)] px-1">
+            <label htmlFor="auth-email" className="text-caption font-medium text-[var(--ink-muted)] px-1">
               Địa chỉ Email
             </label>
             <div className="liquid-input-wrap">
-              <Mail size={15} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
+              <Mail size={14} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
               <input
                 id="auth-email"
                 type="email"
@@ -119,13 +119,13 @@ export function AuthOverlay() {
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between px-1">
-              <label htmlFor="auth-password" className="text-[11px] font-medium text-[var(--ink-muted)]">
+              <label htmlFor="auth-password" className="text-caption font-medium text-[var(--ink-muted)]">
                 Mật khẩu
               </label>
-              <span className="text-[10px] text-[var(--ink-muted)] opacity-75 mono">≥ 8 ký tự</span>
+              <span className="text-micro text-[var(--ink-muted)] opacity-75 mono">≥ 8 ký tự</span>
             </div>
             <div className="liquid-input-wrap">
-              <Lock size={15} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
+              <Lock size={14} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
               <input
                 id="auth-password"
                 type={showPassword ? 'text' : 'password'}
@@ -141,9 +141,9 @@ export function AuthOverlay() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                className="mr-2.5 rounded-lg p-1 text-[var(--ink-muted)] transition hover:text-[var(--ink)] cursor-pointer"
+                className="mr-2.5 rounded-md p-1 text-[var(--ink-muted)] transition hover:text-[var(--ink)] cursor-pointer"
               >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
             </div>
           </div>

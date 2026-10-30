@@ -48,7 +48,7 @@ export function ChatInput() {
         </button>
       ) : null}
       <button type="submit" className="btn btn-primary flex-none" disabled={!value.trim()} aria-label="Gửi">
-        <SendHorizonal size={15} />
+        <SendHorizonal size={14} />
       </button>
     </form>
   );

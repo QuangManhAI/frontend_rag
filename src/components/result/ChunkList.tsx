@@ -21,8 +21,8 @@ export function ChunkList({ chunks, used }: { chunks: Chunk[]; used: GroundedChu
       {chunks.map((c) => {
         const u = usedById.get(c.chunk_id);
         return (
-          <li key={c.chunk_id} className={`rounded-xl border border-[var(--ui-border)] px-3 py-2 ${u ? 'used-band' : ''}`} data-used={u ? 'true' : 'false'}>
-            <div className="flex items-center gap-2 text-[0.7rem] text-[var(--ink-muted)]">
+          <li key={c.chunk_id} className={`rounded-md border border-[var(--ui-border)] px-3 py-2 ${u ? 'used-band' : ''}`} data-used={u ? 'true' : 'false'}>
+            <div className="flex items-center gap-2 text-caption text-[var(--ink-muted)]">
               <span className="tag">{SECTION_LABEL[c.section_type]}</span>
               <span className="truncate">{c.section_title}</span>
               {u && (
@@ -36,7 +36,7 @@ export function ChunkList({ chunks, used }: { chunks: Chunk[]; used: GroundedChu
                 <ScoreBars chunk={u} compact />
               </div>
             )}
-            <Markdown text={c.text} className="!text-[0.8rem] mt-1" />
+            <Markdown text={c.text} className="!text-xs mt-1" />
           </li>
         );
       })}

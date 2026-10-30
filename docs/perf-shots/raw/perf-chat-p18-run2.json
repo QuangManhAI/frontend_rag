@@ -1,0 +1,52 @@
+{
+  "label": "p18-run2",
+  "timestamp": "2026-10-30T03:00:38.464Z",
+  "targetUrl": "http://localhost:5174/?vectors=150000&bench&perf",
+  "totalFrames": 4893,
+  "fps": {
+    "mean": 1007.9,
+    "stdDev": 920,
+    "median": 476.2,
+    "min": 2.5,
+    "max": 10000
+  },
+  "frameTime": {
+    "meanMs": 2.14,
+    "stdDevMs": 8.94,
+    "medianMs": 2.1,
+    "p95Ms": 3.4,
+    "p99Ms": 4.5,
+    "minMs": 0.1,
+    "maxMs": 402.8
+  },
+  "longTasks": {
+    "count": 4,
+    "maxDurationMs": 403,
+    "tasks": [
+      {
+        "duration": 267,
+        "startTime": 2994.899999976158,
+        "name": "self"
+      },
+      {
+        "duration": 255,
+        "startTime": 4326.599999904633,
+        "name": "self"
+      },
+      {
+        "duration": 403,
+        "startTime": 5797.799999952316,
+        "name": "self"
+      },
+      {
+        "duration": 295,
+        "startTime": 12622.5,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

@@ -39,7 +39,7 @@ export function CategoryLegend() {
               <li key={c.index}>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-[color-mix(in_srgb,var(--ink)_7%,transparent)] aria-pressed:bg-[color-mix(in_srgb,var(--accent)_14%,transparent)]"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-[color-mix(in_srgb,var(--ink)_7%,transparent)] aria-pressed:bg-[color-mix(in_srgb,var(--accent)_14%,transparent)]"
                   aria-pressed={active === c.index}
                   data-category={c.code}
                   onClick={() => toggleCategoryFilter(c.index)}
