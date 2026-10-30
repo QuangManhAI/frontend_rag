@@ -8,6 +8,7 @@ import { groupGroundedByPaper, resolveResultCase } from '../../utils/resultCase'
 import { Anchor } from '../world/overlay/anchors';
 import { ScoreBars } from './ScoreBars';
 import { usePaper } from './usePaper';
+import { Glass } from '../ui/Glass';
 
 /** Glass card pinned beside the focused vector (DOM overlay, so it always faces the camera). */
 export function ResultCard() {
@@ -29,7 +30,7 @@ export function ResultCard() {
 
   return (
     <Anchor position={pos} distanceFactor={16} keepInView>
-      <article className="result-card glass glass-strong p-3 text-xs" data-testid="result-card" data-paper-id={paperId} aria-label="Thẻ kết quả">
+      <Glass as="article" material="strong" className="result-card p-3 text-xs" data-testid="result-card" data-paper-id={paperId} aria-label="Thẻ kết quả">
         <header className="flex items-start gap-2">
           <span className="dot mt-1" style={{ background: color, color }} aria-hidden />
           <h3 className="font-semibold text-xs leading-snug flex-1 line-clamp-2">{title ?? <span className="skeleton inline-block h-3 w-44" />}</h3>
@@ -57,7 +58,7 @@ export function ResultCard() {
         <button type="button" className="btn btn-primary w-full justify-center mt-2.5 !py-1" onClick={() => useUi.getState().openPanel(paperId)}>
           Xem chi tiết <ArrowUpRight size={14} />
         </button>
-      </article>
+      </Glass>
     </Anchor>
   );
 }

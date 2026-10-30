@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getHealth } from '../../api/client';
 import type { HealthStatus } from '../../types/world';
+import { Glass } from '../ui/Glass';
 
 const LABEL: Record<keyof HealthStatus, string> = { mongo: 'MongoDB', qdrant: 'Qdrant', llm: 'LLM', world: 'Route' };
 /** Without these the answer fails; `world` only drives the flight path, so it gets a dot but no banner. */
@@ -48,8 +49,8 @@ export function HealthBanner({ health }: { health: HealthStatus | 'unreachable' 
   const down = health === 'unreachable' ? ['Backend'] : CRITICAL.filter((k) => !health[k]).map((k) => LABEL[k]);
   if (down.length === 0) return null;
   return (
-    <div role="status" className="glass px-3 py-1.5 text-xs flex items-center gap-2 border-[var(--warn)]! fade-in" data-testid="health-banner">
+    <Glass role="status" className="px-3 py-1.5 text-xs flex items-center gap-2 border-[var(--warn)]! fade-in" data-testid="health-banner">
       <AlertTriangle size={14} className="text-[var(--warn)]" /> {down.join(', ')} không phản hồi — câu trả lời có thể lỗi.
-    </div>
+    </Glass>
   );
 }

@@ -108,3 +108,40 @@ test.describe('signed out', () => {
     await shoot(page, '07-auth');
   });
 });
+
+/** Glass never stacks on glass (FE_DESIGN_SYSTEM §4.1): count live backdrop-filter layers per state. */
+async function backdropLayers(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const visible = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+    };
+    const active = (v: string) => v !== '' && v !== 'none';
+    let count = 0;
+    for (const el of document.querySelectorAll('body *')) {
+      if (!visible(el)) continue;
+      if (active(getComputedStyle(el).backdropFilter)) count++;
+      if (active(getComputedStyle(el, '::before').backdropFilter)) count++;
+    }
+    return count;
+  });
+}
+
+test('backdrop-filter layers per state', async ({ page }) => {
+  await seedReducedMotion(page);
+  await page.goto(APP);
+  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible({ timeout: 30_000 });
+  const auth = await backdropLayers(page);
+
+  await seedAuth(page);
+  await openWorld(page);
+  await page.getByLabel('Lịch sử trò chuyện').click();
+  const history = await backdropLayers(page);
+  await page.getByLabel('Đóng lịch sử').click();
+
+  await askAndFinish(page);
+  const answer = await backdropLayers(page);
+
+  console.log(`backdrop-filter layers — auth: ${auth} · history: ${history} · answer: ${answer}`);
+  expect(answer).toBeGreaterThan(0);
+});

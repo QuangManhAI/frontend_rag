@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
 - **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T09:30:00+07:00
+- **Last Updated**: 2026-10-30T10:45:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -142,8 +142,20 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Frame time (dev, headless, 150k) | ✅ median 2.2 / 2.1 / 2.1 ms (P15: 2.2), p95 3.4 ms |
 | Ảnh (ngưỡng 1.5%) | ⚠️ 6/8 trong ngưỡng; `03` 2.1 %, `04` 4.2 % do chữ xuống dòng lại (Markdown 14.4 → 14 px, abstract/đoạn trích 13.1 → 12 px) — người duyệt chấp nhận, 8 baseline đã cập nhật |
 
+## P19 — Component `Glass` (Liquid Glass Cấp 1) (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `components/ui/Glass.tsx` (material · shape · nested · interactive · `as`, ref là prop thường của React 19) | ✅ `Glass.test.tsx` 4/4 |
+| `.glass` → cấu trúc `::before` (nền + backdrop-filter) / `::after` (specular, ẩn tới P21); `backdrop-filter` chỉ còn ở `::before` | ✅ |
+| Chuyển sang `Glass`: TopBar, cột chat, chip lọc, bottom sheet, Settings, Legend, PaperPanel, ResultCard, HealthBanner, 2 tooltip 3D, nút mở chat, chip tên người dùng, emblem/ô nhập/CTA đăng nhập | ✅ `grep liquid- src` = 0, không còn `glass-strong` |
+| Kính không chồng kính: số lớp backdrop-filter | ✅ đăng nhập 7 → 3 · lịch sử 5 → 3 · trả lời 10 → 9 |
+| Ảnh | ✅ 7/8 ≤ nhiễu; `07` đổi 4.441 px (form đăng nhập: bỏ blur lồng, CTA viền strong) — người duyệt chấp nhận, baseline 07 đã cập nhật |
+| Frame time (A/B xen kẽ, cổng riêng `127.0.0.1`) | ✅ P19 median 2.0 / 2.0 / 2.1 ms · P18 2.0 ms (p95 3.5–3.6, 4 long task cả hai) |
+| Unit, E2E, lint, build | ✅ 231/231 · 6/6 · 0 vi phạm · OK |
+
 ## Còn tồn tại (sau P16)
 - E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.
 - `npm test` cần `NODE_OPTIONS=--no-experimental-webstorage` trên Node ≥ 25.
 - `scripts/perf-chat-benchmark.cjs` mặc định dùng Edge (`msedge`); trên macOS chạy với `BROWSER_CHANNEL=chromium`.
+- Đo hiệu năng phải dùng cổng riêng và `127.0.0.1` (xem ASSUMPTIONS [P19]): `localhost:5174` có thể trúng dev server khác đang chạy.
 

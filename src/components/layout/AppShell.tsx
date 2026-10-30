@@ -12,6 +12,7 @@ import { HealthBanner, useHealth } from './HealthBanner';
 import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
 import { WorldError } from './WorldError';
+import { Glass } from '../ui/Glass';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -53,8 +54,8 @@ function ChatDock() {
     );
   }
   return (
-    <div
-      className={`glass w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
+    <Glass
+      className={`w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
       style={firstOpen.current && !closing ? introDelay(0.15) : undefined}
       aria-hidden={closing || undefined}
       data-testid="chat-dock"
@@ -65,7 +66,7 @@ function ChatDock() {
       }}
     >
       <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
-    </div>
+    </Glass>
   );
 }
 
@@ -73,13 +74,13 @@ function FilterChip() {
   const label = useUi((s) => s.highlightLabel);
   if (!label) return null;
   return (
-    <div className="glass glass-strong flex items-center gap-2 px-3 py-1.5 text-xs fade-in" data-testid="filter-chip">
+    <Glass material="strong" shape="chip" className="flex items-center gap-2 px-3 py-1.5 text-xs fade-in" data-testid="filter-chip">
       <Filter size={14} className="text-[var(--accent)]" />
       Đang lọc: <span className="mono">{label.label}</span>
       <button type="button" className="btn btn-icon !p-0.5" aria-label="Bỏ lọc (Esc)" onClick={() => useUi.getState().setHighlights(null, null)}>
         <X size={14} />
       </button>
-    </div>
+    </Glass>
   );
 }
 
@@ -88,7 +89,7 @@ function BottomSheet() {
   const [height, setHeight] = useState(42);
   const drag = useRef<{ y: number; h: number } | null>(null);
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 glass glass-strong !rounded-b-none flex flex-col intro-up" style={{ height: `${height}vh`, ...introDelay(0.15) }}>
+    <Glass material="strong" className="absolute inset-x-0 bottom-0 z-20 !rounded-b-none flex flex-col intro-up" style={{ height: `${height}vh`, ...introDelay(0.15) }}>
       <div
         className="py-2 grid place-items-center cursor-grab touch-none"
         role="slider"
@@ -120,7 +121,7 @@ function BottomSheet() {
       <div className="flex-1 min-h-0">
         <ChatPanel />
       </div>
-    </div>
+    </Glass>
   );
 }
 

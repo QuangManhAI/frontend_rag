@@ -6,7 +6,7 @@
 - **Detailed Plan**: P1–P11, Trig, P15+.
 - **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T09:30:00+07:00
+- **Last Updated**: 2026-10-30T10:45:00+07:00
 
 [STATUS: ACTIVE]
 
@@ -110,4 +110,11 @@
 - [P18] Thời lượng gộp theo B.5 làm vài animation ngắn lại: intro 0.6 → 0.48 s, `bar` 0.6 → 0.48 s, `score3d` 0.3/0.35 → 0.24 s; chuyển động camera (`CHAT_SLIDE_S`) không đổi.
 - [P18] `PerfHUD.tsx` (được miễn rule) vẫn được đổi `rounded-lg` → `rounded-md`, `rounded` → `rounded-xs`, `text-[10px]` → `text-micro` — sau `--radius-*: initial` các class cũ không còn được sinh, HUD sẽ mất bo góc.
 - [P18] `check-design` bỏ qua phần trong `var(...)` khi tìm thời lượng thô — `var(--intro-delay, 0s)` là mặc định của biến, không phải thời lượng.
+- [P19] Thêm `HealthBanner` và 2 tooltip của `VectorTooltip` vào danh sách chuyển sang `Glass` (19.2 bỏ sót — cùng dùng `.glass`).
+- [P19] HistoryDrawer **không** thành `Glass` như 19.2 ghi: nó là lớp phủ đục (`.surface-opaque`, D-025/P17) toàn khung chat; bọc `Glass` sẽ thêm viền + bóng + bo góc bên trong cột. Chỉ bỏ `backdrop-blur-md` (kính chồng kính).
+- [P19] CTA đăng nhập dùng class `.glass-cta` (viền strong + cạnh strong theo §8.1) vì `Glass` không có prop "emphasis"; ô nhập dùng `focus-visible:outline-none!` để giữ hành vi cũ (`.liquid-input:focus-visible { outline: none }`) trước quy tắc `:focus-visible` toàn cục; placeholder `--ink-faint` (§2.2) thay `color-mix(--ink-muted 72%)`.
+- [P19] Viền cảnh báo lỗi đăng nhập `danger 50%` → `40%` (thang §2.4; P17 bỏ sót vì check-design không kiểm tỷ lệ pha).
+- [P19] Nút "Mở chat" bỏ class `.btn` (nền `.btn` đè lên lớp `::before`) — dùng `Glass` control + utility bố cục tương đương (`px-3 py-1.5 gap-1.5 text-control`).
+- [P19] Caveat Phụ lục A.4 (animation `opacity` làm `::before` mất blur): chụp giữa animation `chat-in` (t = 900 ms) trước/sau không thấy khác; nền phía sau cột chat lúc đó tối nên phép thử chưa đủ mạnh — cần người duyệt xem tay trên máy thật.
+- [P19] **Sự cố đo hiệu năng:** dev server của người dùng (`vite --host 127.0.0.1`, chạy từ 2026-10-29 04:28, `VITE_USE_MOCK=false`) chiếm `127.0.0.1:5174`; server mock của agent cũng mở "5174" (IPv6) nên `localhost:5174` lúc trúng server này lúc trúng server kia → 2 lượt đo "chậm" (median 4–19 ms, 300–400 long task) là đo nhầm, đã xoá. Từ P19 đo bằng cổng riêng gắn `--host 127.0.0.1` (5195/5196) và chạy xen kẽ A/B.
 

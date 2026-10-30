@@ -4,6 +4,7 @@ import { useUi, type QualityMode, type Settings } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
 import { CrawlSettings } from './CrawlSettings';
 import { YearSlider } from './YearSlider';
+import { Glass } from '../ui/Glass';
 
 type NumKey = 'top_k' | 'nprobe';
 
@@ -33,7 +34,7 @@ export function SettingsPanel() {
   const setFlag = (patch: Partial<Settings>) => useUi.getState().updateSettings(patch);
 
   return (
-    <div className="glass glass-strong w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
+    <Glass material="strong" className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
       <div className="flex items-center mb-3">
         <h2 className="font-semibold">Cài đặt</h2>
         <button type="button" className="btn btn-icon ml-auto" aria-label="Đóng cài đặt" onClick={() => useUi.getState().setSettingsOpen(false)}>
@@ -130,6 +131,6 @@ export function SettingsPanel() {
       >
         <RotateCcw size={14} /> Đặt lại
       </button>
-    </div>
+    </Glass>
   );
 }

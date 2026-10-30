@@ -37,7 +37,7 @@ export function HistoryDrawer() {
 
   return (
     <div
-      className="absolute inset-0 z-30 flex flex-col surface-opaque backdrop-blur-md border-r border-[var(--ui-border)] transition-all animate-fadeIn"
+      className="absolute inset-0 z-30 flex flex-col surface-opaque border-r border-[var(--ui-border)] transition-all animate-fadeIn"
       role="dialog"
       aria-label="Lịch sử trò chuyện"
     >

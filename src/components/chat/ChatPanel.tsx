@@ -9,6 +9,7 @@ import { ChatInput } from './ChatInput';
 import { HistoryDrawer } from './HistoryDrawer';
 import { MessageList } from './MessageList';
 import { PipelineStatus } from './PipelineStatus';
+import { Glass } from '../ui/Glass';
 
 /** Chat column content; positioning (side panel / bottom sheet) is done by AppShell. */
 export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
@@ -75,12 +76,16 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
         <div className="flex items-center gap-1 shrink-0">
           {isAuthenticated && user && (
             <>
-              <span
-                className="liquid-badge-chip max-w-[110px] truncate !text-[var(--ink)] text-caption"
+              <Glass
+                as="span"
+                material="clear"
+                shape="chip"
+                nested
+                className="inline-flex items-center gap-1 px-2 py-0.5 max-w-[110px] truncate font-medium text-[var(--ink)] text-caption"
                 title={user.email}
               >
                 {user.display_name || user.email}
-              </span>
+              </Glass>
               <button
                 type="button"
                 className="btn btn-icon !p-1.5"
@@ -118,8 +123,16 @@ export function ChatPanel({ onCollapse }: { onCollapse?: () => void }) {
 
 export function ChatReopenButton() {
   return (
-    <button type="button" className="btn glass" onClick={() => useUi.getState().setChatOpen(true)} aria-label="Mở chat">
+    <Glass
+      as="button"
+      type="button"
+      shape="control"
+      interactive
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-control font-medium text-[var(--ink)]"
+      onClick={() => useUi.getState().setChatOpen(true)}
+      aria-label="Mở chat"
+    >
       <MessagesSquare size={16} /> Chat
-    </button>
+    </Glass>
   );
 }

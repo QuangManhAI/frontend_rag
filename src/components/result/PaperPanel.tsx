@@ -9,6 +9,7 @@ import { resolveResultCase } from '../../utils/resultCase';
 import { Markdown } from '../chat/Markdown';
 import { ChunkList } from './ChunkList';
 import { usePaper } from './usePaper';
+import { Glass } from '../ui/Glass';
 
 export const UNVERIFIED_WARNING = 'LLM trích dẫn một bài không có trong ngữ cảnh đã truy xuất';
 export const BROWSE_NOTE = 'Không được dùng cho câu trả lời này';
@@ -66,12 +67,14 @@ function PaperPanelBody({ paperId }: { paperId: string }) {
   const color = categoryColor(p?.category_index ?? -1, theme);
 
   return (
-    <aside
+    <Glass
+      as="aside"
+      material="strong"
       ref={root}
       role="dialog"
       aria-modal="false"
       aria-label={`Chi tiết bài ${paperId}`}
-      className="glass glass-strong slide-in-right flex flex-col h-full min-h-0 overflow-hidden"
+      className="slide-in-right flex flex-col h-full min-h-0 overflow-hidden"
       data-testid="paper-panel"
       data-paper-id={paperId}
       data-case={kind}
@@ -145,6 +148,6 @@ function PaperPanelBody({ paperId }: { paperId: string }) {
           </>
         )}
       </div>
-    </aside>
+    </Glass>
   );
 }

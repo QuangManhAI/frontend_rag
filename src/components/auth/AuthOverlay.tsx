@@ -1,6 +1,7 @@
 import { AlertTriangle, Eye, EyeOff, Lock, Mail, SendHorizonal, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../store/authStore';
+import { Glass } from '../ui/Glass';
 
 export function AuthOverlay() {
   const login = useAuth((s) => s.login);
@@ -37,14 +38,14 @@ export function AuthOverlay() {
 
   return (
     <div
-      className="liquid-auth-shell scroll-thin fade-in"
+      className="relative flex-1 min-h-0 flex flex-col justify-center px-5 py-6 overflow-y-auto overflow-x-hidden scroll-thin fade-in"
       onKeyDown={(e) => e.stopPropagation()}
       data-testid="chat-auth-panel"
     >
       <div className="my-auto w-full px-1 py-4">
         {/* Vector Knowledge Tree emblem (synced with TopBar) & heading */}
         <div className="text-center mb-6">
-          <div className="liquid-emblem" aria-hidden="true">
+          <Glass material="clear" nested className="size-12 grid place-items-center mx-auto mb-3 text-[var(--accent)]" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden className="flex-none">
               <circle cx="12" cy="7" r="5" fill="var(--accent)" opacity="0.25" />
               <path d="M12 21V11M12 14l-4-4M12 12l4-4" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none" />
@@ -52,7 +53,7 @@ export function AuthOverlay() {
               <circle cx="16" cy="8" r="1.6" fill="var(--cat-2, var(--accent))" />
               <circle cx="12" cy="5" r="1.6" fill="var(--cat-0, var(--accent))" />
             </svg>
-          </div>
+          </Glass>
           <h3 className="text-base font-semibold tracking-tight text-[var(--ink)]">
             {isLogin ? 'Đăng nhập' : 'Đăng ký tài khoản'}
           </h3>
@@ -67,7 +68,7 @@ export function AuthOverlay() {
         {error && (
           <div
             role="alert"
-            className="mb-4 flex items-start gap-2 rounded-md border border-[color-mix(in_srgb,var(--danger)_50%,transparent)] bg-transparent backdrop-blur-md px-3 py-2.5 text-xs text-[var(--danger)] fade-in"
+            className="mb-4 flex items-start gap-2 rounded-md border border-[color-mix(in_srgb,var(--danger)_40%,transparent)] bg-transparent px-3 py-2.5 text-xs text-[var(--danger)] fade-in"
           >
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span className="leading-snug">{error}</span>
@@ -81,7 +82,7 @@ export function AuthOverlay() {
               <label htmlFor="auth-display-name" className="text-caption font-medium text-[var(--ink-muted)] px-1">
                 Tên hiển thị
               </label>
-              <div className="liquid-input-wrap">
+              <Glass material="clear" shape="control" nested className="flex items-center">
                 <User size={14} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
                 <input
                   id="auth-display-name"
@@ -91,10 +92,10 @@ export function AuthOverlay() {
                   maxLength={60}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="liquid-input"
+                  className="w-full bg-transparent border-none outline-none focus-visible:outline-none! text-[var(--ink)] text-control py-2.5 pr-3 pl-2 placeholder:text-[var(--ink-faint)]"
                   autoComplete="name"
                 />
-              </div>
+              </Glass>
             </div>
           )}
 
@@ -102,7 +103,7 @@ export function AuthOverlay() {
             <label htmlFor="auth-email" className="text-caption font-medium text-[var(--ink-muted)] px-1">
               Địa chỉ Email
             </label>
-            <div className="liquid-input-wrap">
+            <Glass material="clear" shape="control" nested className="flex items-center">
               <Mail size={14} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
               <input
                 id="auth-email"
@@ -111,10 +112,10 @@ export function AuthOverlay() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="liquid-input"
+                className="w-full bg-transparent border-none outline-none focus-visible:outline-none! text-[var(--ink)] text-control py-2.5 pr-3 pl-2 placeholder:text-[var(--ink-faint)]"
                 autoComplete="email"
               />
-            </div>
+            </Glass>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -124,7 +125,7 @@ export function AuthOverlay() {
               </label>
               <span className="text-micro text-[var(--ink-muted)] opacity-75 mono">≥ 8 ký tự</span>
             </div>
-            <div className="liquid-input-wrap">
+            <Glass material="clear" shape="control" nested className="flex items-center">
               <Lock size={14} className="ml-3.5 shrink-0 text-[var(--accent)] opacity-85" aria-hidden="true" />
               <input
                 id="auth-password"
@@ -134,7 +135,7 @@ export function AuthOverlay() {
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="liquid-input"
+                className="w-full bg-transparent border-none outline-none focus-visible:outline-none! text-[var(--ink)] text-control py-2.5 pr-3 pl-2 placeholder:text-[var(--ink-faint)]"
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
               />
               <button
@@ -145,13 +146,22 @@ export function AuthOverlay() {
               >
                 {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
-            </div>
+            </Glass>
           </div>
 
-          <button type="submit" disabled={loading} className="liquid-cta-btn mt-2">
+          <Glass
+            as="button"
+            type="submit"
+            disabled={loading}
+            material="clear"
+            shape="control"
+            nested
+            interactive
+            className="glass-cta mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-control font-semibold text-[var(--ink)]"
+          >
             <span>{loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}</span>
             {!loading && <SendHorizonal size={0} className="text-[var(--accent)]" />}
-          </button>
+          </Glass>
         </form>
 
         {/* Bottom switch link */}

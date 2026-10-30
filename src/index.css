@@ -111,17 +111,107 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- glass surfaces ---------- */
+/* ---------- glass surfaces (components/ui/Glass.tsx · FE_DESIGN_SYSTEM.md §4, §10.4) ----------
+   .glass               border, radius, shadow of the surface itself (no own background)
+   .glass::before       backdrop layer: material tint + backdrop-filter  (Liquid Glass level 3 adds url(#…) here)
+   .glass::after        specular layer: hidden until Liquid Glass level 2 (P21)
+   data-material        regular | strong | clear      data-shape   panel | control | chip
+   data-nested="true"   inside another glass surface → no second backdrop-filter */
+@layer components {
+  /* Layered so position utilities (absolute, fixed) on the same element still win. */
+  .glass {
+    position: relative;
+    isolation: isolate;
+  }
+}
 .glass {
-  background: var(--glass-tint);
+  background: transparent;
   border: 1px solid var(--glass-stroke);
-  backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel), var(--glass-edge);
 }
-.glass-strong {
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-tint);
+  backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+}
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  display: none;
+  background: radial-gradient(
+    circle at calc(50% + var(--lg-light-x) * 50%) calc(50% + var(--lg-light-y) * 50%),
+    color-mix(in srgb, white calc(var(--lg-specular) * 100%), transparent),
+    transparent var(--lg-specular-size)
+  );
+  mix-blend-mode: plus-lighter;
+}
+.glass[data-material="strong"]::before {
   background: var(--ui-surface-strong);
+}
+.glass[data-material="clear"] {
+  box-shadow: var(--glass-edge);
+}
+.glass[data-material="clear"]::before {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+}
+.glass[data-nested="true"]::before {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.glass[data-material="strong"][data-nested="true"]::before {
+  background: linear-gradient(var(--ui-surface-strong), var(--ui-surface-strong)), var(--bg);
+}
+.glass[data-shape="control"] {
+  border-radius: var(--radius-md);
+}
+.glass[data-shape="chip"] {
+  border-radius: var(--radius-full);
+}
+.glass[data-interactive="true"] {
+  cursor: pointer;
+  transition: border-color var(--dur-hover) var(--ease-standard), box-shadow var(--dur-hover) var(--ease-standard), transform var(--dur-press) var(--ease-standard);
+}
+.glass[data-interactive="true"]::before {
+  transition: background var(--dur-hover) var(--ease-standard);
+}
+.glass[data-interactive="true"]:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.glass[data-interactive="true"][data-material="clear"]:hover:not(:disabled)::before {
+  background: var(--glass-fill-hover);
+}
+.glass[data-interactive="true"]:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.glass[data-interactive="true"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Primary call to action on glass (Auth submit): strong stroke and edge (§8.1). */
+.glass.glass-cta {
+  border-color: var(--glass-stroke-strong);
+  box-shadow: var(--glass-edge-strong);
+}
+/* Field wrappers (clear control around an <input>) light up while the input has focus. */
+.glass[data-shape="control"]:focus-within:not(:has(> button:focus-visible)) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--glass-edge-strong);
+}
+.glass[data-material="clear"][data-shape="control"]:focus-within::before {
+  background: var(--glass-fill-hover);
 }
 /* Strong surface that covers text (drawers over the chat): stacked on the page color so
    nothing underneath shows through (FE_DESIGN_SYSTEM.md §4.1). */
@@ -799,114 +889,4 @@ input[type="range"] {
   opacity: 0.82;
 }
 
-/* ---------- Liquid Glass / Transparent Morphism (Chat Auth) ---------- */
-.liquid-auth-shell {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 1.5rem 1.35rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: transparent;
-}
-
-.liquid-emblem {
-  position: relative;
-  width: 3rem;
-  height: 3rem;
-  border-radius: var(--radius-lg);
-  display: grid;
-  place-items: center;
-  margin: 0 auto 0.7rem;
-  color: var(--accent);
-  background: var(--glass-fill);
-  border: 1px solid var(--glass-stroke);
-  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-edge-strong);
-}
-
-.liquid-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  border-radius: var(--radius-md);
-  background: var(--glass-fill);
-  border: 1px solid var(--glass-stroke);
-  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-edge);
-  transition: border-color var(--dur-hover) var(--ease-standard), background var(--dur-hover) var(--ease-standard), box-shadow var(--dur-hover) var(--ease-standard);
-}
-.liquid-input-wrap:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: var(--glass-fill-hover);
-  box-shadow: var(--glass-edge-strong);
-}
-
-.liquid-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--ink);
-  font-size: var(--text-control);
-  padding: 0.68rem 0.75rem 0.68rem 0.55rem;
-}
-.liquid-input::placeholder {
-  color: color-mix(in srgb, var(--ink-muted) 72%, transparent);
-}
-.liquid-input:focus-visible {
-  outline: none;
-}
-
-.liquid-cta-btn {
-  position: relative;
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.7rem 1rem;
-  border-radius: var(--radius-md);
-  font-size: var(--text-control);
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--glass-fill);
-  border: 1px solid var(--glass-stroke-strong);
-  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-edge-strong);
-  cursor: pointer;
-  transition: background var(--dur-hover) var(--ease-standard), border-color var(--dur-hover) var(--ease-standard), transform var(--dur-press) var(--ease-standard);
-}
-.liquid-cta-btn:hover:not(:disabled) {
-  background: var(--glass-fill-hover);
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-}
-.liquid-cta-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-.liquid-cta-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.liquid-badge-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-full);
-  font-size: var(--text-caption);
-  font-weight: 500;
-  color: var(--ink-muted);
-  background: var(--glass-fill);
-  border: 1px solid var(--glass-stroke);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
-}
 

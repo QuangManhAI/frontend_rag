@@ -6,7 +6,7 @@
 - **Detailed Plan**: §1 Bảng tổng; §2 Cách đo; §3 Chi tiết từng prompt.
 - **References**: [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE_DESIGN_AUDIT.md`](../../docs/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
 - **Created**: 2026-10-29T23:55:00+07:00
-- **Last Updated**: 2026-10-30T09:30:00+07:00
+- **Last Updated**: 2026-10-30T10:45:00+07:00
 
 [STATUS: IN_PROGRESS]
 
@@ -23,6 +23,7 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | **P16** token | 2026-10-30 | không đổi | 8 · 5 · **14** · 19 (thêm 0.08, 0.24) | **0** (≤ 600 px nhiễu, 2/2) | không chạm 3D/kính — không đo | 5/6 (không đổi) | chờ duyệt |
 | **P17** màu | 2026-10-30 | **0 · 0** · 26 · 13 · **0 · 0** · 5 · 19 · 20 · 11 · 18 · **16** · 21 · 8 | 8 · 5 · 14 · 19 | `06` đổi 1.430 px (ngăn kéo đục, chữ faint/accent-ink); 7 ảnh còn lại ≤ nhiễu | không chạm 3D/kính — không đo | **6/6** (D-026) | **chấp nhận** — baseline 06 cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
 | **P18** thang | 2026-10-30 | 0 · 0 · 0 · 0 · 0 · 0 · 5 · 19 · 0 · 0 · 0 · 0 · 0 · 0 | **4 · 3 · 6 · 9** (7 + 2 em) | 6/8 ≤ 1.5 %; `03` 2.1 %, `04` 4.2 % (chữ xuống dòng lại) | 2.1 ms (3.4 ms) — ±3 % | 6/6 | **chấp nhận** — 8 baseline cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
+| **P19** Glass | 2026-10-30 | 0 (14 rule trừ trig) · trig 5 · 19 | 4 · 3 · 6 · 9 | 7/8 ≤ nhiễu; `07` 4.441 px | 2.0 ms (3.5 ms) — A/B = P18 | 6/6 | **chấp nhận** — baseline 07 cập nhật sau khi người duyệt xem ảnh (2026-10-30) |
 
 ---
 
@@ -32,7 +33,7 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 | :-- | :-- | :-- |
 | Vi phạm + STATS | `npm run check:design` | Toàn bộ `src/**/*.tsx` (trừ test, `PerfHUD.tsx`) và `src/index.css` |
 | Ảnh giao diện | `VISUAL_THRESHOLD=<tỷ lệ> npm run test:visual` (bỏ trống = "không đổi": ≤ 600 px nhiễu) | Mock, `?vectors=8000&nofx`, reduce motion, 1440×900 (mobile 390×844), canvas + PerfHUD bị ẩn (`e2e/visual.css`), `pipeline-status` bị che |
-| Hiệu năng | `BROWSER_CHANNEL=chromium node scripts/perf-chat-benchmark.cjs 'http://localhost:5174/?vectors=150000&bench&perf'` | Dev server mock (`VITE_USE_MOCK=true npx vite --port 5174`), headless Chromium không vsync, Apple M4, 3 lần, lấy median |
+| Hiệu năng | `BROWSER_CHANNEL=chromium node scripts/perf-chat-benchmark.cjs 'http://127.0.0.1:5196/?vectors=150000&bench&perf'` | Dev server mock **cổng riêng, gắn IPv4** (`VITE_USE_MOCK=true npx vite --host 127.0.0.1 --port 5196 --strictPort`), headless Chromium không vsync, Apple M4, 3 lần, lấy median; khi so hai phiên bản thì dựng phiên bản cũ ở worktree (cổng 5195) và chạy xen kẽ |
 | Unit test | `NODE_OPTIONS=--no-experimental-webstorage npm test -- --run` | Node 26 (xem `ASSUMPTIONS.md` [P15]) |
 
 > Frame time ở đây là khoảng `requestAnimationFrame` trong headless không vsync — chỉ dùng **so sánh tương đối** giữa các prompt trên cùng máy, không so với số trong `perf-report.md`.
@@ -66,4 +67,11 @@ Cột vi phạm theo thứ tự rule của `check-design` (số **dòng** vi ph�
 
 - **Sai khác ảnh (ngưỡng 1.5 %, 1440×900 = 1.296.000 px):** 01 5.974 · 02 902 · 03 27.156 (2.1 %) · 04 54.493 (4.2 %) · 05 12.325 · 06 2.500 · 07 5.118 · 08 3.094 px. 03/04 vượt ngưỡng vì đổi cỡ chữ theo vai trò làm văn bản dài xuống dòng lại; không có phần tử nào lệch bố cục.
 - **Hiệu năng (3 lần):** median 2.2 / 2.1 / 2.1 ms; p95 3.4 ms; long task 4 / 4 / 4.
+
+### P19 — Component `Glass`
+
+- **Lớp backdrop-filter** (test `backdrop-filter layers per state`): đăng nhập 7 → 3, lịch sử 5 → 3, trả lời 10 → 9.
+- **Hiệu năng A/B xen kẽ (127.0.0.1, cổng riêng):** P19 median 2.0 / 2.0 / 2.1 ms, p95 3.5 ms, 4 long task; P18 (worktree `57224a6`) median 2.0 ms, p95 3.6 ms, 4 long task.
+- **Sự cố đo:** hai lượt đầu trúng dev server khác trên `127.0.0.1:5174` (không mock) → số đo sai (median 4–19 ms), đã xoá; xem `ASSUMPTIONS.md` [P19].
+- **Animation opacity × `::before`:** không thấy mất blur ở giữa `chat-in`, nhưng nền phía sau tối — cần xem tay.
 
