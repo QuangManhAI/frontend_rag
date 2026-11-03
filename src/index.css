@@ -944,7 +944,9 @@ body {
 /* Page intro: chrome slides in from its own edge; set --intro-delay to stagger. */
 .intro-down,
 .intro-up {
-  animation: var(--dur-reveal) var(--ease-standard) var(--intro-delay, 0s) both;
+  /* backwards, not both: a finished opacity animation that stays in effect keeps the group a backdrop root in
+     Chromium, so the glass panels inside it (top bar, legend) saw nothing behind them and showed no lens. */
+  animation: var(--dur-reveal) var(--ease-standard) var(--intro-delay, 0s) backwards;
 }
 .intro-down {
   animation-name: intro-down;

@@ -5,6 +5,7 @@ import { useWorld } from '../../store/worldStore';
 import { categoryColor } from '../../theme/tokens';
 import { useTheme } from '../../theme/useTheme';
 import { Glass } from '../ui/Glass';
+import { LIQUID_OPTICS_LEGEND, LiquidShell } from '../ui/LiquidShell';
 
 export function toggleCategoryFilter(index: number): void {
   const ui = useUi.getState();
@@ -26,6 +27,7 @@ export function CategoryLegend() {
   const [open, setOpen] = useState(() => !(globalThis.matchMedia?.('(max-width: 767px)').matches ?? false));
   if (categories.length === 0) return null;
   return (
+    <LiquidShell optics={LIQUID_OPTICS_LEGEND}>
     <Glass material="strong" refract="legend" className="w-64 max-w-[calc(100vw-2rem)] text-xs" data-testid="category-legend">
       <button type="button" className="flex w-full items-center gap-2 px-3 py-2 font-semibold" onClick={() => setOpen(!open)} aria-expanded={open}>
         <Layers size={14} className="text-[var(--accent)]" /> Loại bài báo
@@ -56,5 +58,6 @@ export function CategoryLegend() {
         </ul>
       )}
     </Glass>
+    </LiquidShell>
   );
 }

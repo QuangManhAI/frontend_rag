@@ -15,7 +15,7 @@ import { WorldError } from './WorldError';
 import { Glass } from '../ui/Glass';
 import { useGlassLevel, useLiquidLight } from '../../theme/useLiquidLight';
 import { LiquidFilters } from '../ui/LiquidFilters';
-import { Glass as LiquidGlass, type GlassOptics } from '@samasante/liquid-glass';
+import { LIQUID_OPTICS_CHAT, LiquidLens } from '../ui/LiquidShell';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -35,28 +35,6 @@ function useIsMobile(): boolean {
 }
 
 const introDelay = (s: number) => ({ '--intro-delay': `${s}s` }) as CSSProperties;
-
-/** Frost of the liquid-glass lens, from the level-3 token (index.css `--lg-blur`). */
-/** Optics of the @samasante/liquid-glass lens on the chat dock, as tuned by hand in the library's settings panel. */
-const LIQUID_OPTICS: Partial<GlassOptics> = {
-  // Refraction
-  strength: 0.20,
-  depth: 0.02,
-  curvature: 0.7,
-  dispersion: 1,
-  // Edge
-  bend: 0,
-  bendWidth: 0.26,
-  // Sheen
-  sheen: 0.5,
-  sheenWidth: 1,
-  specular: 0.6,
-  sheenAngle: 55,
-  // Background
-  glow: 0.3,
-  frost: 0+7,
-  brightness: 0.0,
-};
 
 /**
  * Desktop chat column. Stays mounted while it slides out so the close is animated too;
@@ -91,20 +69,20 @@ function ChatDock() {
 
   if (liquid) {
     // The library's material wrapper carries the backdrop lens, so it is the box that slides; the dock inside
-    // keeps its markup, tokens and rim light but drops its own backdrop filter (index.css [data-lgr]): a
+    // keeps its markup, tokens and rim light but drops its own backdrop filter (index.css [data-lgr]; optics in ui/LiquidShell.tsx): a
     // backdrop-filtered child of a backdrop-filtered box would only see the box, not the world.
     return (
-      <LiquidGlass
+      <LiquidLens
+        optics={LIQUID_OPTICS_CHAT}
         className={`w-[32vw] min-w-[340px] max-w-[520px] h-full ${slide}`}
         style={slideStyle}
-        optics={LIQUID_OPTICS}
         aria-hidden={closing || undefined}
         onAnimationEnd={onSlideEnd}
       >
         <Glass refract="chat" data-lgr className="w-full h-full overflow-hidden" data-testid="chat-dock">
           {panel}
         </Glass>
-      </LiquidGlass>
+      </LiquidLens>
     );
   }
   return (

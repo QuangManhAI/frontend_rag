@@ -3,10 +3,13 @@ import { useUi } from '../../store/uiStore';
 import { HealthDots } from './HealthBanner';
 import type { HealthStatus } from '../../types/world';
 import { Glass } from '../ui/Glass';
+import { LIQUID_OPTICS_TOPBAR, LiquidShell } from '../ui/LiquidShell';
 
 export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null }) {
   const settingsOpen = useUi((s) => s.settingsOpen);
   return (
+    // Full width like the bare header (the lens wrapper shrink-wraps by default).
+    <LiquidShell optics={LIQUID_OPTICS_TOPBAR} style={{ display: 'block' }}>
     <Glass as="header" refract="topbar" className="flex items-center gap-2 md:gap-3 px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden className="flex-none">
@@ -27,5 +30,6 @@ export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null
         <Settings2 size={16} />
       </button>
     </Glass>
+    </LiquidShell>
   );
 }
