@@ -9,7 +9,6 @@ const MEDIA = ['(prefers-reduced-transparency: reduce)', '(prefers-contrast: mor
 export function useGlassLevelValue(): LgLevel {
   const setting = useUi((s) => s.settings.glass);
   const quality = useUi((s) => s.settings.quality);
-  const tier = useUi((s) => s.qualityTier);
   const [mediaTick, setMediaTick] = useState(0);
   useEffect(() => {
     const lists = MEDIA.map((q) => globalThis.matchMedia?.(q)).filter((m): m is MediaQueryList => !!m);
@@ -18,7 +17,7 @@ export function useGlassLevelValue(): LgLevel {
     return () => lists.forEach((m) => m.removeEventListener?.('change', bump));
   }, []);
   // mediaTick re-reads the media queries after an OS accessibility toggle.
-  return useMemo(() => detectLevel(readEnv(quality, tier), setting), [quality, tier, setting, mediaTick]);
+  return useMemo(() => detectLevel(readEnv(quality), setting), [quality, setting, mediaTick]);
 }
 
 /** Same level, mirrored on <html data-lg-level> for the CSS (FE_DESIGN_SYSTEM §10.5). Mount once. */

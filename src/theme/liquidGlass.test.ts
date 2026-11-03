@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { detectLevel, LIGHT_REST, lightFromPointer, nlerp, type LgEnv } from './liquidGlass';
 
-const env = (over: Partial<LgEnv> = {}): LgEnv => ({ reducedTransparency: false, contrastMore: false, chromium: true, qualityMode: 'auto', tier: 0, ...over });
+const env = (over: Partial<LgEnv> = {}): LgEnv => ({ reducedTransparency: false, contrastMore: false, chromium: true, qualityMode: 'auto', ...over });
 
 describe('detectLevel (FE_DESIGN_SYSTEM §10.5)', () => {
   it('auto picks the highest supported level', () => {
@@ -9,8 +9,7 @@ describe('detectLevel (FE_DESIGN_SYSTEM §10.5)', () => {
     expect(detectLevel(env({ chromium: false }), 'auto')).toBe(2);
   });
 
-  it('cheap quality, high tiers and high contrast cap at level 2', () => {
-    expect(detectLevel(env({ tier: 2 }), 'liquid')).toBe(2);
+  it('the low quality setting and high contrast cap at level 2', () => {
     expect(detectLevel(env({ qualityMode: 'low' }), 'auto')).toBe(2);
     expect(detectLevel(env({ contrastMore: true }), 'auto')).toBe(2);
   });

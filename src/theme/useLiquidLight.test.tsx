@@ -83,3 +83,20 @@ describe('useGlassLevel', () => {
     expect(useUi.getState().updateSettings({ glass: 'shiny' as never })).toHaveProperty('glass');
   });
 });
+
+describe('glass level vs. the adaptive 3D tier', () => {
+  it('does not change when AdaptiveQuality steps the tier down while the scene is rotated', () => {
+    const root = document.createElement('div');
+    act(() => useUi.getState().updateSettings({ glass: 'liquid' }));
+    const { result } = renderHook(() => useGlassLevel(root));
+    const before = result.current;
+    act(() => useUi.getState().setQualityTier(2));
+    act(() => useUi.getState().setQualityTier(3));
+    expect(result.current).toBe(before);
+    expect(root.dataset.lgLevel).toBe(String(before));
+    act(() => {
+      useUi.getState().setQualityTier(0);
+      useUi.getState().resetSettings();
+    });
+  });
+});

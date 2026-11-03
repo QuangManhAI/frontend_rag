@@ -11,9 +11,9 @@ export interface LgEnv {
   contrastMore: boolean;
   /** Refraction (level 3) relies on backdrop-filter: url(), which only Chromium renders. */
   chromium: boolean;
+  /** The user's quality setting. The adaptive 3D tier is deliberately not an input: it flips while the
+   *  scene is rotated, and tying the glass to it made the panels flash between levels (P23 fix). */
   qualityMode: 'auto' | 'high' | 'low';
-  /** AdaptiveQuality tier: 0 full … 3 no post-processing. */
-  tier: number;
 }
 
 /** Highest level the environment and the user's setting allow. Level 4 needs P23. */
@@ -21,7 +21,7 @@ export function detectLevel(env: LgEnv, setting: GlassSetting): LgLevel {
   if (setting === 'off' || env.reducedTransparency) return 0;
   if (setting === 'frosted') return 1;
   let max: LgLevel = env.chromium ? 3 : 2;
-  if (env.qualityMode === 'low' || env.tier >= 2) max = 2;
+  if (env.qualityMode === 'low') max = 2;
   if (env.contrastMore) max = 2;
   return max;
 }
@@ -61,12 +61,11 @@ function isChromium(): boolean {
 }
 
 /** Media queries and engine, plus the current quality state. */
-export function readEnv(qualityMode: LgEnv['qualityMode'], tier: number): LgEnv {
+export function readEnv(qualityMode: LgEnv['qualityMode']): LgEnv {
   return {
     reducedTransparency: media('(prefers-reduced-transparency: reduce)'),
     contrastMore: media('(prefers-contrast: more)'),
     chromium: isChromium(),
     qualityMode,
-    tier,
   };
 }
