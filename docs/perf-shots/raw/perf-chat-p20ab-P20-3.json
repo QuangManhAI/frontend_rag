@@ -1,0 +1,52 @@
+{
+  "label": "p20ab-P20-3",
+  "timestamp": "2026-10-30T04:00:32.755Z",
+  "targetUrl": "http://127.0.0.1:5197/?vectors=150000&bench&perf",
+  "totalFrames": 4896,
+  "fps": {
+    "mean": 1004.2,
+    "stdDev": 908.2,
+    "median": 476.2,
+    "min": 2.4,
+    "max": 5000
+  },
+  "frameTime": {
+    "meanMs": 2.14,
+    "stdDevMs": 8.93,
+    "medianMs": 2.2,
+    "p95Ms": 3.4,
+    "p99Ms": 3.9,
+    "minMs": 0.2,
+    "maxMs": 411.5
+  },
+  "longTasks": {
+    "count": 4,
+    "maxDurationMs": 411,
+    "tasks": [
+      {
+        "duration": 258,
+        "startTime": 3327.100000023842,
+        "name": "self"
+      },
+      {
+        "duration": 253,
+        "startTime": 4657.899999976158,
+        "name": "self"
+      },
+      {
+        "duration": 411,
+        "startTime": 6127.299999952316,
+        "name": "self"
+      },
+      {
+        "duration": 290,
+        "startTime": 12946.700000047684,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

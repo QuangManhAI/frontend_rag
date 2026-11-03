@@ -4,6 +4,7 @@ import { useUi } from '../../../store/uiStore';
 import { useWorld } from '../../../store/worldStore';
 import { categoryColor } from '../../../theme/tokens';
 import { useTheme } from '../../../theme/useTheme';
+import { Glass } from '../../ui/Glass';
 
 const TITLE_DELAY_MS = 300;
 
@@ -41,7 +42,7 @@ export function VectorTooltip() {
     const cat = categories[crate.category_index];
     const color = categoryColor(crate.category_index, theme);
     return (
-      <div className="fixed z-40 glass glass-strong px-3 py-2 text-xs pointer-events-none max-w-72 fade-in" style={style} role="tooltip">
+      <Glass material="strong" className="fixed z-40 px-3 py-2 text-xs pointer-events-none max-w-72 fade-in" style={style} role="tooltip">
         <div className="flex items-center gap-2 font-semibold">
           <span className="dot" style={{ background: color, color }} /> {cat?.name ?? 'Khác'}
         </div>
@@ -49,7 +50,7 @@ export function VectorTooltip() {
           {cat?.code} · thùng #{crate.id} · {crate.paper_count} bài
         </div>
         <div className="text-[var(--ink-muted)] mt-1">Click để lọc lá theo thùng này</div>
-      </div>
+      </Glass>
     );
   }
 
@@ -57,7 +58,7 @@ export function VectorTooltip() {
   const cat = vectors.categories[i];
   const color = categoryColor(cat, theme);
   return (
-    <div className="fixed z-40 glass glass-strong px-3 py-2 text-xs pointer-events-none max-w-80 fade-in" style={style} role="tooltip" data-testid="vector-tooltip">
+    <Glass material="strong" className="fixed z-40 px-3 py-2 text-xs pointer-events-none max-w-80 fade-in" style={style} role="tooltip" data-testid="vector-tooltip">
       <div className="font-semibold leading-snug">
         {title && title.id === paperId ? title.title : <span className="skeleton inline-block h-3 w-48 align-middle" />}
       </div>
@@ -67,6 +68,6 @@ export function VectorTooltip() {
         <span className="mono">{paperId}</span>
       </div>
       <div className="mono text-[var(--ink-muted)] mt-0.5">authority {vectors.authority[i].toFixed(3)}{vectors.flags[i] & 1 ? ' · full text' : ''}</div>
-    </div>
+    </Glass>
   );
 }

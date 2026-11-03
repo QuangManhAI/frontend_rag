@@ -1,6 +1,10 @@
 import type { Crate, GroundLayout, Vec3 } from '../types/world';
 import { resamplePolyline } from './flight';
 import { cellToWorld, crateHeight } from './groundLayout';
+import { makeRotor, powRotor } from './rotation';
+
+/** Golden-angle step (2.39996 rad): category k fans out at GOLDEN^k when its plug sits on the axis. */
+const GOLDEN = makeRotor(2.39996);
 
 /** Uniform arrays in the cable / block shaders are sized for this many zones. */
 export const MAX_ZONES = 16;
@@ -98,9 +102,9 @@ const VIEW_BIAS: readonly [number, number] = [0.5, 0.87];
 export function cablePath(zone: Zone, bottomY: number, samples = CABLE_SAMPLES): Vec3[] {
   const [px, pz] = zone.plug;
   const r = Math.hypot(px, pz);
-  const ang = zone.category_index * 2.39996;
-  const dx = r > 1 ? px / r : Math.cos(ang);
-  const dz = r > 1 ? pz / r : Math.sin(ang);
+  const fan = r > 1 ? null : powRotor(GOLDEN, zone.category_index);
+  const dx = fan ? fan.re : px / r;
+  const dz = fan ? fan.im : pz / r;
   const reach = 55 + r * 1.2;
   const start: Vec3 = [px + dx * reach + VIEW_BIAS[0] * 45, CABLE_FAR_Y, pz + dz * reach + VIEW_BIAS[1] * 45];
   const c1: Vec3 = [start[0] + (px - start[0]) * 0.2, CABLE_FAR_Y + (bottomY - CABLE_FAR_Y) * 0.45, start[2] + (pz - start[2]) * 0.2];

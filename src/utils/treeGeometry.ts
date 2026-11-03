@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Vec3 } from '../types/world';
+import { makeRotor, mulRotor, ringRotors } from './rotation';
 
 export type Rgb = readonly [number, number, number];
 
@@ -54,6 +55,7 @@ export function tubeAlongPath(path: readonly Vec3[], opts: TubeOptions): THREE.B
   const branchId = new Float32Array(n).fill(opts.branchId ?? 0);
   const p = new THREE.Vector3();
   const nv = new THREE.Vector3();
+  const ring = ringRotors(radial); // same cross-section ring for every row
   let v = 0;
   for (let i = 0; i <= tubular; i++) {
     const t = i / tubular;
@@ -63,9 +65,8 @@ export function tubeAlongPath(path: readonly Vec3[], opts: TubeOptions): THREE.B
     const B = frames.binormals[i];
     const rgb = opts.color ? opts.color(t) : ([1, 1, 1] as const);
     for (let j = 0; j <= radial; j++) {
-      const a = (j / radial) * Math.PI * 2;
-      const s = Math.sin(a);
-      const c = -Math.cos(a);
+      const s = ring[j * 2 + 1];
+      const c = -ring[j * 2];
       nv.set(c * N.x + s * B.x, c * N.y + s * B.y, c * N.z + s * B.z).normalize();
       position[v * 3] = p.x + r * nv.x;
       position[v * 3 + 1] = p.y + r * nv.y;
@@ -99,11 +100,12 @@ export function tubeAlongPath(path: readonly Vec3[], opts: TubeOptions): THREE.B
   return g;
 }
 
+/** Bark relief: a sum of sine waves used as periodic noise, not a rotation. */
 function bark(angle: number, y: number, seed: number): number {
   return (
-    Math.sin(angle * 5 + y * 0.35 + seed) * 0.5 +
-    Math.sin(angle * 11 - y * 0.9 + seed * 2.1) * 0.3 +
-    Math.sin(angle * 23 + y * 2.3 + seed * 0.7) * 0.2
+    Math.sin(angle * 5 + y * 0.35 + seed) * 0.5 + // trig-ok: periodic noise (FE_DESIGN_SYSTEM §9.4)
+    Math.sin(angle * 11 - y * 0.9 + seed * 2.1) * 0.3 + // trig-ok: periodic noise
+    Math.sin(angle * 23 + y * 2.3 + seed * 0.7) * 0.2 // trig-ok: periodic noise
   );
 }
 
@@ -130,20 +132,23 @@ export function buildTrunkGeometry(o: TrunkOptions): THREE.BufferGeometry {
   const position = new Float32Array(n * 3);
   const uv = new Float32Array(n * 2);
   const color = new Float32Array(n * 3);
+  const ring = ringRotors(radial);
   let v = 0;
   for (let i = 0; i < rows; i++) {
     const isCap = i === rows - 1;
     const f = Math.min(1, i / segs);
     const y = isCap ? H + 1.5 : f * H - 0.6;
     const twist = f * 1.1;
+    const twistRotor = makeRotor(twist); // one rotor per row; the ring rotors carry the angle
     for (let j = 0; j <= radial; j++) {
-      const a = (j / radial) * Math.PI * 2;
-      const flare = 3.4 * Math.exp(-Math.max(0, y) / 2.6) * (0.75 + 0.25 * Math.sin(a * 5 + seed));
+      const a = (j / radial) * Math.PI * 2; // still the input of the bark/flare noise
+      const flare = 3.4 * Math.exp(-Math.max(0, y) / 2.6) * (0.75 + 0.25 * Math.sin(a * 5 + seed)); // trig-ok: periodic noise
       let r = r0 + (r1 - r0) * Math.pow(f, 0.8) + flare + bark(a + twist, y, seed) * 0.32 * (1 - f * 0.4);
       if (isCap) r = 0.5;
-      position[v * 3] = Math.cos(a + twist) * r;
+      const dir = mulRotor({ re: ring[j * 2], im: ring[j * 2 + 1] }, twistRotor); // e^{i(a + twist)}
+      position[v * 3] = dir.re * r;
       position[v * 3 + 1] = y;
-      position[v * 3 + 2] = Math.sin(a + twist) * r;
+      position[v * 3 + 2] = dir.im * r;
       uv[v * 2] = j / radial;
       uv[v * 2 + 1] = isCap ? 1 : f;
       color[v * 3] = o.color[0];

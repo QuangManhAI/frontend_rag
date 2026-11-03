@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { GLASS_SETTINGS, type GlassSetting } from '../theme/liquidGlass';
 import type { CitationCheck, GroundedChunk } from '../types/rag';
 import type { Vec3 } from '../types/world';
 import type { CameraMode } from '../utils/cameraPresets';
@@ -21,6 +22,8 @@ export interface Settings {
   reduceMotion: boolean;
   /** Topic labels on the branches (off by default: they clutter the view). */
   showBranchLabels: boolean;
+  /** Glass effect: auto picks the Liquid Glass level from the device (FE_DESIGN_SYSTEM §10.5). */
+  glass: GlassSetting;
 }
 
 /** Which answer a focused paper is judged against (its own message's context). */
@@ -62,6 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   expand_query: false,
   reduceMotion: false,
   showBranchLabels: false,
+  glass: 'auto',
 };
 
 export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Settings, string>> {
@@ -69,6 +73,7 @@ export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Set
   if (s.top_k !== undefined && (!Number.isInteger(s.top_k) || s.top_k < 1 || s.top_k > 20)) errors.top_k = 'top_k phải là số nguyên từ 1 đến 20';
   if (s.nprobe !== undefined && (!Number.isInteger(s.nprobe) || s.nprobe < 1 || s.nprobe > 6)) errors.nprobe = 'nprobe phải là số nguyên từ 1 đến 6';
   if (s.quality !== undefined && !['auto', 'high', 'low'].includes(s.quality)) errors.quality = 'Chất lượng không hợp lệ';
+  if (s.glass !== undefined && !GLASS_SETTINGS.includes(s.glass)) errors.glass = 'Hiệu ứng kính không hợp lệ';
   return errors;
 }
 

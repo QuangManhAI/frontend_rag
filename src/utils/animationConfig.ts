@@ -21,3 +21,10 @@ export const animationConfig = {
   /** Orb breathing period while waiting for data. */
   breathe: 1.4,
 } as const;
+
+/**
+ * The 3D scene slides with the chat column: same length as its CSS slide (`--dur-scene` in
+ * index.css, guarded by motionSync.test.ts), starting a bit after it.
+ */
+export const CHAT_SLIDE_S = 1.5;
+export const CHAT_SLIDE_DELAY_S = 0.5;

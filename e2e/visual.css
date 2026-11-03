@@ -1,0 +1,6 @@
+/* Applied only while taking visual-baseline screenshots (e2e/visual.spec.ts):
+   hide the WebGL canvas and the live PerfHUD so glass surfaces blur a stable page background. */
+canvas,
+div[style*="z-index: 99999"] {
+  visibility: hidden !important;
+}

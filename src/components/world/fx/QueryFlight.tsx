@@ -328,7 +328,7 @@ export function QueryFlight() {
   useFrame((state, dt) => {
     const r = rt.current;
     const time = state.clock.elapsedTime;
-    const breathe = 1 + 0.09 * Math.sin((time * Math.PI * 2) / cfg.breathe);
+    const breathe = 1 + 0.09 * Math.sin((time * Math.PI * 2) / cfg.breathe); // trig-ok: scalar oscillation, rotor measured slower/off-phase (trig-audit §3)
     if (r.stage === 'idle' || r.stage === 'error') return;
 
     if (!r.plan) {

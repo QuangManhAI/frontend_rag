@@ -179,7 +179,7 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
         zIndex: 99999,
         pointerEvents: 'auto',
       }}
-      className="bg-black/85 backdrop-blur-md border border-white/15 rounded-lg p-3 text-xs font-mono text-neutral-200 shadow-2xl select-none min-w-[240px]"
+      className="bg-black/85 backdrop-blur-md border border-white/15 rounded-md p-3 text-xs font-mono text-neutral-200 shadow-2xl select-none min-w-[240px]"
     >
       {/* Header with FPS and Mean */}
       <div className="flex items-baseline justify-between border-b border-white/10 pb-2 mb-2">
@@ -187,13 +187,13 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
           <span className={`text-2xl font-bold ${fpsColor}`}>
             {snapshot.fps.toFixed(1)}
           </span>
-          <span className="text-[10px] text-neutral-400 font-sans tracking-wide uppercase">FPS</span>
+          <span className="text-micro text-neutral-400 font-sans tracking-wide uppercase">FPS</span>
         </div>
         <div className="text-right">
           <div className="text-neutral-300 font-semibold">
             Mean: {snapshot.meanFps.toFixed(1)} <span className="text-neutral-400 font-normal">± {snapshot.devFps.toFixed(1)}</span>
           </div>
-          <div className="text-[10px] text-neutral-400">
+          <div className="text-micro text-neutral-400">
             Min: {snapshot.minFps.toFixed(1)} · Max: {snapshot.maxFps.toFixed(1)}
           </div>
         </div>
@@ -224,7 +224,7 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
       </div>
 
       {/* Quick Tier Switcher Buttons */}
-      <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between gap-1 text-[10px]">
+      <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between gap-1 text-micro">
         <span className="text-neutral-400 font-sans">Quick Tier:</span>
         <div className="flex gap-1">
           <button
@@ -232,7 +232,7 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
               updateSettings({ quality: 'high' });
               setQualityTier(0);
             }}
-            className={`px-1.5 py-0.5 rounded ${snapshot.tier === 0 ? 'bg-indigo-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
+            className={`px-1.5 py-0.5 rounded-xs ${snapshot.tier === 0 ? 'bg-indigo-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
             title="Tier 0: Full Bloom"
           >
             T0
@@ -242,7 +242,7 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
               updateSettings({ quality: 'auto' });
               setQualityTier(1);
             }}
-            className={`px-1.5 py-0.5 rounded ${snapshot.tier === 1 ? 'bg-indigo-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
+            className={`px-1.5 py-0.5 rounded-xs ${snapshot.tier === 1 ? 'bg-indigo-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
             title="Tier 1: DPR 1.0 + Bloom"
           >
             T1
@@ -252,7 +252,7 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
               updateSettings({ quality: 'low' });
               setQualityTier(2);
             }}
-            className={`px-1.5 py-0.5 rounded ${snapshot.tier === 2 ? 'bg-indigo-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
+            className={`px-1.5 py-0.5 rounded-xs ${snapshot.tier === 2 ? 'bg-indigo-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
             title="Tier 2: Light Bloom"
           >
             T2
@@ -261,7 +261,7 @@ export function PerfHUD({ defaultOpen = true }: { defaultOpen?: boolean }) {
             onClick={() => {
               setQualityTier(3);
             }}
-            className={`px-1.5 py-0.5 rounded ${snapshot.tier === 3 ? 'bg-emerald-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
+            className={`px-1.5 py-0.5 rounded-xs ${snapshot.tier === 3 ? 'bg-emerald-600 text-white font-bold' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'}`}
             title="Tier 3: Max Speed (No PostFX - 100+ FPS)"
           >
             Max

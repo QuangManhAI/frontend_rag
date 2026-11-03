@@ -20,11 +20,11 @@ export interface ThemeTokens {
   trunk: string;
   trunkVein: string;
   veinIntensity: number;
-  /** Strength of the vector halo; outline drawn around points (light theme). */
+  /** Strength of the vector halo; optional dark outline drawn around points. */
   vectorGlow: number;
   vectorOutline: string;
   vectorOutlineStrength: number;
-  /** Additive blending looks right on dark backgrounds only. */
+  /** Additive blending for glows (the shipped theme is dark). */
   additiveGlow: boolean;
   queryOrb: string;
   queryOrbHalo: string;
@@ -46,7 +46,21 @@ export interface ThemeTokens {
   uiWarn: string;
   uiDanger: string;
   uiSuccess: string;
-  /** 12 category colors (neon in dark, pastel in light) + fallback. */
+  /** Faint ink: placeholders, timestamps, disabled — never body text (~3:1 on bg). */
+  uiInkFaint: string;
+  /** Glass material (docs/FE_DESIGN_SYSTEM.md §4): dark tint behind regular panels. */
+  glassTint: string;
+  /** White fill of controls inside glass, at rest and on hover/focus. */
+  glassFill: string;
+  glassFillHover: string;
+  /** Top edge highlight (static specular), normal and strong (CTA, focus). */
+  glassHighlight: string;
+  glassHighlightStrong: string;
+  /** Bottom edge highlight. */
+  glassLowlight: string;
+  /** Border on hover and under prefers-contrast: more. */
+  glassStrokeStrong: string;
+  /** 12 neon category colors + fallback. */
   categoryPalette: readonly string[];
   categoryOther: string;
 }
@@ -82,7 +96,7 @@ export const darkTheme: ThemeTokens = {
   sun: 0.9,
   uiSurface: '#120f2499',
   uiSurfaceStrong: '#151129e6',
-  uiBorder: '#ffffff1f',
+  uiBorder: '#ffffff24', // 0.14 — also the glass edge (FE_DESIGN_SYSTEM §2.2)
   uiInk: '#ece9ff',
   uiInkMuted: '#a29cc4',
   uiAccent: '#7fe8ff',
@@ -90,6 +104,14 @@ export const darkTheme: ThemeTokens = {
   uiWarn: '#ffc145',
   uiDanger: '#ff5d73',
   uiSuccess: '#58f0a7',
+  uiInkFaint: '#64607e', // uiInkMuted at 60% over bg
+  glassTint: '#0c0a183d', // = rgba(12, 10, 24, 0.24), the .glass fill today
+  glassFill: '#ffffff0a', // 0.04
+  glassFillHover: '#ffffff14', // 0.08
+  glassHighlight: '#ffffff29', // 0.16
+  glassHighlightStrong: '#ffffff3d', // 0.24
+  glassLowlight: '#ffffff0a', // 0.04
+  glassStrokeStrong: '#ffffff38', // 0.22
   categoryPalette: [
     '#38d6ff', // cs.LG
     '#ff3d9a', // cs.CL

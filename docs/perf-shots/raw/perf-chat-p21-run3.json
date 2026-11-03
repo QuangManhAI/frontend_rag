@@ -1,0 +1,52 @@
+{
+  "label": "p21-run3",
+  "timestamp": "2026-10-30T04:18:32.235Z",
+  "targetUrl": "http://127.0.0.1:5197/?vectors=150000&bench&perf",
+  "totalFrames": 4909,
+  "fps": {
+    "mean": 1035.4,
+    "stdDev": 930.8,
+    "median": 454.5,
+    "min": 2.4,
+    "max": 5000
+  },
+  "frameTime": {
+    "meanMs": 2.12,
+    "stdDevMs": 9.01,
+    "medianMs": 2.2,
+    "p95Ms": 3.4,
+    "p99Ms": 4,
+    "minMs": 0.2,
+    "maxMs": 411.2
+  },
+  "longTasks": {
+    "count": 4,
+    "maxDurationMs": 412,
+    "tasks": [
+      {
+        "duration": 264,
+        "startTime": 2963,
+        "name": "self"
+      },
+      {
+        "duration": 258,
+        "startTime": 4296.100000023842,
+        "name": "self"
+      },
+      {
+        "duration": 412,
+        "startTime": 5764.5,
+        "name": "self"
+      },
+      {
+        "duration": 297,
+        "startTime": 12587.5,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

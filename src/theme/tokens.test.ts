@@ -26,6 +26,29 @@ describe('theme tokens', () => {
     expect(el.dataset.theme).toBe('dark');
   });
 
+  it('glass and faint-ink tokens reach the DOM (FE_DESIGN_SYSTEM §2.2)', async () => {
+    const { applyCssVars } = await import('./applyCssVars');
+    const el = document.createElement('div');
+    applyCssVars(darkTheme, el);
+    const expected: Record<string, string> = {
+      '--ink-faint': '#64607e',
+      '--glass-tint': '#0c0a183d',
+      '--glass-fill': '#ffffff0a',
+      '--glass-fill-hover': '#ffffff14',
+      '--glass-highlight': '#ffffff29',
+      '--glass-highlight-strong': '#ffffff3d',
+      '--glass-lowlight': '#ffffff0a',
+      '--glass-stroke-strong': '#ffffff38',
+    };
+    for (const [name, value] of Object.entries(expected)) expect(el.style.getPropertyValue(name)).toBe(value);
+  });
+
+  it('one border alpha: uiBorder merged with the 0.14 glass edge (P17, Phụ lục A #1)', () => {
+    expect(darkTheme.uiBorder).toBe('#ffffff24');
+    expect(darkTheme.uiSurface).toBe('#120f2499');
+    expect(darkTheme.uiSurfaceStrong).toBe('#151129e6');
+  });
+
   it('useThemeSync writes the dark theme to the document', async () => {
     const { renderHook } = await import('@testing-library/react');
     const { useThemeSync, useTheme } = await import('./useTheme');

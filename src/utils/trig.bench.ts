@@ -9,7 +9,8 @@ import { generateMockWorld } from '../api/mock/mockWorld';
 import { parseVectors } from '../api/vectorParser';
 import { darkTheme } from '../theme/tokens';
 import { buildCanopyColors, diffStates } from './canopy';
-import { advanceStepper, makeFixedStepper } from './rotation';
+import { mulberry32 } from '../api/mock/rng';
+import { advanceStepper, makeFixedStepper, makeRotor, mulRotor, randomInDisk, ringRotors } from './rotation';
 
 const DT = 1 / 60;
 const BREATHE = 1.4;
@@ -85,6 +86,96 @@ const points = new THREE.Points(geometry);
 const raycaster = new THREE.Raycaster(new THREE.Vector3(0, 140, 180), new THREE.Vector3(0, -0.35, -1).normalize());
 raycaster.params.Points = { threshold: 1 };
 const colors = new Float32Array(vectors.count * 3);
+
+// ---- (A) P20: cross-section ring, sin/cos per vertex vs one rotor step (load time) ----
+for (const n of [16, 32, 64]) {
+  let sinkA = 0;
+  describe(`A · ring of ${n} points (P20)`, () => {
+    bench('cos/sin per point', () => {
+      for (let j = 0; j <= n; j++) {
+        const a = (j / n) * Math.PI * 2;
+        sinkA += Math.cos(a) + Math.sin(a);
+      }
+    });
+    bench('ringRotors', () => {
+      const ring = ringRotors(n);
+      sinkA += ring[n] + ring[n + 1];
+    });
+  });
+}
+
+// ---- (A) P20: whole tube cross-sections — tubeAlongPath reuses one ring for every row ----
+for (const radial of [6, 10]) {
+  const rows = 25; // tubularSegments 24 + 1
+  let sinkT = 0;
+  describe(`A · tube cross-sections, ${rows} rows × ${radial + 1} points (P20)`, () => {
+    bench('cos/sin per vertex (before)', () => {
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j <= radial; j++) {
+          const a = (j / radial) * Math.PI * 2;
+          sinkT += -Math.cos(a) + Math.sin(a);
+        }
+      }
+    });
+    bench('ringRotors once + lookups (after)', () => {
+      const ring = ringRotors(radial);
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j <= radial; j++) sinkT += -ring[j * 2] + ring[j * 2 + 1];
+      }
+    });
+  });
+}
+
+// ---- (A) P20: trunk vertices, cos/sin(a + twist) vs ring rotor × row twist rotor ----
+{
+  const rows = 50; // heightSegments 48 + 2
+  const radial = 40;
+  let sinkK = 0;
+  describe(`A · trunk ${rows} rows × ${radial + 1} points (P20)`, () => {
+    bench('cos/sin(a + twist) per vertex (before)', () => {
+      for (let i = 0; i < rows; i++) {
+        const twist = (i / 48) * 1.1;
+        for (let j = 0; j <= radial; j++) {
+          const a = (j / radial) * Math.PI * 2;
+          sinkK += Math.cos(a + twist) + Math.sin(a + twist);
+        }
+      }
+    });
+    bench('ringRotors × makeRotor(twist) (after)', () => {
+      const ring = ringRotors(radial);
+      for (let i = 0; i < rows; i++) {
+        const tw = makeRotor((i / 48) * 1.1);
+        for (let j = 0; j <= radial; j++) {
+          const d = mulRotor({ re: ring[j * 2], im: ring[j * 2 + 1] }, tw);
+          sinkK += d.re + d.im;
+        }
+      }
+    });
+  });
+}
+
+// ---- (B/C) P20: FeedCables particle emission, 1000 points in the stream disk ----
+{
+  const rngPolar = mulberry32(5);
+  const rngReject = mulberry32(5);
+  const disk: [number, number] = [0, 0];
+  let sinkD = 0;
+  describe('B/C · 1000 disk samples per emission burst (P20)', () => {
+    bench('polar: sqrt(u)·(cos, sin)', () => {
+      for (let k = 0; k < 1000; k++) {
+        const a = rngPolar() * Math.PI * 2;
+        const d = Math.sqrt(rngPolar());
+        sinkD += Math.cos(a) * d + Math.sin(a) * d;
+      }
+    });
+    bench('randomInDisk (rejection)', () => {
+      for (let k = 0; k < 1000; k++) {
+        randomInDisk(rngReject, disk);
+        sinkD += disk[0] + disk[1];
+      }
+    });
+  });
+}
 
 describe('context · scene hot spots (150k vectors)', () => {
   bench('diffStates (each overlay/filter change)', () => {

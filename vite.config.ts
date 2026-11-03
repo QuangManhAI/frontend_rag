@@ -15,6 +15,12 @@ export default defineConfig({
   server: {
     // 5174: 5173 is the UTH pipeline's own frontend; the RAG_TS backend (3000) allows this origin by default.
     port: 5174,
+    // IPv4 loopback: the Cloudflare tunnel (3d-rag.minio-quangmanh.io.vn) dials http://127.0.0.1:5174, while Vite's
+    // default `localhost` binds only [::1] on macOS, so the tunnel got "connection refused" and served 502.
+    // Not 0.0.0.0: the dev server stays off the LAN.
+    host: '127.0.0.1',
+    // Vite rejects unknown Host headers (403); let the tunnel's public hostname through.
+    allowedHosts: ['3d-rag.minio-quangmanh.io.vn'],
     proxy: {
       // RAG_TS backend: chat (SSE), papers, health.
       '/api/v1': {

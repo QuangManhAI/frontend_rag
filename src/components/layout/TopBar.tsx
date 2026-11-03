@@ -2,11 +2,15 @@ import { Settings2 } from 'lucide-react';
 import { useUi } from '../../store/uiStore';
 import { HealthDots } from './HealthBanner';
 import type { HealthStatus } from '../../types/world';
+import { Glass } from '../ui/Glass';
+import { LIQUID_OPTICS_TOPBAR, LiquidShell } from '../ui/LiquidShell';
 
 export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null }) {
   const settingsOpen = useUi((s) => s.settingsOpen);
   return (
-    <header className="glass flex items-center gap-2 md:gap-3 px-3 py-2">
+    // Full width like the bare header (the lens wrapper shrink-wraps by default).
+    <LiquidShell optics={LIQUID_OPTICS_TOPBAR} style={{ display: 'block' }}>
+    <Glass as="header" refract="topbar" className="flex items-center gap-2 md:gap-3 px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden className="flex-none">
           <circle cx="12" cy="7" r="5" fill="var(--accent)" opacity="0.25" />
@@ -17,7 +21,7 @@ export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null
         </svg>
         <div className="min-w-0">
           <h1 className="text-sm font-semibold leading-tight truncate">Cây Tri Thức Vector</h1>
-          <p className="text-[0.65rem] text-[var(--ink-muted)] leading-tight truncate hidden sm:block">RAG trực quan · tài liệu khoa học</p>
+          <p className="text-micro text-[var(--ink-muted)] leading-tight truncate hidden sm:block">RAG trực quan · tài liệu khoa học</p>
         </div>
       </div>
       <span className="ml-auto" />
@@ -25,6 +29,7 @@ export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null
       <button type="button" className="btn btn-icon" aria-label="Cài đặt" aria-pressed={settingsOpen} data-testid="settings-toggle" onClick={() => useUi.getState().setSettingsOpen(!settingsOpen)}>
         <Settings2 size={16} />
       </button>
-    </header>
+    </Glass>
+    </LiquidShell>
   );
 }

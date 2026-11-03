@@ -10,7 +10,7 @@
   --bg-horizon: #24123f;
   --ui-surface: #120f2499;
   --ui-surface-strong: #151129e6;
-  --ui-border: #ffffff1f;
+  --ui-border: #ffffff24;
   --ink: #ece9ff;
   --ink-muted: #a29cc4;
   --accent: #7fe8ff;
@@ -20,13 +20,84 @@
   --success: #58f0a7;
   --orb: #e6fbff;
   --orb-halo: #7fe8ff;
-  --radius: 14px;
+  --radius: var(--radius-lg); /* deprecated alias */
+  --ink-faint: #64607e;
+  --glass-tint: #0c0a183d;
+  --glass-fill: #ffffff0a;
+  --glass-fill-hover: #ffffff14;
+  --glass-highlight: #ffffff29;
+  --glass-highlight-strong: #ffffff3d;
+  --glass-lowlight: #ffffff0a;
+  --glass-stroke-strong: #ffffff38;
+
+  /* semantic aliases (docs/FE_DESIGN_SYSTEM.md §4.3) */
+  --glass-stroke: var(--ui-border);
+  --glass-saturate: 1.2;
+  --glass-edge: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);
+  --glass-edge-strong: inset 0 1px 0 var(--glass-highlight-strong), inset 0 -1px 0 var(--glass-lowlight);
+  --shadow-panel: 0 12px 36px -12px rgb(0 0 0 / 0.45);
+  --shadow-panel-lifted: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 6px -2px rgb(0 0 0 / 0.5); /* Liquid Glass level 2+ */
+  --glow-accent: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent);
+
+  /* motion (§7.1) */
+  --dur-press: 120ms;
+  --dur-hover: 160ms;
+  --dur-enter: 240ms;
+  --dur-reveal: 480ms;
+  --dur-scene: 1500ms; /* = CHAT_SLIDE_S (utils/animationConfig.ts), see motionSync.test.ts */
+
+  /* Liquid Glass — level 1 defaults, all off (§10.3) */
+  --lg-refraction: 0px;
+  --lg-bezel: 0px;
+  --lg-chroma: 0px;
+  --lg-specular: 0;
+  --lg-specular-size: 60%;
+  --lg-dim: 0;
+  --lg-blur: var(--blur-lg); /* backdrop blur of refracting panels (level 2+ lowers it so the lens shows) */
+  --lg-saturate: var(--glass-saturate);
+  --lg-tint-regular: 24%; /* panel tint = --bg mixed at this share (level 2+) */
+  --lg-tint-strong: 45%;
+  --lg-veil: 0%; /* milky light of the glass body: share of --ink over the backdrop (level 2+) */
+  --lg-brightness: 1; /* backdrop brightness seen through a liquid panel */
+  --lg-dome: 0; /* convexity of the whole slab: its edge offset as a share of the panel's short side (level 3) */
+  --lg-body-light: 0; /* strength of the baked bevel light inside the level-3 filter (0 … 1) */
+  --lg-refract-url: url(#lg-refract-none); /* written per surface by LiquidFilters once its filter exists */
+  --lg-light-map: none; /* baked bevel light of a panel, written per surface by LiquidFilters (level 2+) */
   color-scheme: dark;
 }
 
 @theme {
   --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* radius — replaces Tailwind's scale (§3.1); rounded-xl/2xl/3xl and bare `rounded` no longer exist */
+  --radius-*: initial;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* backdrop blur (§4.2) */
+  --blur-*: initial;
+  --blur-sm: 6px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
+
+  /* type — text-xs (12), text-sm (14), text-base (16) keep Tailwind defaults (§5.2) */
+  --text-micro: 10px;
+  --text-micro--line-height: 14px;
+  --text-caption: 11px;
+  --text-caption--line-height: 16px;
+  --text-control: 13px;
+  --text-control--line-height: 18px;
+  --text-display: 22px;
+  --text-display--line-height: 28px;
+
+  /* easing (§7.2) */
+  --ease-standard: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --ease-scene: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 html,
@@ -49,37 +120,343 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- glass surfaces ---------- */
+/* ---------- glass surfaces (components/ui/Glass.tsx · FE_DESIGN_SYSTEM.md §4, §10.4) ----------
+   .glass               border, radius, shadow and the backdrop-filter of the surface itself
+                        (Liquid Glass level 3 adds url(#…) here). Not on ::before: Chromium drops a pseudo-element's
+                        backdrop whenever the surface's own content is composited (4/5 runs on the chat column).
+   .glass::before       material tint
+   .glass::after        specular layer: hidden until Liquid Glass level 2 (P21)
+   data-material        regular | strong | clear      data-shape   panel | control | chip
+   data-nested="true"   inside another glass surface → no second backdrop-filter */
+/* Light direction (a unit rotor) is written per glass surface each frame by useLiquidLight.
+   Non-inherited, so an update restyles only that surface — not the whole document. */
+@property --lg-light-x {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --lg-light-y {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: -1;
+}
+@layer components {
+  /* Layered so position utilities (absolute, fixed) on the same element still win. */
+  .glass {
+    position: relative;
+    isolation: isolate;
+  }
+}
 .glass {
-  background: rgba(12, 10, 24, 0.24);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  border-radius: var(--radius);
-  box-shadow:
-    0 12px 36px -12px rgb(0 0 0 / 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  background: transparent;
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel), var(--glass-edge);
+  backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
 }
-[data-theme="light"] .glass {
-  box-shadow: 0 10px 40px -16px rgb(60 40 120 / 0.25);
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-tint);
 }
-.glass-strong {
+.glass::after {
+  /* Rim light: the gradient only shows in a thin band along the edge (border box minus content box). */
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  display: none;
+  --lg-light-x: inherit; /* non-inherited by default (@property above): take the surface's value */
+  --lg-light-y: inherit;
+  -webkit-mask: linear-gradient(white, white) content-box, linear-gradient(white, white);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(white, white) content-box exclude, linear-gradient(white, white);
+  background: radial-gradient(
+    circle at calc(50% + var(--lg-light-x) * 50%) calc(50% + var(--lg-light-y) * 50%),
+    color-mix(in srgb, white calc(var(--lg-specular) * 100%), transparent),
+    transparent var(--lg-specular-size)
+  );
+  /* No mix-blend-mode: a blended child turns .glass into a backdrop root and ::before stops blurring. */
+}
+.glass[data-material="strong"]::before {
   background: var(--ui-surface-strong);
+}
+.glass[data-material="clear"] {
+  box-shadow: var(--glass-edge);
+  backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+}
+.glass[data-material="clear"]::before {
+  /* --lg-dim darkens clear glass for legibility (prefers-contrast: more) */
+  background:
+    linear-gradient(color-mix(in srgb, var(--bg) calc(var(--lg-dim) * 100%), transparent), color-mix(in srgb, var(--bg) calc(var(--lg-dim) * 100%), transparent)),
+    var(--glass-fill);
+}
+.glass[data-nested="true"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.glass[data-material="strong"][data-nested="true"]::before {
+  background: linear-gradient(var(--ui-surface-strong), var(--ui-surface-strong)), var(--bg);
+}
+.glass[data-shape="control"] {
+  border-radius: var(--radius-md);
+}
+.glass[data-shape="chip"] {
+  border-radius: var(--radius-full);
+}
+.glass[data-interactive="true"] {
+  cursor: pointer;
+  transition: border-color var(--dur-hover) var(--ease-standard), box-shadow var(--dur-hover) var(--ease-standard), transform var(--dur-press) var(--ease-standard);
+}
+.glass[data-interactive="true"]::before {
+  transition: background var(--dur-hover) var(--ease-standard);
+}
+.glass[data-interactive="true"]:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.glass[data-interactive="true"][data-material="clear"]:hover:not(:disabled)::before {
+  background: var(--glass-fill-hover);
+}
+.glass[data-interactive="true"]:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.glass[data-interactive="true"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Primary call to action on glass (Auth submit): strong stroke and edge (§8.1). */
+.glass.glass-cta {
+  border-color: var(--glass-stroke-strong);
+  box-shadow: var(--glass-edge-strong);
+}
+/* Field wrappers (clear control around an <input>) light up while the input has focus. */
+.glass[data-shape="control"]:focus-within:not(:has(> button:focus-visible)) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--glass-edge-strong);
+}
+.glass[data-material="clear"][data-shape="control"]:focus-within::before {
+  background: var(--glass-fill-hover);
+}
+/* ---------- Liquid Glass levels (<html data-lg-level>, theme/useLiquidLight.ts · §10.5–§10.6) ---------- */
+/* Level 2+: the floating panels (<Glass refract>: top bar, chat, legend, settings, paper panel) turn into one
+   liquid material — a light tint instead of the near-opaque Strong fill, less blur, more saturation, and a
+   pointer-lit rim. What makes it read as glass is light, not frosting: see the bevel below and level 3. */
+:root:is([data-lg-level="2"], [data-lg-level="3"]) {
+  --lg-specular: 0.85;
+  --lg-specular-size: 45%;
+  --lg-blur: var(--blur-sm);
+  --lg-saturate: 1.8;
+  --lg-brightness: 1.15;
+  --lg-veil: 6%;
+  --lg-tint-regular: 10%;
+  --lg-tint-strong: 10%; /* every liquid panel uses the top bar's material */
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] {
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract]::before {
+  background: color-mix(in srgb, var(--bg) var(--lg-tint-regular), transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-material="strong"]::before {
+  background: color-mix(in srgb, var(--bg) var(--lg-tint-strong), transparent);
+}
+/* Bevel light caught by the thick edge — bright where it faces the top-left key light, weaker on the far side —
+   baked per panel size (theme/refractionMap.ts buildSpecularMap) and painted over the tint by ::before.
+   Until the map exists the same light is roughed in with inset shadows. */
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-lit="true"] {
+  border-color: transparent; /* the baked rim is the edge */
+  box-shadow: var(--shadow-panel-lifted);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-lit="true"]::before {
+  background:
+    var(--lg-light-map) 0 0 / 100% 100% no-repeat,
+    linear-gradient(color-mix(in srgb, var(--ink) var(--lg-veil), transparent), color-mix(in srgb, var(--ink) var(--lg-veil), transparent)),
+    color-mix(in srgb, var(--bg) var(--lg-tint-regular), transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-lit="true"][data-material="strong"]::before {
+  background:
+    var(--lg-light-map) 0 0 / 100% 100% no-repeat,
+    linear-gradient(color-mix(in srgb, var(--ink) var(--lg-veil), transparent), color-mix(in srgb, var(--ink) var(--lg-veil), transparent)),
+    color-mix(in srgb, var(--bg) var(--lg-tint-strong), transparent);
+}
+/* Controls inside a liquid panel are small glass beads (Control Center tiles): a milky body, a rim lit all the
+   way round (stronger top-left) and a soft drop, so they sit raised on the panel. No backdrop of their own. */
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] :is(.btn:not(.btn-primary), .glass[data-nested="true"]) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow:
+    inset 1px 1px 0 var(--glass-highlight-strong),
+    inset -1px -1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-lowlight),
+    inset 6px 8px 12px -10px var(--glass-highlight-strong),
+    0 4px 10px -6px var(--bg);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] .btn:not(.btn-primary):hover {
+  background: color-mix(in srgb, var(--ink) 15%, transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] .btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--accent) 70%, transparent),
+    inset -1px -1px 0 color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 6px 8px 12px -10px var(--accent),
+    0 0 14px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract]:not([data-lit="true"]) {
+  box-shadow:
+    var(--shadow-panel),
+    inset 1px 1px 0 var(--glass-highlight-strong),
+    inset 10px 10px 18px -12px var(--glass-highlight-strong),
+    inset -1px -1px 0 var(--glass-highlight),
+    inset -10px -10px 18px -14px var(--glass-highlight);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass:is([data-shape="panel"], [data-interactive="true"])::after {
+  display: block;
+  will-change: transform; /* own layer: repainting the rim must not re-run the backdrop blur */
+}
+/* Level 3 (Chromium): each panel also bends its backdrop through the convex bevel (components/ui/LiquidFilters.tsx,
+   one filter per panel). Blur runs first so the lens edge stays crisp. Switched on per panel only once its
+   filter exists ([data-refract-ready]). */
+:root[data-lg-level="3"] {
+  /* One glass for every panel = the top bar's: its 48 px height gives a 20 px bevel and a 28 px offset
+     (42 % of the short side, 1.4 × bevel). Tall panels used a 48 px bevel, which turned into a milky band. */
+  --lg-refraction: 40px; /* largest offset of the backdrop, at the rim */
+  --lg-bezel: 48px;
+  /* Body lens: the edge of the slab samples 10 % of the short side further in (45 px on the chat column,
+     6 px on the top bar), so the backdrop curves across the whole card, not only under the rim. */
+  --lg-dome: 0.1;
+  --lg-chroma: 0px;
+  --lg-body-light: 1;
+  /* The bevel already carries a baked rim line; the pointer rim only adds a soft glint on top of it
+     (0.85 stacked two white lines into a neon outline). */
+  --lg-specular: 0.4;
+  /* Clear as water: no frost, no milky veil, almost no tint — the glass shows only by bending and catching light. */
+  --lg-blur: 0px;
+  --lg-veil: 0%;
+  --lg-tint-regular: 0%;
+  --lg-tint-strong: 0%;
+  /* No colour boost: a 1.8× saturate turned the faint purple horizon behind the chat into a purple slab,
+     while the top bar over the near-black sky looked clear — same glass, different backdrop. */
+  --lg-saturate: 1;
+  --lg-brightness: 1;
+}
+/* Clear lens → text keeps a soft halo of the page colour so it stays legible over bright, bent branches. */
+:root[data-lg-level="3"] .glass[data-refract-ready="true"] {
+  text-shadow: 0 0 6px color-mix(in srgb, var(--bg) 85%, transparent), 0 1px 2px var(--bg);
+}
+:root[data-lg-level="3"] .glass[data-refract-ready="true"] {
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness)) var(--lg-refract-url);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness)) var(--lg-refract-url);
+}
+/* A panel inside @samasante/liquid-glass (layout/AppShell.tsx ChatDock): the library's wrapper bends the backdrop,
+   so the panel drops its own filter — a backdrop-filtered child would only see the wrapper, not the world. */
+:root[data-lg-level="3"] .glass[data-refract][data-lgr="true"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Content on the clear lens, as on Apple's dark glass: white type in three steps (primary, secondary, tertiary)
+   and white-frosted controls, so it reads off any backdrop. Only the ink tokens are re-pointed for the panel's
+   subtree; accents (pressed buttons, primary CTA, links, status colours) keep their own colour. */
+:root[data-lg-level="3"] .glass[data-lgr="true"] {
+  --ink: white;
+  --ink-muted: color-mix(in srgb, white 72%, transparent);
+  --ink-faint: color-mix(in srgb, white 48%, transparent);
+  color: var(--ink);
+  /* A tight dark halo under every glyph keeps white type legible where the lens shows bright canopy. */
+  text-shadow:
+    0 0 1px color-mix(in srgb, var(--bg) 70%, transparent),
+    0 1px 2px color-mix(in srgb, var(--bg) 60%, transparent),
+    0 0 10px color-mix(in srgb, var(--bg) 55%, transparent);
+}
+/* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
+:root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 80%, white);
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg));
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] :is(.btn:not(.btn-primary):not([aria-pressed="true"]), .glass[data-nested="true"], .field) {
+  border-color: color-mix(in srgb, white 22%, transparent);
+  background: color-mix(in srgb, white 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 6%, transparent),
+    0 4px 12px -8px var(--bg);
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] :is(.btn:not(.btn-primary):not([aria-pressed="true"]), .glass[data-nested="true"][data-interactive="true"]):hover:not(:disabled) {
+  background: color-mix(in srgb, white 22%, transparent);
+}
+/* Nested glass paints its tint in ::before; on the lens the white fill above is the whole body. */
+:root[data-lg-level="3"] .glass[data-lgr="true"] .glass[data-nested="true"]::before {
+  background: none;
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] :is(.field, .glass[data-nested="true"]):focus-within {
+  border-color: color-mix(in srgb, white 45%, transparent);
+  background: color-mix(in srgb, white 18%, transparent);
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] ::placeholder {
+  color: var(--ink-faint);
+}
+/* Native select menus open on a dark sheet, not on white-on-glass. */
+:root[data-lg-level="3"] .glass[data-lgr="true"] option {
+  color: var(--ink);
+  background: var(--bg);
+}
+/* Level 0 (setting "Đục" or reduced transparency): no backdrop sampling anywhere, opaque surfaces. */
+:root[data-lg-level="0"] *,
+:root[data-lg-level="0"] *::before {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:root[data-lg-level="0"] .glass::before {
+  background: var(--ui-surface-strong);
+}
+@media (prefers-reduced-transparency: reduce) {
+  *,
+  *::before {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .glass::before {
+    background: var(--ui-surface-strong);
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --lg-dim: 0.35;
+  }
+  .glass {
+    border-color: var(--glass-stroke-strong);
+  }
+}
+
+/* Strong surface that covers text (drawers over the chat): stacked on the page color so
+   nothing underneath shows through (FE_DESIGN_SYSTEM.md §4.1). */
+.surface-opaque {
+  background: linear-gradient(var(--ui-surface-strong), var(--ui-surface-strong)), var(--bg);
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 0.4rem 0.7rem;
-  font-size: 0.8rem;
+  font-size: var(--text-control);
   font-weight: 500;
   color: var(--ink);
   border: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-surface) 60%, transparent);
-  transition: background 0.15s, border-color 0.15s, transform 0.1s, color 0.15s;
+  transition: background var(--dur-hover), border-color var(--dur-hover), transform var(--dur-press), color var(--dur-hover);
   cursor: pointer;
 }
 .btn:hover {
@@ -121,12 +498,12 @@ body {
 
 .field {
   width: 100%;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--bg) 55%, transparent);
   color: var(--ink);
   padding: 0.45rem 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--text-control);
 }
 .field[aria-invalid="true"] {
   border-color: var(--danger);
@@ -136,9 +513,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.1rem 0.5rem;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   border: 1px solid var(--ui-border);
   color: var(--ink-muted);
 }
@@ -146,7 +523,7 @@ body {
 .dot {
   width: 0.55rem;
   height: 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   flex: none;
   box-shadow: 0 0 8px currentColor;
 }
@@ -159,7 +536,7 @@ body {
   vertical-align: baseline;
   margin: 0 0.12rem;
   padding: 0 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-family: var(--font-mono);
   font-size: 0.72em;
   line-height: 1.6;
@@ -168,7 +545,7 @@ body {
   color: var(--ink);
   cursor: pointer;
   position: relative;
-  transition: background 0.15s, transform 0.1s;
+  transition: background var(--dur-hover), transform var(--dur-press);
 }
 .cite-chip:hover {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
@@ -184,15 +561,15 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   padding: 0.3rem 0.55rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--ui-surface-strong);
   border: 1px solid var(--warn);
   color: var(--ink);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-hover);
   z-index: 5;
 }
 .cite-chip:hover .cite-tip,
@@ -202,7 +579,7 @@ body {
 
 /* ---------- markdown ---------- */
 .md {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   line-height: 1.65;
   overflow-wrap: anywhere;
 }
@@ -225,7 +602,7 @@ body {
 }
 .md strong {
   color: var(--ink);
-  font-weight: 650;
+  font-weight: 600;
 }
 .md em {
   color: var(--accent);
@@ -235,7 +612,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.85em;
   padding: 0.05rem 0.3rem;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: color-mix(in srgb, var(--ink) 9%, transparent);
 }
 .md blockquote {
@@ -244,7 +621,7 @@ body {
   padding: 0.2rem 0.7rem;
   color: var(--ink-muted);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .md .katex-display {
   overflow-x: auto;
@@ -257,9 +634,33 @@ body {
 }
 
 /* ---------- scrollbars ---------- */
+/* Every scroll area in the app: a thin, faint thumb on a transparent track (no gutter box, no arrows), a little
+   brighter while the area is hovered. `.scroll-thin` is kept as an alias. */
+*,
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--ink) 25%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--ink) 14%, transparent) transparent;
+}
+*:hover {
+  scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
+}
+/* Safari (no scrollbar-width / scrollbar-color yet). */
+@supports not (scrollbar-width: thin) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+  :hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--ink) 28%, transparent);
+  }
 }
 
 /* ---------- pipeline status ---------- */
@@ -267,14 +668,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   color: var(--ink-muted);
-  transition: color 0.2s;
+  transition: color var(--dur-hover);
 }
 .step-dot {
   width: 0.6rem;
   height: 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1.5px solid currentColor;
   flex: none;
 }
@@ -316,7 +717,7 @@ body {
   width: 6px;
   height: 6px;
   margin-right: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent);
   animation: blink 1.2s infinite ease-in-out;
 }
@@ -356,34 +757,34 @@ body {
   pointer-events: none;
   white-space: nowrap;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-caption);
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   color: var(--ink);
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--blur-sm));
   transform: translate(-50%, -140%);
   user-select: none;
 }
 .label3d.small {
-  font-size: 10px;
+  font-size: var(--text-micro);
   opacity: 0.85;
 }
 .score3d {
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   padding: 1px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   transform: translate(-50%, -160%);
   white-space: nowrap;
   border: 1px solid var(--ui-border);
   background: var(--ui-surface-strong);
   color: var(--ink-muted);
-  transition: opacity 0.3s, color 0.3s, border-color 0.3s;
-  animation: score-in 0.35s ease-out both;
+  transition: opacity var(--dur-enter), color var(--dur-enter), border-color var(--dur-enter);
+  animation: score-in var(--dur-enter) var(--ease-standard) both;
 }
 .score3d[data-chosen="true"] {
   color: var(--accent);
@@ -403,7 +804,7 @@ body {
 .compare-score {
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-control);
   font-weight: 700;
   color: var(--accent);
   text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
@@ -411,7 +812,7 @@ body {
   white-space: nowrap;
 }
 .compare-score.flash {
-  animation: flash 0.25s ease-out;
+  animation: flash var(--dur-enter) var(--ease-standard);
 }
 @keyframes flash {
   from {
@@ -423,7 +824,7 @@ body {
 .query-text {
   pointer-events: none;
   transform: translate(-50%, -50%);
-  font-size: 22px;
+  font-size: var(--text-display);
   font-weight: 600;
   color: var(--orb);
   text-shadow: 0 0 18px var(--orb-halo);
@@ -434,10 +835,7 @@ body {
   letter-spacing: 0.01em;
 }
 .query-text.dissolve {
-  animation: dissolve 1.5s ease-in forwards;
-}
-[data-theme="light"] .query-text {
-  text-shadow: 0 0 12px var(--ui-surface-strong);
+  animation: dissolve var(--dur-scene) ease-in forwards;
 }
 @keyframes dissolve {
   0% {
@@ -460,12 +858,12 @@ body {
 .digits-ring {
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-micro);
   color: var(--accent);
   white-space: nowrap;
   transform: translate(-50%, 140%);
   opacity: 0.9;
-  animation: digits-in 0.6s ease-out both;
+  animation: digits-in var(--dur-reveal) var(--ease-standard) both;
 }
 @keyframes digits-in {
   from {
@@ -484,9 +882,9 @@ body {
   align-items: baseline;
   gap: 5px;
   padding: 3px 10px 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--ink);
@@ -496,16 +894,16 @@ body {
   border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   box-shadow:
     0 0 14px var(--glow),
-    inset 0 1px 0 #ffffff1f;
-  backdrop-filter: blur(6px);
+    inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(var(--blur-sm));
   transform: translate(-50%, calc(-100% - var(--stem)));
   translate: 0 calc(-1 * var(--lift, 0px));
   transform-origin: 50% 100%;
   transition:
-    translate 0.24s cubic-bezier(0.2, 0.8, 0.3, 1),
-    border-color 0.2s,
-    box-shadow 0.2s;
-  animation: topk-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+    translate var(--dur-enter) var(--ease-standard),
+    border-color var(--dur-hover),
+    box-shadow var(--dur-hover);
+  animation: topk-in var(--dur-reveal) var(--ease-spring) both;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -515,7 +913,7 @@ body {
   position: absolute;
   left: 50%;
   pointer-events: none;
-  transition: height 0.24s cubic-bezier(0.2, 0.8, 0.3, 1), top 0.24s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: height var(--dur-enter) var(--ease-standard), top var(--dur-enter) var(--ease-standard);
 }
 .topk-badge::before {
   top: 100%;
@@ -528,7 +926,7 @@ body {
   top: calc(100% + var(--stem) + var(--lift, 0px));
   width: 5px;
   height: 5px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   transform: translate(-50%, -50%);
   background: var(--orb);
   box-shadow: 0 0 8px var(--orb-halo);
@@ -554,7 +952,7 @@ body {
   opacity: 0.75;
 }
 .topk-meta {
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 500;
   color: var(--ink-muted);
 }
@@ -574,7 +972,7 @@ body {
 .result-card {
   width: 300px;
   transform: translate(28px, -50%);
-  animation: card-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: card-in var(--dur-reveal) var(--ease-spring) both;
 }
 @keyframes card-in {
   from {
@@ -585,7 +983,7 @@ body {
 
 .bar {
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--ink) 12%, transparent);
   overflow: hidden;
 }
@@ -593,7 +991,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  transition: width 0.6s ease-out;
+  transition: width var(--dur-reveal) var(--ease-standard);
 }
 
 .clamp-3 {
@@ -605,7 +1003,7 @@ body {
 
 /* ---------- panels ---------- */
 .slide-in-right {
-  animation: slide-right 0.25s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  animation: slide-right var(--dur-enter) var(--ease-standard) both;
 }
 @keyframes slide-right {
   from {
@@ -617,7 +1015,9 @@ body {
 /* Page intro: chrome slides in from its own edge; set --intro-delay to stagger. */
 .intro-down,
 .intro-up {
-  animation: 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) var(--intro-delay, 0s) both;
+  /* backwards, not both: a finished opacity animation that stays in effect keeps the group a backdrop root in
+     Chromium, so the glass panels inside it (top bar, legend) saw nothing behind them and showed no lens. */
+  animation: var(--dur-reveal) var(--ease-standard) var(--intro-delay, 0s) backwards;
 }
 .intro-down {
   animation-name: intro-down;
@@ -641,10 +1041,10 @@ body {
 /* Chat column (docked left): slides slowly out past the left edge and back in.
    The 3D scene follows 0.5 s later with the same duration (CameraDirector, CHAT_SLIDE_*). */
 .chat-slide-in {
-  animation: chat-in 1.5s cubic-bezier(0.65, 0, 0.35, 1) var(--intro-delay, 0s) both;
+  animation: chat-in var(--dur-scene) var(--ease-scene) var(--intro-delay, 0s) both;
 }
 .chat-slide-out {
-  animation: chat-out 1.5s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation: chat-out var(--dur-scene) var(--ease-scene) both;
   pointer-events: none;
 }
 @keyframes chat-in {
@@ -660,7 +1060,7 @@ body {
   }
 }
 .fade-in {
-  animation: fade 0.25s ease-out both;
+  animation: fade var(--dur-enter) var(--ease-standard) both;
 }
 @keyframes fade {
   from {
@@ -669,7 +1069,7 @@ body {
 }
 
 .skeleton {
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(90deg, color-mix(in srgb, var(--ink) 8%, transparent) 25%, color-mix(in srgb, var(--ink) 16%, transparent) 50%, color-mix(in srgb, var(--ink) 8%, transparent) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.3s infinite linear;
@@ -737,126 +1137,8 @@ input[type="range"] {
 
 /* labels: smaller and quieter so 14 branch labels don't shout */
 .label3d {
-  font-size: 10px;
+  font-size: var(--text-micro);
   opacity: 0.82;
 }
 
-/* ---------- Liquid Glass / Transparent Morphism (Chat Auth) ---------- */
-.liquid-auth-shell {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 1.5rem 1.35rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: transparent;
-}
-
-.liquid-emblem {
-  position: relative;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  margin: 0 auto 0.7rem;
-  color: var(--accent);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.liquid-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-}
-.liquid-input-wrap:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.liquid-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--ink);
-  font-size: 0.83rem;
-  padding: 0.68rem 0.75rem 0.68rem 0.55rem;
-}
-.liquid-input::placeholder {
-  color: color-mix(in srgb, var(--ink-muted) 72%, transparent);
-}
-.liquid-input:focus-visible {
-  outline: none;
-}
-
-.liquid-cta-btn {
-  position: relative;
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.7rem 1rem;
-  border-radius: 12px;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
-  cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
-}
-.liquid-cta-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-}
-.liquid-cta-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-.liquid-cta-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.liquid-badge-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-  padding: 0.22rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--ink-muted);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(10px);
-}
 

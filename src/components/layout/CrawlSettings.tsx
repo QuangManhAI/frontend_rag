@@ -26,7 +26,7 @@ function useFlowing(): number[] {
 function Bar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
-    <div className="grid grid-cols-[4.2rem_1fr_3rem] items-center gap-2 text-[0.68rem]">
+    <div className="grid grid-cols-[4.2rem_1fr_3rem] items-center gap-2 text-caption">
       <span className="text-[var(--ink-muted)]">{label}</span>
       <span className="bar" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
         <i style={{ width: `${pct}%`, background: color }} />
@@ -71,10 +71,10 @@ export function CrawlSettings() {
       <div className="flex items-center gap-2 mb-2 font-semibold">
         <CloudDownload size={14} className={running ? 'text-[var(--accent)] animate-pulse' : 'text-[var(--ink-muted)]'} />
         Cào dữ liệu
-        <span className="ml-auto font-normal text-[0.68rem]">{conn}</span>
+        <span className="ml-auto font-normal text-caption">{conn}</span>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="text-[0.78rem]">
+        <div className="text-xs">
           {status ? (
             <>
               {running ? 'Đang cào' : done ? 'Đã cào xong' : 'Tạm dừng'}{' '}
@@ -100,14 +100,14 @@ export function CrawlSettings() {
             </div>
           </>
         )}
-        {lastError && <div className="text-[var(--danger)] text-[0.68rem]">⚠ {lastError}</div>}
+        {lastError && <div className="text-[var(--danger)] text-caption">⚠ {lastError}</div>}
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={showRise} onChange={(e) => useCrawl.getState().setShowRise(e.target.checked)} className="accent-[var(--accent)]" />
           Hiện hạt lên cây
         </label>
         {MOCK_WORLD && (
           <div className="mt-1 pt-2 border-t border-[var(--ui-border)] flex flex-col gap-1.5" data-testid="crawl-mock">
-            <span className="text-[0.65rem] uppercase tracking-wide text-[var(--ink-muted)]">Giả lập (mock)</span>
+            <span className="text-micro uppercase tracking-wide text-[var(--ink-muted)]">Giả lập (mock)</span>
             <div className="flex flex-wrap gap-1">
               <button type="button" className="btn !py-1" data-testid="crawl-toggle" onClick={() => useCrawl.getState().setMock({ running: !mock.running })}>
                 {mock.running ? <Pause size={12} /> : <Play size={12} />} {mock.running ? 'Dừng cào' : 'Bắt đầu cào'}

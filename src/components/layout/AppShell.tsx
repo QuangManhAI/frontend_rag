@@ -12,6 +12,10 @@ import { HealthBanner, useHealth } from './HealthBanner';
 import { SettingsPanel } from './SettingsPanel';
 import { TopBar } from './TopBar';
 import { WorldError } from './WorldError';
+import { Glass } from '../ui/Glass';
+import { useGlassLevel, useLiquidLight } from '../../theme/useLiquidLight';
+import { LiquidFilters } from '../ui/LiquidFilters';
+import { LIQUID_OPTICS_CHAT, LiquidLens } from '../ui/LiquidShell';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -44,6 +48,8 @@ function ChatDock() {
     if (chatOpen) setMounted(true);
   }, [chatOpen]);
   const closing = mounted && !chatOpen;
+  // Level 3: the lens comes from @samasante/liquid-glass, wrapped around the dock (see below).
+  const liquid = useGlassLevel() === 3;
 
   if (!mounted) {
     return (
@@ -52,20 +58,50 @@ function ChatDock() {
       </div>
     );
   }
+  const slide = closing ? 'chat-slide-out' : 'chat-slide-in';
+  const slideStyle = firstOpen.current && !closing ? introDelay(0.15) : undefined;
+  const onSlideEnd = (e: React.AnimationEvent<HTMLElement>) => {
+    if (e.target !== e.currentTarget) return; // ignore animations of children
+    firstOpen.current = false;
+    if (closing) setMounted(false);
+  };
+  const panel = <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />;
+
+  if (liquid) {
+    // The library's material wrapper carries the backdrop lens, so it is the box that slides; the dock inside
+    // keeps its markup, tokens and rim light but drops its own backdrop filter (index.css [data-lgr]; optics in ui/LiquidShell.tsx): a
+    // backdrop-filtered child of a backdrop-filtered box would only see the box, not the world.
+    return (
+      <LiquidLens
+        optics={LIQUID_OPTICS_CHAT}
+        className={`w-[32vw] min-w-[340px] max-w-[520px] h-full ${slide}`}
+        style={slideStyle}
+        aria-hidden={closing || undefined}
+        onAnimationEnd={onSlideEnd}
+      >
+        <Glass refract="chat" data-lgr className="w-full h-full overflow-hidden" data-testid="chat-dock">
+          {panel}
+        </Glass>
+      </LiquidLens>
+    );
+  }
   return (
-    <div
-      className={`glass w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
-      style={firstOpen.current && !closing ? introDelay(0.15) : undefined}
-      aria-hidden={closing || undefined}
-      data-testid="chat-dock"
-      onAnimationEnd={(e) => {
-        if (e.target !== e.currentTarget) return; // ignore animations of children
-        firstOpen.current = false;
-        if (closing) setMounted(false);
-      }}
-    >
-      <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
-    </div>
+    <>
+      <Glass
+        refract="chat"
+        className={`w-[32vw] min-w-[340px] max-w-[520px] h-full overflow-hidden ${closing ? 'chat-slide-out' : 'chat-slide-in'}`}
+        style={firstOpen.current && !closing ? introDelay(0.15) : undefined}
+        aria-hidden={closing || undefined}
+        data-testid="chat-dock"
+        onAnimationEnd={(e) => {
+          if (e.target !== e.currentTarget) return; // ignore animations of children
+          firstOpen.current = false;
+          if (closing) setMounted(false);
+        }}
+      >
+        <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />
+      </Glass>
+    </>
   );
 }
 
@@ -73,13 +109,13 @@ function FilterChip() {
   const label = useUi((s) => s.highlightLabel);
   if (!label) return null;
   return (
-    <div className="glass glass-strong flex items-center gap-2 px-3 py-1.5 text-xs fade-in" data-testid="filter-chip">
-      <Filter size={13} className="text-[var(--accent)]" />
+    <Glass material="strong" shape="chip" className="flex items-center gap-2 px-3 py-1.5 text-xs fade-in" data-testid="filter-chip">
+      <Filter size={14} className="text-[var(--accent)]" />
       Đang lọc: <span className="mono">{label.label}</span>
       <button type="button" className="btn btn-icon !p-0.5" aria-label="Bỏ lọc (Esc)" onClick={() => useUi.getState().setHighlights(null, null)}>
-        <X size={12} />
+        <X size={14} />
       </button>
-    </div>
+    </Glass>
   );
 }
 
@@ -88,7 +124,7 @@ function BottomSheet() {
   const [height, setHeight] = useState(42);
   const drag = useRef<{ y: number; h: number } | null>(null);
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 glass glass-strong !rounded-b-none flex flex-col intro-up" style={{ height: `${height}vh`, ...introDelay(0.15) }}>
+    <Glass material="strong" className="absolute inset-x-0 bottom-0 z-20 !rounded-b-none flex flex-col intro-up" style={{ height: `${height}vh`, ...introDelay(0.15) }}>
       <div
         className="py-2 grid place-items-center cursor-grab touch-none"
         role="slider"
@@ -120,11 +156,14 @@ function BottomSheet() {
       <div className="flex-1 min-h-0">
         <ChatPanel />
       </div>
-    </div>
+    </Glass>
   );
 }
 
 export function AppShell() {
+  const glassLevel = useGlassLevel();
+  const reduceMotion = useUi((s) => s.settings.reduceMotion);
+  useLiquidLight(glassLevel >= 2 && !reduceMotion);
   const status = useWorld((s) => s.status);
   const error = useWorld((s) => s.error);
   const panelOpen = useUi((s) => s.panelPaperId !== null);
@@ -199,6 +238,7 @@ export function AppShell() {
       )}
 
       <VectorTooltip />
+      {glassLevel >= 2 && <LiquidFilters refract={glassLevel === 3} />}
     </div>
   );
 }

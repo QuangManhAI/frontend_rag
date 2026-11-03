@@ -1,4 +1,16 @@
-# PROGRESS
+# PROGRESS.md — Nhật ký tiến độ Frontend `frontend_rag`
+
+- **Motivation/Background**: Mỗi prompt (P1–P14 trong [`../docs/prompt_fe_3d.md`](../docs/prompt_fe_3d.md), P15+ trong [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md)) phải ghi lại kết quả kiểm chứng để người duyệt dò vết.
+- **Purpose**: Bảng tiến độ theo prompt: module, kiểm chứng, kết quả, vấn đề tồn tại.
+- **Overview Pipeline**: Cập nhật cuối mỗi prompt sau khi chạy mục "Kiểm chứng".
+- **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
+- **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
+- **Created**: 2026-10-19T18:48:02+07:00
+- **Last Updated**: 2026-10-30T18:30:00+07:00
+
+[STATUS: ACTIVE]
+
+---
 
 Trạng thái: **P1–P11 xong ở chế độ mock** (chưa nối backend thật). Cập nhật 2026-10-19.
 
@@ -73,3 +85,116 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Không giật | ✅ M4, bản build 150k, 1440×900: 0–1% khung > 25 ms ở mọi giai đoạn (2 lượt đo) |
 | Sau khi tìm xong: camera về góc ban đầu, tán mờ, rank nổi bật | ✅ (E2E c: camera `overview`, `dim = 1`, có huy hiệu #1) |
 | Unit + E2E | ✅ 188/188, 6/6 |
+
+## Giai đoạn 2026-10-20 → 2026-10-28 (bổ sung từ `git log`, không có spec)
+| Chủ đề | Commit | Ghi chú |
+| :-- | :-- | :-- |
+| Hiệu năng 3D/FPS, PerfHUD | `199c14e`, `b368cc5`, `718b049`, `e8cb552`, `20026ee`, `0888b74`, `f6300f8` | Báo cáo: [`docs/perf-chat-report.md`](docs/perf-chat-report.md) |
+| Hiệu năng tải trang (LCP/FCP) | `9457e1c` | [`docs/perf-report.md`](docs/perf-report.md) |
+| TopK badge, mock chat | `181761e`, `86e72c5` | |
+| Auth "Liquid Glass" | `85b3e35` → `3fdb69e` → `5871b26` → `6fb7906` → `26fa96b` → `85962c2` | Sửa 6 lần, không có spec — xem [`../docs/FE_DESIGN_AUDIT.md`](../docs/FE_DESIGN_AUDIT.md) |
+| FPS_LOCK (thêm rồi gỡ) | `f8a483b`, `20a1c26` | |
+| tsconfig | `bc48609`, `90e5299` | |
+| Intro / loading / WorldError | `050879c`, `1ba3e20`, `538ae7f` | |
+| Chat offline (Dexie) + đồng bộ | `7762d3d`, `59f781f`, `d035b48` | [`docs/STATE_AND_STREAMING_ARCHITECTURE.md`](docs/STATE_AND_STREAMING_ARCHITECTURE.md) |
+
+## P15 — Baseline ảnh, check-design & quản trị tài liệu (2026-10-29)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Không sửa `src/` | ✅ `git diff --stat -- src/` rỗng |
+| `npm run test:visual` (8 ảnh, ngưỡng 0) ổn định 2 lần liên tiếp | ✅ 8/8, 8/8 |
+| `npm run check:design` khớp audit | ✅ unknown-var: 4 tên (`--ink-secondary`, `--ui-hover`, `--ui-panel-bg`, `--ink-faint`); STATS radius 8 · blur 5 · alpha trắng 12 · cỡ chữ 19 (audit đếm tay ~14 vì bỏ sót `text-[0.65rem]`…) |
+| Unit test | ⚠️ 200/210 trên Node 26 (lỗi môi trường `localStorage`, xem ASSUMPTIONS [P15]); ✅ 210/210 với `NODE_OPTIONS=--no-experimental-webstorage` |
+| E2E `knowledge-tree.spec.ts` | ⚠️ 5/6. a, b, f pass; d, e pass sau khi E2E nạp sẵn user (form đăng nhập che ô chat từ `3fdb69e`); **c fail sẵn có**: kỳ vọng câu trả lời còn đang chạy chữ khi ResultCard hiện, nhưng câu trả lời đã đủ (1067 ký tự) — chờ người duyệt quyết định |
+| Mốc hiệu năng `test:perf` (dev, headless Chromium, 150k) | median frame 2.1 / 2.2 / 2.2 ms; p95 3.4–3.6 ms; long task 4–6 (lúc tải + stream) |
+
+## P16 — Nền tảng token (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Token mới: `glassTint/Fill/FillHover/Highlight/HighlightStrong/Lowlight/StrokeStrong`, `uiInkFaint`; CSS alias `--glass-stroke`, `--glass-saturate`, `--glass-edge(-strong)`, `--shadow-panel`, `--glow-accent`, `--dur-*`, `--lg-*` (Cấp 1, tắt) | ✅ |
+| Class Tailwind mới `text-micro/caption/control/display`, `ease-standard/spring/scene` được sinh từ `src/index.css` | ✅ (kiểm bằng `@tailwindcss/node`) |
+| `contrastRatio` (WCAG): ink ≥ 7, ink-muted ≥ 4.5, ink-faint ∈ [3, 4.5), accent-ink trên accent ≥ 4.5 | ✅ `contrast.test.ts` 6/6 |
+| Không đổi pixel (`test:visual`, ngưỡng nhiễu 600 px) | ✅ 8/8 hai lần liên tiếp |
+| `check:design` không tăng so với P15 | ✅ (alpha trắng 12 → 14 vì token mới 0.08/0.24 — sẽ gộp ở P18) |
+| typecheck, unit, build | ✅ 0 lỗi · 218/218 · build OK |
+
+## P17 — Sửa lỗi lệch token (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `check:design:strict --rules=unknown-var,var-fallback,tw-palette,raw-color` | ✅ 0 (trước: 10 · 4 · 8 · 4 dòng) |
+| `--ink-faint` được định nghĩa; `--ink-secondary`/`--ui-hover`/`--ui-panel-bg` thay bằng token có sẵn; màu Tailwind (`red/amber/gray/white`) trong ChatPanel, HistoryDrawer → `--danger`/`--warn`/`--ink*`/`--accent-ink` | ✅ |
+| `.glass` dùng `--glass-tint`, `--glass-stroke`, `--shadow-panel`, `--glass-edge` (giá trị y hệt) | ✅ `css-raw-color` 20 → 16 |
+| `uiBorder` 0.12 → 0.14 (Phụ lục A #1, người duyệt đồng ý) | ✅ dưới ngưỡng phát hiện ở mọi ảnh |
+| Xoá CSS/comment theme sáng | ✅ |
+| Chữ đọc được: "Xóa?" danger trên danger 16%, badge offline warn trên warn 16%, ink-muted trên hover fill | ✅ `contrast.test.ts` ≥ 4.5 |
+| Ảnh: chỉ `06-history-drawer` đổi (1.430 px) | ✅ người duyệt chấp nhận, baseline 06 đã cập nhật |
+| Unit, E2E, typecheck | ✅ 221/221 · 6/6 · 0 lỗi |
+
+## P18 — Quy đổi thang giá trị (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `check:design:strict --rules=all-except-trig` | ✅ 0 (đã nằm trong `npm run lint`) |
+| STATS: bo góc 4 + full · blur 3 · alpha trắng 6 · cỡ chữ 7 (+2 `em`) | ✅ 4 · 3 · 6 · 9 (= 7 + `0.72em`, `0.85em`) |
+| `@theme`: `--radius-*: initial` (xs 4 · sm 6 · md 10 · lg 14 · full), `--blur-*: initial` (sm 6 · md 12 · lg 16); `--radius` → alias `--radius-lg` | ✅ `scale.test.ts` |
+| `--dur-scene` = `CHAT_SLIDE_S` × 1000 (hằng số chuyển sang `utils/animationConfig.ts`) | ✅ `motionSync.test.ts` |
+| Không còn `rounded-xl/2xl/3xl`, `rounded` trần | ✅ (`retired-radius` = 0) |
+| Unit, E2E, typecheck, build | ✅ 227/227 · 6/6 · 0 lỗi · OK |
+| Frame time (dev, headless, 150k) | ✅ median 2.2 / 2.1 / 2.1 ms (P15: 2.2), p95 3.4 ms |
+| Ảnh (ngưỡng 1.5%) | ⚠️ 6/8 trong ngưỡng; `03` 2.1 %, `04` 4.2 % do chữ xuống dòng lại (Markdown 14.4 → 14 px, abstract/đoạn trích 13.1 → 12 px) — người duyệt chấp nhận, 8 baseline đã cập nhật |
+
+## P19 — Component `Glass` (Liquid Glass Cấp 1) (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `components/ui/Glass.tsx` (material · shape · nested · interactive · `as`, ref là prop thường của React 19) | ✅ `Glass.test.tsx` 4/4 |
+| `.glass` → cấu trúc `::before` (nền + backdrop-filter) / `::after` (specular, ẩn tới P21); `backdrop-filter` chỉ còn ở `::before` | ✅ |
+| Chuyển sang `Glass`: TopBar, cột chat, chip lọc, bottom sheet, Settings, Legend, PaperPanel, ResultCard, HealthBanner, 2 tooltip 3D, nút mở chat, chip tên người dùng, emblem/ô nhập/CTA đăng nhập | ✅ `grep liquid- src` = 0, không còn `glass-strong` |
+| Kính không chồng kính: số lớp backdrop-filter | ✅ đăng nhập 7 → 3 · lịch sử 5 → 3 · trả lời 10 → 9 |
+| *(Ghi chú P22)* Blur đặt ở `::before` hóa ra không ổn định trong Chromium khi panel có nội dung — ảnh mốc với canvas ẩn không phát hiện được; đã sửa ở P22 | ⚠️ |
+| Ảnh | ✅ 7/8 ≤ nhiễu; `07` đổi 4.441 px (form đăng nhập: bỏ blur lồng, CTA viền strong) — người duyệt chấp nhận, baseline 07 đã cập nhật |
+| Frame time (A/B xen kẽ, cổng riêng `127.0.0.1`) | ✅ P19 median 2.0 / 2.0 / 2.1 ms · P18 2.0 ms (p95 3.5–3.6, 4 long task cả hai) |
+| Unit, E2E, lint, build | ✅ 231/231 · 6/6 · 0 vi phạm · OK |
+
+## P20 — Toán Web3D bằng số phức (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| Đổi theo §9.5: `treeGeometry` (ống, thân), `cameraPresets`, `feedCables`, `FeedCables` (runtime), `Fireflies`, `mockWorld` | ✅ chi tiết `docs/trig-audit.md` §7 |
+| Helper mới `ringRotors`, `powRotor`, `randomInDisk`, `randomDirection` + test (oracle cos/sin < 1e-12, thống kê 100k mẫu) | ✅ |
+| Sai lệch so với code cũ | ✅ max 1.4e-14 (ngưỡng 1e-3) |
+| Bench: không chỗ nào chậm hơn | ✅ ống 2.96×, thân 1.57×, đĩa (runtime) 1.65× nhanh hơn |
+| `check:design:strict` đủ mọi rule (gồm trig) trong `npm run lint` | ✅ 0 |
+| Frame time A/B P19 ↔ P20 | ✅ median 2.1–2.2 ms cả hai |
+| Ảnh canvas 3D | ✅ 0.18 % (nhiễu 0.06 %), chỉ đom đóm/hạt cáp |
+| Unit, E2E, visual, build | ✅ 236/236 · 6/6 · 9/9 · OK |
+
+## P21 — Liquid Glass Cấp 2: vệt sáng động, chọn cấp, trợ năng (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `theme/liquidGlass.ts`: `detectLevel`, `lightFromPointer`, `nlerp` (rotor, không góc), `readEnv` | ✅ 7 test (các ví dụ của spec) |
+| `theme/useLiquidLight.ts`: `useGlassLevel` (`<html data-lg-level>`), `useLiquidLight` (ghi `--lg-light-x/y` lên bề mặt có viền sáng, ≤ 1 lần/frame, không re-render) | ✅ test 1000 sự kiện → 1 frame, 2 lần ghi mỗi bề mặt, 0 render |
+| Cài đặt "Hiệu ứng kính": Tự động / Đục / Mờ / Liquid, lưu trong `rkt.settings`, settings cũ không có khoá vẫn chạy | ✅ E2E |
+| Cấp 0 → không phần tử nào có `backdrop-filter`; giảm chuyển động → ánh sáng đứng yên | ✅ E2E |
+| Chữ trên kính Clear ≥ 4.5:1 | ✅ `contrast.test.ts` |
+| Hiệu năng khi di chuột (median, cấp 1 ↔ cấp 3) | ✅ 2.6 ↔ 2.5 ms (ngân sách +2 %); p95 3.7 ↔ 4.4–5.1 ms |
+| `test:perf` chuẩn (cấp 3) | ✅ median 2.2–2.3 ms, p95 3.4 ms, 4 long task (P20: 2.1–2.2) |
+| Ảnh | ✅ 8 mốc cấp 1 giữ nguyên trừ `05` (thêm nhóm "Hiệu ứng kính"); 3 ảnh mới `01/02/05-lg2` — người duyệt chấp nhận |
+| Unit, E2E, build | ✅ 251/251 · 6/6 · OK |
+
+## P22 — Liquid Glass Cấp 3: khúc xạ SVG cho cột chat (2026-10-30)
+| Kiểm chứng | Kết quả |
+| :-- | :-- |
+| `theme/refractionMap.ts` (SDF bo góc, pháp tuyến giải tích, bản đồ R/G) | ✅ 7 test (ví dụ (2,2) của spec nằm ngoài góc bo 14px → kiểm tra trung tính, dùng (5,5) cho góc) |
+| `components/ui/LiquidFilters.tsx`: `<svg>` ẩn ngoài `<Canvas>`, bản đồ sinh lúc rảnh, ResizeObserver 150 ms, cache ≤ 4 kích thước, `<html data-lg-refract="ready">` | ✅ E2E: cache ≤ 4 sau 10 lần đổi kích thước |
+| Khúc xạ hiển thị trên Chromium (ảnh nền sọc: dải mép trên/trái bị bẻ) | ✅ `glass-backdrop-liquid` |
+| Ngoài Chromium (giả lập Firefox): cấp 2, không có filter, console sạch | ✅ E2E |
+| **Lỗi P19 phát hiện ở P22:** blur đặt ở `::before` bị Chromium bỏ khi nội dung được composite (cột chat: hỏng 4/5 lần ở cấp Mờ) → đưa `backdrop-filter` về phần tử | ✅ 5/5 lần mờ đúng; test `glass backdrop` bắt được lỗi cũ (fail 2/2 khi đưa lại) |
+| Ngân sách cấp 3 (median khi di chuột ≤ +10 % so với cấp 1) | ✅ sau khi đặt `--lg-chroma: 0`: 2.5 vs 2.5–2.7 ms (có chroma: 4.3–4.6 ms, +65–77 %) |
+| FCP / LCP bản build (5 lần, median) | ✅ cấp 1: 232 / 248 ms · cấp 3: 244 / 244 ms (dao động giữa lần chạy 200–488 ms) |
+| `test:perf` chuẩn (cấp 3) | median 1.9–2.0 ms, p95 3.6 ms, 4 long task; trung bình 2.38 ms (P21: 2.13) |
+| Unit, E2E, visual, lint, build | ✅ 256/256 · 6/6 · 18/18 (2 lần) · 0 · OK |
+
+## Còn tồn tại (sau P16)
+- E2E c đã sửa theo D-026 (người duyệt chọn "sửa test cho khớp") → `knowledge-tree.spec.ts` 6/6.
+- `npm test` cần `NODE_OPTIONS=--no-experimental-webstorage` trên Node ≥ 25.
+- `scripts/perf-chat-benchmark.cjs` mặc định dùng Edge (`msedge`); trên macOS chạy với `BROWSER_CHANNEL=chromium`.
+- Đo hiệu năng phải dùng cổng riêng và `127.0.0.1`, và **không chạy hai dev server cùng lúc** khi dùng worktree có `node_modules` symlink (xem ASSUMPTIONS [P19], [P20]).
+

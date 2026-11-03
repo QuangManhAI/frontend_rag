@@ -1,0 +1,62 @@
+{
+  "label": "p15-run1",
+  "timestamp": "2026-10-29T16:52:02.578Z",
+  "targetUrl": "http://localhost:5174/?vectors=150000&bench&perf",
+  "totalFrames": 4555,
+  "fps": {
+    "mean": 841.2,
+    "stdDev": 774.7,
+    "median": 476.2,
+    "min": 1.7,
+    "max": 5000
+  },
+  "frameTime": {
+    "meanMs": 2.43,
+    "stdDevMs": 13.05,
+    "medianMs": 2.1,
+    "p95Ms": 3.6,
+    "p99Ms": 4.9,
+    "minMs": 0.2,
+    "maxMs": 577.8
+  },
+  "longTasks": {
+    "count": 6,
+    "maxDurationMs": 577,
+    "tasks": [
+      {
+        "duration": 293,
+        "startTime": 5076,
+        "name": "self"
+      },
+      {
+        "duration": 490,
+        "startTime": 6407.199999928474,
+        "name": "self"
+      },
+      {
+        "duration": 577,
+        "startTime": 7881.599999904633,
+        "name": "self"
+      },
+      {
+        "duration": 67,
+        "startTime": 8576.799999952316,
+        "name": "self"
+      },
+      {
+        "duration": 98,
+        "startTime": 12347.399999976158,
+        "name": "self"
+      },
+      {
+        "duration": 316,
+        "startTime": 14700.399999976158,
+        "name": "self"
+      }
+    ]
+  },
+  "sla": {
+    "target": "60 FPS (Mean >= 60 FPS, FrameTime <= 16.6ms, LongTasks = 0)",
+    "passed": false
+  }
+}

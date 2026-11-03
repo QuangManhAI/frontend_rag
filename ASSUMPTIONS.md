@@ -1,4 +1,16 @@
-# ASSUMPTIONS
+# ASSUMPTIONS.md — Giả định khi triển khai Frontend `frontend_rag`
+
+- **Motivation/Background**: Spec không thể nói hết mọi chi tiết; mọi giả định AI agent tự đặt ra phải được ghi lại để người duyệt kiểm tra.
+- **Purpose**: Danh sách giả định theo prompt, dạng `[P<số>] <giả định> — <lý do>`.
+- **Overview Pipeline**: Ghi trong lúc thực thi từng prompt của [`../docs/prompt_fe_3d.md`](../docs/prompt_fe_3d.md) và [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md).
+- **Detailed Plan**: P1–P11, Trig, P15+.
+- **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
+- **Created**: 2026-10-19T18:48:02+07:00
+- **Last Updated**: 2026-10-30T18:30:00+07:00
+
+[STATUS: ACTIVE]
+
+---
 
 Định dạng: `[P<số prompt>] <giả định> — <lý do>`
 
@@ -75,3 +87,52 @@
 - [Live] Backend thật + world mock: `src/api/worldBridge.ts` đặt paper thật lên vector mock (ổn định trong phiên, đổi `vectorIds[i]` thành id thật) và dựng lại `route` rỗng từ vị trí các paper `compare` (nprobe cành, mỗi cành 1 twig đông vector nhất). Điểm cành/twig = similarity thật của paper tốt nhất đặt ở đó, KHÔNG phải điểm centroid. Tạm thời tới khi pipeline xuất world (Phụ lục B P1); tự tắt khi `VITE_MOCK_WORLD=false` hoặc backend trả route thật.
 - [Live] `getPaper` khi chat thật mà world mock: backend trả 404 cho id mock (vector chưa được bridge) ➔ dùng paper mock để tooltip vẫn có tiêu đề.
 - [Live] Event `done` có thêm `session_id`, `message_id` (optional) — FE chưa có đăng nhập nên luôn null.
+- [P15] Unit test trên Node ≥ 25 cần `NODE_OPTIONS=--no-experimental-webstorage`: Node 25+ có `localStorage` toàn cục riêng, đè lên của jsdom và trả `undefined` khi không có `--localstorage-file` → 10 test lỗi `Cannot read properties of undefined (reading 'setItem')`. Không sửa cấu hình vitest vì cờ này không tồn tại trên Node 20 — để nhóm chốt phiên bản Node.
+- [P15] E2E nạp sẵn user giả vào `localStorage['rag-auth-storage']` (`e2e/helpers.ts → seedAuth`) — từ khi có form đăng nhập trong ChatPanel, chế độ mock không có endpoint auth nên ô "Câu hỏi" không hiện; chỉ sửa test, không sửa `src/`.
+- [P15] E2E c giữ nguyên dù fail — kỳ vọng "câu trả lời còn dài thêm sau khi ResultCard hiện" không còn đúng với luồng stream hiện tại; nới lỏng test là trái quy tắc, cần người duyệt chọn sửa test hay sửa hành vi.
+- [P15] Ảnh baseline ẩn `<canvas>` và PerfHUD bằng `stylePath` (`e2e/visual.css`) thay vì `mask` — canvas phủ toàn màn hình nên `mask` che cả giao diện; khi ẩn canvas, kính làm mờ nền trang trơn nên ảnh ổn định. Cảnh 3D kiểm riêng ở P20.
+- [P15] Ảnh `02` là "chat thu gọn" (không phải "chat trống" như pseudocode 15.2) vì cột chat mở sẵn khi tải trang — trạng thái đó đã có ở `01`.
+- [P15] `check-design` coi `var(--x, fallback)` là vi phạm chỉ khi `--x` không tồn tại hoặc fallback là màu thô — `var(--lift, 0px)`, `var(--cat-1, var(--accent))` là mặc định hợp lệ. Thêm 2 rule ngoài pseudocode: `css-raw-duration`, `css-raw-easing` (Design System §7, cần cho P18); animation lặp (`infinite`) và `0.001ms` của reduced-motion được miễn.
+- [P15] `check-design` đếm cả `text-[0.65rem]`, `text-[0.7rem]`, `text-[0.78rem]`, `text-[0.8rem]`, `text-[0.82rem]` (không có trong Phụ lục B.4 của Design System) — P18 cần bổ sung quy đổi cho các giá trị này trước khi làm.
+- [P16] `uiInkFaint` có trong `tokens.ts` nhưng **chưa** xuất ra `--ink-faint` (applyCssVars, `:root`) — `HistoryDrawer` đã gọi `var(--ink-faint)` từ trước; định nghĩa biến làm đổi màu chữ (907 px trong ảnh 06), trái yêu cầu "0 pixel" của P16 → chuyển sang P17 (bước có người duyệt ảnh).
+- [P16] Chưa thêm alias `--radius: var(--radius-lg)` của Phụ lục A.3 — `--radius-lg` mặc định của Tailwind là 8px nên alias sẽ đổi `.glass` từ 14 → 8px; alias vào cùng lúc với thang bo góc ở P18.
+- [P16] "0 pixel" trong `test:visual` được hiểu là ≤ 600 px khác (`NOISE_PX`): đo trên Apple M4, rasterize chữ lệch tới 428 px giữa hai lần chạy giống hệt (cả GPU lẫn `--disable-gpu`); thay đổi thật nhỏ nhất quan sát được là 907 px. Thêm `retries: 1` cho riêng bộ visual vì khoảng 1/9 lần có nhãn DOM neo theo phép chiếu 3D trễ một khung (13.620 px) — thay đổi thật fail cả hai lần.
+- [P16] Ảnh mốc P15 được chụp lại (từ code P15, `git stash` phần `src/`) sau khi thêm bước chờ font hai nhịp — ảnh P15 ban đầu chụp khi glyph tiếng Việt có thể chưa tải xong.
+- [P17] HistoryDrawer dùng class mới `.surface-opaque` (`--ui-surface-strong` chồng lên `--bg`) thay vì `--ui-surface-strong` như bảng §2.3 ban đầu — α 0.9 để lộ chữ khung chat bên dưới (ảnh 06); không thêm giá trị mới, đã bổ sung vào `FE_DESIGN_SYSTEM.md` §2.3 và §4.1.
+- [P17] Hàng session đang chọn `bg-[var(--accent)]/15` → `/16` cho khớp thang pha màu §2.4 (modifier opacity của Tailwind tương đương `color-mix … 16%`).
+- [P17] Nút "Đoạn chat mới" và nút lịch sử đang bật đổi chữ trắng → `--accent-ink` (chữ tối trên nền cyan) — trắng trên `#7fe8ff` chỉ đạt ~1.4:1.
+- [P17] `--ui-border` 0.12 → 0.14 không vượt ngưỡng 600 px ở ảnh nào (viền 1px, chênh 0.02 alpha nằm dưới ngưỡng màu từng pixel của Playwright) — thay đổi có thật nhưng không đo được bằng ảnh.
+- [P18] Cỡ chữ ngoài Phụ lục B.4 quy theo vai trò (người duyệt chọn 2026-10-30): `0.65rem` → `text-micro`, `0.68/0.7rem` → `text-caption`, `0.78/0.8/0.82rem` → `text-xs`; đã bổ sung vào Design System B.4.
+- [P18] Icon theo quy tắc "chữ + 2" (người duyệt chọn): nút ở header panel (Chat, Settings, PaperPanel) → 16 (`LogOut` 13 → 16, `ChevronsLeft`/`X` 15 → 16); icon cạnh chữ 12–13 px và trong nút → 14; cạnh chữ 10–11 px → 12 (`WifiOff` 10 → 12).
+- [P18] `<SendHorizonal size={0}>` trong nút CTA đăng nhập giữ nguyên — icon đang bị ẩn có chủ đích từ `85962c2`; bật lại là đổi hành vi, ngoài phạm vi.
+- [P18] Bubble chat `px-3.5` → `px-3` theo §6.1 (không có bậc 3.5); §8.1 ghi `8px 14px` mâu thuẫn → đã sửa §8.1 thành `8px 12px`.
+- [P18] `z-[1]` (WorldOverlay) → `z-10` theo §6.3 (lớp "Overlay 3D").
+- [P18] Thời lượng gộp theo B.5 làm vài animation ngắn lại: intro 0.6 → 0.48 s, `bar` 0.6 → 0.48 s, `score3d` 0.3/0.35 → 0.24 s; chuyển động camera (`CHAT_SLIDE_S`) không đổi.
+- [P18] `PerfHUD.tsx` (được miễn rule) vẫn được đổi `rounded-lg` → `rounded-md`, `rounded` → `rounded-xs`, `text-[10px]` → `text-micro` — sau `--radius-*: initial` các class cũ không còn được sinh, HUD sẽ mất bo góc.
+- [P18] `check-design` bỏ qua phần trong `var(...)` khi tìm thời lượng thô — `var(--intro-delay, 0s)` là mặc định của biến, không phải thời lượng.
+- [P19] Thêm `HealthBanner` và 2 tooltip của `VectorTooltip` vào danh sách chuyển sang `Glass` (19.2 bỏ sót — cùng dùng `.glass`).
+- [P19] HistoryDrawer **không** thành `Glass` như 19.2 ghi: nó là lớp phủ đục (`.surface-opaque`, D-025/P17) toàn khung chat; bọc `Glass` sẽ thêm viền + bóng + bo góc bên trong cột. Chỉ bỏ `backdrop-blur-md` (kính chồng kính).
+- [P19] CTA đăng nhập dùng class `.glass-cta` (viền strong + cạnh strong theo §8.1) vì `Glass` không có prop "emphasis"; ô nhập dùng `focus-visible:outline-none!` để giữ hành vi cũ (`.liquid-input:focus-visible { outline: none }`) trước quy tắc `:focus-visible` toàn cục; placeholder `--ink-faint` (§2.2) thay `color-mix(--ink-muted 72%)`.
+- [P19] Viền cảnh báo lỗi đăng nhập `danger 50%` → `40%` (thang §2.4; P17 bỏ sót vì check-design không kiểm tỷ lệ pha).
+- [P19] Nút "Mở chat" bỏ class `.btn` (nền `.btn` đè lên lớp `::before`) — dùng `Glass` control + utility bố cục tương đương (`px-3 py-1.5 gap-1.5 text-control`).
+- [P19] Caveat Phụ lục A.4 (animation `opacity` làm `::before` mất blur): chụp giữa animation `chat-in` (t = 900 ms) trước/sau không thấy khác; nền phía sau cột chat lúc đó tối nên phép thử chưa đủ mạnh — cần người duyệt xem tay trên máy thật.
+- [P19] **Sự cố đo hiệu năng:** dev server của người dùng (`vite --host 127.0.0.1`, chạy từ 2026-10-29 04:28, `VITE_USE_MOCK=false`) chiếm `127.0.0.1:5174`; server mock của agent cũng mở "5174" (IPv6) nên `localhost:5174` lúc trúng server này lúc trúng server kia → 2 lượt đo "chậm" (median 4–19 ms, 300–400 long task) là đo nhầm, đã xoá. Từ P19 đo bằng cổng riêng gắn `--host 127.0.0.1` (5195/5196) và chạy xen kẽ A/B.
+- [P20] Thêm helper `ringRotors(n)` (vòng n+1 rotor, chuẩn hoá mỗi 64 bước) và `powRotor`, `randomDirection` ngoài `randomInDisk` của spec — cần cho ống/thân (tính vòng một lần), góc vàng của cáp và hướng đom đóm.
+- [P20] `randomInDisk`/`randomDirection` dùng nhiều lần gọi `rng` hơn công thức cực → vị trí cụ thể của hạt cáp và đom đóm khác trước (cùng phân bố, kiểm bằng test thống kê); không có test nào so khớp vị trí theo seed của hai chỗ này nên không phải sửa kỳ vọng.
+- [P20] Shader: không có góc đồng nhất cho mọi đỉnh (mọi `sin` trong GLSL phụ thuộc theo đỉnh/thời gian) → mục `uniform vec2 uRotor` "không áp dụng".
+- [P20] Sự cố đo A/B: hai dev server (worktree P19 + bản hiện tại) chạy song song dùng chung `node_modules/.vite` qua symlink → bản sau báo "Invalid hook call" (hai bản React) và không khởi tạo được cảnh; lượt P18 "không ra số" ở P19 cũng do đây. Từ P20 chạy một server mỗi lúc (cổng 5197), bật/tắt xen kẽ.
+- [P21] Vệt sáng là **viền** (mask cắt dải 1.5px quanh mép) thay vì gradient phủ cả mặt như bản phác §10.4 — phủ cả mặt thành mảng sáng lớn trên TopBar; `--lg-specular` 0.35 → 0.6 vì dải mảnh.
+- [P21] Bỏ `mix-blend-mode: plus-lighter` của `::after`: làm `.glass` thành backdrop root, `::before` mất blur (legend lộ rõ qua panel Cài đặt) — đã thêm lại để kiểm chứng rồi gỡ.
+- [P21] `--lg-light-x/y` đăng ký `@property … inherits: false` và ghi lên từng bề mặt có viền sáng (không ghi lên `<html>` như spec); `::after` lấy giá trị bằng `inherit`; cấp ≥ 2 thêm `will-change: transform` cho `::after`. Đo khi di chuột: ghi lên `<html>` median +11 %, ghi theo bề mặt không đổi, thêm `will-change` → median −4 % so với cấp 1.
+- [P21] Ngân sách "+2 %" (Phụ lục A #2) áp vào **median**; p95 khi di chuột vẫn cao hơn cấp 1 (4.4–5.1 so với 3.7 ms) — ghi nhận, không chặn.
+- [P21] Cấp 3 trên Chromium hiện **trông giống cấp 2** (khúc xạ thuộc P22); `auto` đã trả 3 theo ví dụ của spec.
+- [P21] Ảnh mốc cấp 1 giữ bằng cách seed `glass: 'frosted'` (`seedReducedMotion` mặc định); ảnh Liquid tách thành `*-lg2.png`.
+- [P21] E2E "đã lưu" đọc `localStorage` thay vì `reload` — init script seed chạy lại ở mỗi lần tải và ghi đè thiết lập.
+- [P22] Ví dụ "góc bo: pixel (2,2) có R, G > 128" của spec nằm **ngoài** góc bo bán kính 14 (sd = +2.26) nên phải trung tính; test dùng (5,5) cho góc và giữ (2,2) như kiểm tra trung tính.
+- [P22] `backdrop-filter` chuyển từ `.glass::before` về chính `.glass` (thay §10.4/P19): Chromium bỏ backdrop của pseudo-element khi nội dung được composite (cột chat 4/5 lần hỏng ở cấp 1, 5/5 ở cấp 3); trên phần tử 5/5 đúng. Không đổi hình ảnh trong bộ ảnh mốc (nền phẳng).
+- [P22] `--lg-chroma: 0` thay 0.5px của spec: tách màu tốn median +65–77 % khi di chuột (vượt ngân sách +10 %); không có tách màu, cấp 3 bằng cấp 1 → giữ "Tự động" = cấp 3 trên Chromium (Phụ lục A #3) thay vì phương án dự phòng "chỉ khi chọn Liquid".
+- [P22] Filter dùng `filterUnits/primitiveUnits="userSpaceOnUse"` kích thước bằng phần tử — đã thử cả `objectBoundingBox`; cả hai chạy đúng trên `backdrop-filter` (Chromium 156).
+- [P22] Cache bản đồ giới hạn 4 kích thước (LRU) — spec chỉ ghi "cache theo khoá"; không giới hạn thì mỗi lần đổi kích thước giữ thêm một PNG.
+- [P22] Kiểm tra Safari bằng giả lập `navigator.userAgentData` (Firefox) trong Chromium — không có WebKit trong Playwright của dự án; ảnh Safari thật cần người duyệt chụp tay.
+- [P22] FCP/LCP đo bằng PerformanceObserver trên `vite build` + `vite preview` (không có Lighthouse CLI).
+

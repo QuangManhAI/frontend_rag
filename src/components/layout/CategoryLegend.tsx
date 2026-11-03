@@ -4,6 +4,8 @@ import { useUi } from '../../store/uiStore';
 import { useWorld } from '../../store/worldStore';
 import { categoryColor } from '../../theme/tokens';
 import { useTheme } from '../../theme/useTheme';
+import { Glass } from '../ui/Glass';
+import { LIQUID_OPTICS_LEGEND, LiquidShell } from '../ui/LiquidShell';
 
 export function toggleCategoryFilter(index: number): void {
   const ui = useUi.getState();
@@ -25,7 +27,8 @@ export function CategoryLegend() {
   const [open, setOpen] = useState(() => !(globalThis.matchMedia?.('(max-width: 767px)').matches ?? false));
   if (categories.length === 0) return null;
   return (
-    <div className="glass glass-strong w-64 max-w-[calc(100vw-2rem)] text-xs" data-testid="category-legend">
+    <LiquidShell optics={LIQUID_OPTICS_LEGEND}>
+    <Glass material="strong" refract="legend" className="w-64 max-w-[calc(100vw-2rem)] text-xs" data-testid="category-legend">
       <button type="button" className="flex w-full items-center gap-2 px-3 py-2 font-semibold" onClick={() => setOpen(!open)} aria-expanded={open}>
         <Layers size={14} className="text-[var(--accent)]" /> Loại bài báo
         <span className="mono ml-auto text-[var(--ink-muted)] font-normal">{categories.length}</span>
@@ -39,7 +42,7 @@ export function CategoryLegend() {
               <li key={c.index}>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-[color-mix(in_srgb,var(--ink)_7%,transparent)] aria-pressed:bg-[color-mix(in_srgb,var(--accent)_14%,transparent)]"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-[color-mix(in_srgb,var(--ink)_7%,transparent)] aria-pressed:bg-[color-mix(in_srgb,var(--accent)_14%,transparent)]"
                   aria-pressed={active === c.index}
                   data-category={c.code}
                   onClick={() => toggleCategoryFilter(c.index)}
@@ -54,6 +57,7 @@ export function CategoryLegend() {
           })}
         </ul>
       )}
-    </div>
+    </Glass>
+    </LiquidShell>
   );
 }

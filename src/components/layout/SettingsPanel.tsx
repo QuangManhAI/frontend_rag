@@ -1,9 +1,13 @@
 import { RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import { useUi, type QualityMode, type Settings } from '../../store/uiStore';
+import type { GlassSetting } from '../../theme/liquidGlass';
+import { useGlassLevelValue } from '../../theme/useLiquidLight';
 import { useWorld } from '../../store/worldStore';
 import { CrawlSettings } from './CrawlSettings';
 import { YearSlider } from './YearSlider';
+import { Glass } from '../ui/Glass';
+import { LIQUID_OPTICS_SETTINGS, LiquidShell } from '../ui/LiquidShell';
 
 type NumKey = 'top_k' | 'nprobe';
 
@@ -13,6 +17,13 @@ const QUALITY: ReadonlyArray<readonly [QualityMode, string]> = [
   ['low', 'Thấp'],
 ];
 const TIER_LABEL = ['đầy đủ', 'tắt MSAA', 'dpr 1.5 · bloom nhẹ', 'dpr 1 · tắt bloom'] as const;
+const GLASS: ReadonlyArray<readonly [GlassSetting, string]> = [
+  ['auto', 'Tự động'],
+  ['off', 'Đục'],
+  ['frosted', 'Mờ'],
+  ['liquid', 'Liquid'],
+];
+const LEVEL_LABEL = ['đục', 'kính mờ', 'phản chiếu', 'khúc xạ', 'WebGL'] as const;
 
 /** Retrieval, display and crawl settings; invalid numbers are rejected (shown inline, never applied). */
 export function SettingsPanel() {
@@ -20,6 +31,7 @@ export function SettingsPanel() {
   const settings = useUi((s) => s.settings);
   const categories = useWorld((s) => s.categories);
   const tier = useUi((s) => s.qualityTier);
+  const level = useGlassLevelValue();
   const [draft, setDraft] = useState<Record<NumKey, string>>({ top_k: String(settings.top_k), nprobe: String(settings.nprobe) });
   const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>({});
   if (!open) return null;
@@ -33,11 +45,12 @@ export function SettingsPanel() {
   const setFlag = (patch: Partial<Settings>) => useUi.getState().updateSettings(patch);
 
   return (
-    <div className="glass glass-strong w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
+    <LiquidShell optics={LIQUID_OPTICS_SETTINGS}>
+    <Glass material="strong" refract="settings" className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
       <div className="flex items-center mb-3">
         <h2 className="font-semibold">Cài đặt</h2>
         <button type="button" className="btn btn-icon ml-auto" aria-label="Đóng cài đặt" onClick={() => useUi.getState().setSettingsOpen(false)}>
-          <X size={14} />
+          <X size={16} />
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -62,7 +75,7 @@ export function SettingsPanel() {
               onChange={(e) => setNum(key, e.target.value)}
             />
             {errors[key] && (
-              <span id={`${key}-err`} role="alert" className="text-[var(--danger)] text-[0.7rem]">
+              <span id={`${key}-err`} role="alert" className="text-[var(--danger)] text-caption">
                 {errors[key]}
               </span>
             )}
@@ -101,6 +114,27 @@ export function SettingsPanel() {
           ))}
         </div>
       </fieldset>
+      <fieldset className="mt-3 text-xs">
+        <legend className="text-[var(--ink-muted)] mb-1">
+          Hiệu ứng kính <span className="mono">· cấp {level}: {LEVEL_LABEL[level] ?? '—'}</span>
+        </legend>
+        <div className="grid grid-cols-4 gap-1" role="radiogroup" aria-label="Hiệu ứng kính">
+          {GLASS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={settings.glass === value}
+              aria-pressed={settings.glass === value}
+              className="btn justify-center !py-1 !px-1 whitespace-nowrap"
+              data-testid={`glass-${value}`}
+              onClick={() => setFlag({ glass: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <div className="flex flex-col gap-2 mt-3 text-xs">
         {(
           [
@@ -128,8 +162,9 @@ export function SettingsPanel() {
           setErrors({});
         }}
       >
-        <RotateCcw size={13} /> Đặt lại
+        <RotateCcw size={14} /> Đặt lại
       </button>
-    </div>
+    </Glass>
+    </LiquidShell>
   );
 }
