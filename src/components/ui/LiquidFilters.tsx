@@ -92,6 +92,11 @@ const whenIdle = (cb: () => void): (() => void) => {
   return () => window.clearTimeout(id);
 };
 
+/** Light pooled inside the slab (buildSpecularMap `sheen`), relative to --lg-body-light. */
+const BODY_SHEEN = 0.3;
+/** Largest combined squeeze of the backdrop under the glass (1 = it would fold back). */
+const NO_FOLD = 0.92;
+
 // ---------------------------------------------------------------- one filter per surface
 interface MapState extends Maps {
   w: number;
@@ -111,19 +116,26 @@ function SurfaceGlass({ name, el, refract }: { name: string; el: HTMLElement; re
       const h = Math.round(el.offsetHeight);
       if (w < 8 || h < 8) return;
       const root = getComputedStyle(document.documentElement);
-      const radius = px(getComputedStyle(el).borderTopLeftRadius);
+      const own = getComputedStyle(el); // tokens may be tuned per panel; they inherit from :root
+      const radius = px(own.borderTopLeftRadius);
       // The bevel takes a share of the panel's short side (thick glass on a small tile too), capped by the token.
       const bezel = Math.round(Math.min(px(root.getPropertyValue('--lg-bezel')), 0.42 * Math.min(w, h)));
-      const light = px(root.getPropertyValue('--lg-body-light'));
-      const dome = px(root.getPropertyValue('--lg-dome'));
-      const key = `${w}x${h}:${radius}:${bezel}:${light}:${dome}`;
+      const light = px(own.getPropertyValue('--lg-body-light'));
+      // The body lens scales with the panel: a share of its short side, so a big card bends visibly inside too.
+      const domePx = Math.round(px(own.getPropertyValue('--lg-dome')) * Math.min(w, h));
+      // No fold: the backdrop must keep its order across the bevel, i.e. the slopes of both lens terms
+      // (bevelShift: 1.5·offset/bezel; dome |u|^1.5 at the edge of the short axis: 1.5·dome/half side) stay < 1.
+      // A fold mirrored the backdrop and drew a hard line parallel to the edge.
+      const domeSlope = (1.5 * domePx) / (Math.min(w, h) / 2);
+      const rimMax = (Math.max(0, NO_FOLD - domeSlope) * bezel) / 1.5;
+      const rimPx = Math.round(Math.min(px(root.getPropertyValue('--lg-refraction')), rimMax));
+      const maxPx = Math.max(1, rimPx + domePx);
+      const key = `${w}x${h}:${radius}:${bezel}:${light}:${rimPx}:${domePx}`;
       const maps = cachedMaps(key, () => ({
-        refraction: toDataUrl(buildRefractionMap(w, h, radius, bezel, dome), w, h),
-        specular: toDataUrl(buildSpecularMap(w, h, radius, bezel, light), w, h),
+        refraction: toDataUrl(buildRefractionMap(w, h, radius, bezel, domePx / maxPx, rimPx / maxPx), w, h),
+        specular: toDataUrl(buildSpecularMap(w, h, radius, bezel, light, undefined, BODY_SHEEN * light), w, h),
       }));
-      // Largest offset scales with the bevel, so a thin top bar bends as hard as the chat column, not harder.
-      const offset = Math.min(px(root.getPropertyValue('--lg-refraction')), 1.4 * bezel);
-      setMap({ w, h, ...maps, scale: 2 * offset });
+      setMap({ w, h, ...maps, scale: 2 * maxPx });
     };
     cancelIdle = whenIdle(build);
     if (typeof ResizeObserver === 'undefined') return () => cancelIdle(); // jsdom / very old engines

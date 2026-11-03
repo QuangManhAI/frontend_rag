@@ -15,6 +15,7 @@ import { WorldError } from './WorldError';
 import { Glass } from '../ui/Glass';
 import { useGlassLevel, useLiquidLight } from '../../theme/useLiquidLight';
 import { LiquidFilters } from '../ui/LiquidFilters';
+import { Glass as LiquidGlass } from '@samasante/liquid-glass';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -35,6 +36,11 @@ function useIsMobile(): boolean {
 
 const introDelay = (s: number) => ({ '--intro-delay': `${s}s` }) as CSSProperties;
 
+/** Frost of the liquid-glass lens, from the level-3 token (index.css `--lg-blur`). */
+/** Gain of the library's own edge light: the dock already has our baked rim, so the library's stays a faint line. */
+const LIQUID_SPECULAR = 0.35;
+const liquidFrost = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lg-blur')) || 0;
+
 /**
  * Desktop chat column. Stays mounted while it slides out so the close is animated too;
  * the first open (page load) waits a beat so it follows the top bar in.
@@ -47,12 +53,41 @@ function ChatDock() {
     if (chatOpen) setMounted(true);
   }, [chatOpen]);
   const closing = mounted && !chatOpen;
+  // Level 3: the lens comes from @samasante/liquid-glass, wrapped around the dock (see below).
+  const liquid = useGlassLevel() === 3;
 
   if (!mounted) {
     return (
       <div className="self-start fade-in">
         <ChatReopenButton />
       </div>
+    );
+  }
+  const slide = closing ? 'chat-slide-out' : 'chat-slide-in';
+  const slideStyle = firstOpen.current && !closing ? introDelay(0.15) : undefined;
+  const onSlideEnd = (e: React.AnimationEvent<HTMLElement>) => {
+    if (e.target !== e.currentTarget) return; // ignore animations of children
+    firstOpen.current = false;
+    if (closing) setMounted(false);
+  };
+  const panel = <ChatPanel onCollapse={() => useUi.getState().setChatOpen(false)} />;
+
+  if (liquid) {
+    // The library's material wrapper carries the backdrop lens, so it is the box that slides; the dock inside
+    // keeps its markup, tokens and rim light but drops its own backdrop filter (index.css [data-lgr]): a
+    // backdrop-filtered child of a backdrop-filtered box would only see the box, not the world.
+    return (
+      <LiquidGlass
+        className={`w-[32vw] min-w-[340px] max-w-[520px] h-full ${slide}`}
+        style={slideStyle}
+        optics={{ frost: liquidFrost(), specular: LIQUID_SPECULAR }}
+        aria-hidden={closing || undefined}
+        onAnimationEnd={onSlideEnd}
+      >
+        <Glass refract="chat" data-lgr className="w-full h-full overflow-hidden" data-testid="chat-dock">
+          {panel}
+        </Glass>
+      </LiquidGlass>
     );
   }
   return (

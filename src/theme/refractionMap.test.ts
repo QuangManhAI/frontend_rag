@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bezelProfile, buildRefractionMap, buildSpecularMap, normalRoundRect, sdRoundRect } from './refractionMap';
+import { bevelShift, bezelProfile, buildRefractionMap, buildSpecularMap, normalRoundRect, sdRoundRect } from './refractionMap';
 
 const px = (map: Uint8ClampedArray, w: number, x: number, y: number) => Array.from(map.slice((y * w + x) * 4, (y * w + x) * 4 + 4));
 
@@ -89,7 +89,7 @@ describe('buildSpecularMap (bevel light, key light from the top left)', () => {
   it('lights the whole rim, brighter inside the bevel on the edges facing the light', () => {
     expect(alpha(50, 4)).toBeGreaterThan(alpha(50, h - 5));
     expect(alpha(4, 30)).toBeGreaterThan(alpha(w - 5, 30));
-    expect(alpha(50, h - 1)).toBeGreaterThan(128); // the far rim is lit too (light through the slab)
+    expect(alpha(50, h - 1)).toBeGreaterThan(40); // the far rim is lit too (light through the slab), as a hairline
   });
 
   it('fades from the rim into the bevel', () => {
@@ -123,22 +123,52 @@ describe('buildRefractionMap dome (whole-slab convex lens)', () => {
   });
 });
 
-describe('buildRefractionMap dome (whole-slab convex lens)', () => {
-  const w = 100;
-  const h = 60;
-  const map = buildRefractionMap(w, h, 14, 0, 0.5);
-  const at = (x: number, y: number) => Array.from(map.slice((y * w + x) * 4, (y * w + x) * 4 + 2));
+describe('buildRefractionMap rim weight', () => {
+  it('scales the bevel term so it shares the range with the dome', () => {
+    const full = buildRefractionMap(60, 40, 10, 10);
+    const half = buildRefractionMap(60, 40, 10, 10, 0, 0.5);
+    const i = (20 * 60 + 1) * 4; // left edge, middle row: pure bevel, samples to the right
+    expect(full[i] - 128).toBeGreaterThan(half[i] - 128);
+    expect(half[i]).toBeGreaterThan(128);
+  });
+});
 
-  it('leaves the centre alone and samples towards it everywhere else', () => {
-    const [cr, cg] = at(50, 30);
-    expect(Math.abs(cr - 128)).toBeLessThanOrEqual(1);
-    expect(Math.abs(cg - 128)).toBeLessThanOrEqual(1);
-    expect(at(20, 30)[0]).toBeGreaterThan(128);
-    expect(at(80, 30)[0]).toBeLessThan(128);
-    expect(at(50, 10)[1]).toBeGreaterThan(128);
+describe('buildSpecularMap sheen (light inside the slab)', () => {
+  const w = 100;
+  const h = 80;
+  const map = buildSpecularMap(w, h, 14, 10, 1, undefined, 0.2);
+  const a = (x: number, y: number) => map[(y * w + x) * 4 + 3];
+
+  it('lights the body under the lit corner more than the middle, and the middle stays clear', () => {
+    expect(a(30, 22)).toBeGreaterThan(a(50, 40));
+    expect(a(50, 40)).toBeLessThan(40);
+    expect(a(50, 40)).toBeGreaterThan(0);
   });
 
-  it('bends more the further from the centre', () => {
-    expect(at(10, 30)[0]).toBeGreaterThan(at(35, 30)[0]);
+  it('is off without sheen inside the bevel', () => {
+    expect(buildSpecularMap(w, h, 14, 10, 1)[(40 * w + 50) * 4 + 3]).toBe(0);
+  });
+});
+
+describe('bevelShift / no seams', () => {
+  it('starts and ends flat, so the bevel has no edge line of its own', () => {
+    expect(bevelShift(0)).toBe(1);
+    expect(bevelShift(1)).toBe(0);
+    const e = 1e-4;
+    expect(Math.abs(bevelShift(e) - 1) / e).toBeLessThan(0.01);
+    expect(bevelShift(1 - e) / e).toBeLessThan(0.01);
+  });
+
+  it('has no crease along the corner diagonal when the bezel is deeper than the corner radius', () => {
+    const w = 120;
+    const h = 120;
+    const map = buildRefractionMap(w, h, 8, 30);
+    // Walk along the diagonal-adjacent row: R must change smoothly (no jump between neighbours).
+    const y = 25;
+    for (let x = 20; x < 40; x++) {
+      const a = map[(y * w + x) * 4];
+      const b = map[(y * w + x + 1) * 4];
+      expect(Math.abs(a - b)).toBeLessThanOrEqual(6);
+    }
   });
 });

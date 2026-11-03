@@ -48,9 +48,4 @@ export function HealthBanner({ health }: { health: HealthStatus | 'unreachable' 
   if (!health) return null;
   const down = health === 'unreachable' ? ['Backend'] : CRITICAL.filter((k) => !health[k]).map((k) => LABEL[k]);
   if (down.length === 0) return null;
-  return (
-    <Glass role="status" className="px-3 py-1.5 text-xs flex items-center gap-2 border-[var(--warn)]! fade-in" data-testid="health-banner">
-      <AlertTriangle size={14} className="text-[var(--warn)]" /> {down.join(', ')} không phản hồi — câu trả lời có thể lỗi.
-    </Glass>
-  );
 }
