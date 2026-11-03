@@ -15,7 +15,7 @@ import { WorldError } from './WorldError';
 import { Glass } from '../ui/Glass';
 import { useGlassLevel, useLiquidLight } from '../../theme/useLiquidLight';
 import { LiquidFilters } from '../ui/LiquidFilters';
-import { Glass as LiquidGlass } from '@samasante/liquid-glass';
+import { Glass as LiquidGlass, type GlassOptics } from '@samasante/liquid-glass';
 
 // Preload WorldCanvas chunk in parallel during initial paint
 const worldCanvasPromise = import('../world/WorldCanvas');
@@ -37,9 +37,26 @@ function useIsMobile(): boolean {
 const introDelay = (s: number) => ({ '--intro-delay': `${s}s` }) as CSSProperties;
 
 /** Frost of the liquid-glass lens, from the level-3 token (index.css `--lg-blur`). */
-/** Gain of the library's own edge light: the dock already has our baked rim, so the library's stays a faint line. */
-const LIQUID_SPECULAR = 0.35;
-const liquidFrost = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lg-blur')) || 0;
+/** Optics of the @samasante/liquid-glass lens on the chat dock, as tuned by hand in the library's settings panel. */
+const LIQUID_OPTICS: Partial<GlassOptics> = {
+  // Refraction
+  strength: 0.20,
+  depth: 0.02,
+  curvature: 0.7,
+  dispersion: 1,
+  // Edge
+  bend: 0,
+  bendWidth: 0.26,
+  // Sheen
+  sheen: 0.5,
+  sheenWidth: 1,
+  specular: 0.6,
+  sheenAngle: 55,
+  // Background
+  glow: 0.3,
+  frost: 0+4,
+  brightness: 0.05,
+};
 
 /**
  * Desktop chat column. Stays mounted while it slides out so the close is animated too;
@@ -80,7 +97,7 @@ function ChatDock() {
       <LiquidGlass
         className={`w-[32vw] min-w-[340px] max-w-[520px] h-full ${slide}`}
         style={slideStyle}
-        optics={{ frost: liquidFrost(), specular: LIQUID_SPECULAR }}
+        optics={LIQUID_OPTICS}
         aria-hidden={closing || undefined}
         onAnimationEnd={onSlideEnd}
       >
