@@ -54,8 +54,8 @@ const LIQUID_OPTICS: Partial<GlassOptics> = {
   sheenAngle: 55,
   // Background
   glow: 0.3,
-  frost: 0+4,
-  brightness: 0.05,
+  frost: 0+7,
+  brightness: 0.0,
 };
 
 /**
