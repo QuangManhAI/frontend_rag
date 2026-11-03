@@ -46,7 +46,7 @@ export function SettingsPanel() {
 
   return (
     <LiquidShell optics={LIQUID_OPTICS_SETTINGS}>
-    <Glass material="strong" refract="settings" className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
+    <Glass material="strong" refract="settings" className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
       <div className="flex items-center mb-3">
         <h2 className="font-semibold">Cài đặt</h2>
         <button type="button" className="btn btn-icon ml-auto" aria-label="Đóng cài đặt" onClick={() => useUi.getState().setSettingsOpen(false)}>

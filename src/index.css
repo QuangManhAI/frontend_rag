@@ -364,6 +364,53 @@ body {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+/* Content on the clear lens, as on Apple's dark glass: white type in three steps (primary, secondary, tertiary)
+   and white-frosted controls, so it reads off any backdrop. Only the ink tokens are re-pointed for the panel's
+   subtree; accents (pressed buttons, primary CTA, links, status colours) keep their own colour. */
+:root[data-lg-level="3"] .glass[data-lgr="true"] {
+  --ink: white;
+  --ink-muted: color-mix(in srgb, white 72%, transparent);
+  --ink-faint: color-mix(in srgb, white 48%, transparent);
+  color: var(--ink);
+  /* A tight dark halo under every glyph keeps white type legible where the lens shows bright canopy. */
+  text-shadow:
+    0 0 1px color-mix(in srgb, var(--bg) 70%, transparent),
+    0 1px 2px color-mix(in srgb, var(--bg) 60%, transparent),
+    0 0 10px color-mix(in srgb, var(--bg) 55%, transparent);
+}
+/* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
+:root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 80%, white);
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg));
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] :is(.btn:not(.btn-primary):not([aria-pressed="true"]), .glass[data-nested="true"], .field) {
+  border-color: color-mix(in srgb, white 22%, transparent);
+  background: color-mix(in srgb, white 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 6%, transparent),
+    0 4px 12px -8px var(--bg);
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] :is(.btn:not(.btn-primary):not([aria-pressed="true"]), .glass[data-nested="true"][data-interactive="true"]):hover:not(:disabled) {
+  background: color-mix(in srgb, white 22%, transparent);
+}
+/* Nested glass paints its tint in ::before; on the lens the white fill above is the whole body. */
+:root[data-lg-level="3"] .glass[data-lgr="true"] .glass[data-nested="true"]::before {
+  background: none;
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] :is(.field, .glass[data-nested="true"]):focus-within {
+  border-color: color-mix(in srgb, white 45%, transparent);
+  background: color-mix(in srgb, white 18%, transparent);
+}
+:root[data-lg-level="3"] .glass[data-lgr="true"] ::placeholder {
+  color: var(--ink-faint);
+}
+/* Native select menus open on a dark sheet, not on white-on-glass. */
+:root[data-lg-level="3"] .glass[data-lgr="true"] option {
+  color: var(--ink);
+  background: var(--bg);
+}
 /* Level 0 (setting "Đục" or reduced transparency): no backdrop sampling anywhere, opaque surfaces. */
 :root[data-lg-level="0"] *,
 :root[data-lg-level="0"] *::before {
@@ -587,9 +634,33 @@ body {
 }
 
 /* ---------- scrollbars ---------- */
+/* Every scroll area in the app: a thin, faint thumb on a transparent track (no gutter box, no arrows), a little
+   brighter while the area is hovered. `.scroll-thin` is kept as an alias. */
+*,
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--ink) 25%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--ink) 14%, transparent) transparent;
+}
+*:hover {
+  scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
+}
+/* Safari (no scrollbar-width / scrollbar-color yet). */
+@supports not (scrollbar-width: thin) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+  :hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--ink) 28%, transparent);
+  }
 }
 
 /* ---------- pipeline status ---------- */
