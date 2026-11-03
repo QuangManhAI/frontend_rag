@@ -26,7 +26,7 @@ export function CategoryLegend() {
   const [open, setOpen] = useState(() => !(globalThis.matchMedia?.('(max-width: 767px)').matches ?? false));
   if (categories.length === 0) return null;
   return (
-    <Glass material="strong" className="w-64 max-w-[calc(100vw-2rem)] text-xs" data-testid="category-legend">
+    <Glass material="strong" refract="legend" className="w-64 max-w-[calc(100vw-2rem)] text-xs" data-testid="category-legend">
       <button type="button" className="flex w-full items-center gap-2 px-3 py-2 font-semibold" onClick={() => setOpen(!open)} aria-expanded={open}>
         <Layers size={14} className="text-[var(--accent)]" /> Loại bài báo
         <span className="mono ml-auto text-[var(--ink-muted)] font-normal">{categories.length}</span>

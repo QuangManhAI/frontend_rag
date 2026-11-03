@@ -36,6 +36,7 @@
   --glass-edge: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);
   --glass-edge-strong: inset 0 1px 0 var(--glass-highlight-strong), inset 0 -1px 0 var(--glass-lowlight);
   --shadow-panel: 0 12px 36px -12px rgb(0 0 0 / 0.45);
+  --shadow-panel-lifted: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 6px -2px rgb(0 0 0 / 0.5); /* Liquid Glass level 2+ */
   --glow-accent: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent);
 
   /* motion (§7.1) */
@@ -52,6 +53,16 @@
   --lg-specular: 0;
   --lg-specular-size: 60%;
   --lg-dim: 0;
+  --lg-blur: var(--blur-lg); /* backdrop blur of refracting panels (level 2+ lowers it so the lens shows) */
+  --lg-saturate: var(--glass-saturate);
+  --lg-tint-regular: 24%; /* panel tint = --bg mixed at this share (level 2+) */
+  --lg-tint-strong: 45%;
+  --lg-veil: 0%; /* milky light of the glass body: share of --ink over the backdrop (level 2+) */
+  --lg-brightness: 1; /* backdrop brightness seen through a liquid panel */
+  --lg-dome: 0; /* convexity of the whole slab: share of --lg-refraction reached at the edge (level 3) */
+  --lg-body-light: 0; /* strength of the baked bevel light inside the level-3 filter (0 … 1) */
+  --lg-refract-url: url(#lg-refract-none); /* written per surface by LiquidFilters once its filter exists */
+  --lg-light-map: none; /* baked bevel light of a panel, written per surface by LiquidFilters (level 2+) */
   color-scheme: dark;
 }
 
@@ -236,24 +247,111 @@ body {
   background: var(--glass-fill-hover);
 }
 /* ---------- Liquid Glass levels (<html data-lg-level>, theme/useLiquidLight.ts · §10.5–§10.6) ---------- */
-/* Level 2+: specular highlight on panels and interactive controls, lit from --lg-light-x/y. */
+/* Level 2+: the floating panels (<Glass refract>: top bar, chat, legend, settings, paper panel) turn into one
+   liquid material — a light tint instead of the near-opaque Strong fill, less blur, more saturation, and a
+   pointer-lit rim. What makes it read as glass is light, not frosting: see the bevel below and level 3. */
 :root:is([data-lg-level="2"], [data-lg-level="3"]) {
-  --lg-specular: 0.6;
-  --lg-specular-size: 60%;
+  --lg-specular: 0.85;
+  --lg-specular-size: 45%;
+  --lg-blur: var(--blur-sm);
+  --lg-saturate: 1.8;
+  --lg-brightness: 1.15;
+  --lg-veil: 6%;
+  --lg-tint-regular: 10%;
+  --lg-tint-strong: 10%; /* every liquid panel uses the top bar's material */
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] {
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract]::before {
+  background: color-mix(in srgb, var(--bg) var(--lg-tint-regular), transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-material="strong"]::before {
+  background: color-mix(in srgb, var(--bg) var(--lg-tint-strong), transparent);
+}
+/* Bevel light caught by the thick edge — bright where it faces the top-left key light, weaker on the far side —
+   baked per panel size (theme/refractionMap.ts buildSpecularMap) and painted over the tint by ::before.
+   Until the map exists the same light is roughed in with inset shadows. */
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-lit="true"] {
+  border-color: transparent; /* the baked rim is the edge */
+  box-shadow: var(--shadow-panel-lifted);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-lit="true"]::before {
+  background:
+    var(--lg-light-map) 0 0 / 100% 100% no-repeat,
+    linear-gradient(color-mix(in srgb, var(--ink) var(--lg-veil), transparent), color-mix(in srgb, var(--ink) var(--lg-veil), transparent)),
+    color-mix(in srgb, var(--bg) var(--lg-tint-regular), transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract][data-lit="true"][data-material="strong"]::before {
+  background:
+    var(--lg-light-map) 0 0 / 100% 100% no-repeat,
+    linear-gradient(color-mix(in srgb, var(--ink) var(--lg-veil), transparent), color-mix(in srgb, var(--ink) var(--lg-veil), transparent)),
+    color-mix(in srgb, var(--bg) var(--lg-tint-strong), transparent);
+}
+/* Controls inside a liquid panel are small glass beads (Control Center tiles): a milky body, a rim lit all the
+   way round (stronger top-left) and a soft drop, so they sit raised on the panel. No backdrop of their own. */
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] :is(.btn:not(.btn-primary), .glass[data-nested="true"]) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow:
+    inset 1px 1px 0 var(--glass-highlight-strong),
+    inset -1px -1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-lowlight),
+    inset 6px 8px 12px -10px var(--glass-highlight-strong),
+    0 4px 10px -6px var(--bg);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] .btn:not(.btn-primary):hover {
+  background: color-mix(in srgb, var(--ink) 15%, transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract] .btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--accent) 70%, transparent),
+    inset -1px -1px 0 color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 6px 8px 12px -10px var(--accent),
+    0 0 14px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+:root:is([data-lg-level="2"], [data-lg-level="3"]) .glass[data-refract]:not([data-lit="true"]) {
+  box-shadow:
+    var(--shadow-panel),
+    inset 1px 1px 0 var(--glass-highlight-strong),
+    inset 10px 10px 18px -12px var(--glass-highlight-strong),
+    inset -1px -1px 0 var(--glass-highlight),
+    inset -10px -10px 18px -14px var(--glass-highlight);
 }
 :root:is([data-lg-level="2"], [data-lg-level="3"]) .glass:is([data-shape="panel"], [data-interactive="true"])::after {
   display: block;
-  will-change: transform; /* own layer: repainting the rim must not re-run the ::before backdrop blur */
+  will-change: transform; /* own layer: repainting the rim must not re-run the backdrop blur */
 }
-/* Level 3 (Chromium): the chat column refracts its backdrop along the edge (components/ui/LiquidFilters.tsx).
-   Switched on only once the SVG filter exists (<html data-lg-refract="ready">). */
+/* Level 3 (Chromium): each panel also bends its backdrop through the convex bevel (components/ui/LiquidFilters.tsx,
+   one filter per panel). Blur runs first so the lens edge stays crisp. Switched on per panel only once its
+   filter exists ([data-refract-ready]). */
 :root[data-lg-level="3"] {
-  --lg-refraction: 18px;
-  --lg-bezel: var(--radius-lg);
+  /* One glass for every panel = the top bar's: its 48 px height gives a 20 px bevel and a 28 px offset
+     (42 % of the short side, 1.4 × bevel). Tall panels used a 48 px bevel, which turned into a milky band. */
+  --lg-refraction: 28px; /* largest offset of the backdrop, at the rim */
+  --lg-bezel: 20px;
+  --lg-dome: 0.35;
   --lg-chroma: 0px;
+  --lg-body-light: 1;
+  /* Clear as water: no frost, no milky veil, almost no tint — the glass shows only by bending and catching light. */
+  --lg-blur: 0px;
+  --lg-veil: 0%;
+  --lg-tint-regular: 0%;
+  --lg-tint-strong: 0%;
+  /* No colour boost: a 1.8× saturate turned the faint purple horizon behind the chat into a purple slab,
+     while the top bar over the near-black sky looked clear — same glass, different backdrop. */
+  --lg-saturate: 1;
+  --lg-brightness: 1;
 }
-:root[data-lg-level="3"][data-lg-refract="ready"] .glass[data-refract="chat"] {
-  backdrop-filter: url(#lg-refract-chat) blur(var(--blur-lg)) saturate(var(--glass-saturate));
+/* Clear lens → text keeps a soft halo of the page colour so it stays legible over bright, bent branches. */
+:root[data-lg-level="3"] .glass[data-refract-ready="true"] {
+  text-shadow: 0 0 6px color-mix(in srgb, var(--bg) 85%, transparent), 0 1px 2px var(--bg);
+}
+:root[data-lg-level="3"] .glass[data-refract-ready="true"] {
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness)) var(--lg-refract-url);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness)) var(--lg-refract-url);
 }
 /* Level 0 (setting "Đục" or reduced transparency): no backdrop sampling anywhere, opaque surfaces. */
 :root[data-lg-level="0"] *,

@@ -7,7 +7,7 @@ import { Glass } from '../ui/Glass';
 export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null }) {
   const settingsOpen = useUi((s) => s.settingsOpen);
   return (
-    <Glass as="header" className="flex items-center gap-2 md:gap-3 px-3 py-2">
+    <Glass as="header" refract="topbar" className="flex items-center gap-2 md:gap-3 px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden className="flex-none">
           <circle cx="12" cy="7" r="5" fill="var(--accent)" opacity="0.25" />

@@ -252,7 +252,7 @@ test.describe('glass backdrop', () => {
     expect(errors.filter((e) => /filter|refract|svg/i.test(e))).toEqual([]);
   });
 
-  test('resizing the window keeps at most 4 refraction maps', async ({ page }) => {
+  test('resizing the window keeps the refraction map cache bounded', async ({ page }) => {
     await seedReducedMotion(page, { glass: 'liquid' });
     await seedAuth(page);
     await openWorld(page);
@@ -261,9 +261,12 @@ test.describe('glass backdrop', () => {
       await page.setViewportSize({ width: 1200 + i * 20, height: 800 + i * 10 });
       await page.waitForTimeout(450); // 150 ms debounce + idle build
     }
-    const size = await page.evaluate(async () => (await import('/src/components/ui/LiquidFilters.tsx')).refractionCacheSize());
-    expect(size).toBeLessThanOrEqual(4);
-    const href = await page.locator('#lg-refract-chat feImage').getAttribute('href');
+    const { size, max } = await page.evaluate(async () => {
+      const m = await import('/src/components/ui/LiquidFilters.tsx');
+      return { size: m.refractionCacheSize(), max: m.refractionCacheMax() };
+    });
+    expect(size).toBeLessThanOrEqual(max);
+    const href = await page.locator('#lg-refract-chat feImage').first().getAttribute('href');
     expect(href?.startsWith('data:image/png')).toBe(true);
   });
 });

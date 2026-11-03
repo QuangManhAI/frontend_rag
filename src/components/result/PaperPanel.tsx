@@ -70,6 +70,7 @@ function PaperPanelBody({ paperId }: { paperId: string }) {
     <Glass
       as="aside"
       material="strong"
+      refract="paper"
       ref={root}
       role="dialog"
       aria-modal="false"
