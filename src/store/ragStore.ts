@@ -44,8 +44,8 @@ let controller: AbortController | null = null;
 
 /** Real backend on the mock world: one bridge for the session so a paper keeps its vector. */
 let bridge: WorldBridge | null = null;
-function chatEvents(req: RagRequest, signal: AbortSignal): AsyncIterable<RagStreamEvent> {
-  const events = streamChat(req, signal);
+function chatEvents(req: RagRequest, signal: AbortSignal, idempotencyKey: string): AsyncIterable<RagStreamEvent> {
+  const events = streamChat(req, signal, idempotencyKey);
   if (USE_MOCK || !MOCK_WORLD) return events;
   const world = useWorld.getState();
   if (world.status !== 'ready' || !world.vectors) return events;
@@ -79,7 +79,7 @@ export const useRag = create<RagState>((set, get) => {
     else if (visualPhase === 'idle' && next.phase !== 'idle') visualPhase = 'embedding';
 
     // Batch message update with state update into a single set() call to eliminate double render passes per token
-    if (event.type === 'token') {
+    if (event.type === 'token' || event.type === 'answer_replaced') {
       set((st) => ({
         phase: next.phase,
         current: next.current,
@@ -172,7 +172,7 @@ export const useRag = create<RagState>((set, get) => {
       };
 
       try {
-        for await (const ev of chatEvents(req, ctrl.signal)) {
+        for await (const ev of chatEvents(req, ctrl.signal, userMsgId)) {
           if (controller !== ctrl) return;
           if (ev.type === 'done' && ev.session_id) {
             await useSessionStore.getState().confirmBackendSession(sessionId, ev.session_id);

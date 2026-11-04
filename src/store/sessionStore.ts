@@ -1,11 +1,31 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { API_BASE, USE_MOCK } from '../api/client';
+import { API_BASE, USE_MOCK } from '../api/config';
+import { apiFetch, fetchAllPages } from '../api/http';
 import { chatDb, type LocalChatMessage, type LocalChatSession } from '../db/chatDb';
 import type { ChatMessage } from './ragStore';
 import { useRag } from './ragStore';
 import { useAuth } from './authStore';
 import { uuidv7 } from '../utils/uuid';
+
+const SYNC_PAGE_SIZE = '50';
+const MESSAGE_PAGE_SIZE = '100';
+/** Safety bounds of a sync: 500 sessions, 2000 messages. */
+const MAX_SESSION_PAGES = 10;
+const MAX_MESSAGE_PAGES = 20;
+const SYNC_REQUEST_TIMEOUT_MS = 4000;
+
+const syncRequest = () => ({ signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS) });
+
+interface RemoteMessage {
+  id?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  citations?: string[];
+  grounded_chunks?: any[];
+  timings?: any;
+  created_at?: string;
+}
 
 interface SessionState {
   currentSessionId: string | null;
@@ -78,32 +98,29 @@ export const useSessionStore = create<SessionState>()(
           const user = useAuth.getState().user;
           if (isAlive && token && !USE_MOCK) {
             try {
-              const res = await fetch(`${API_BASE}/chat-sessions?limit=50`, {
-                headers: { Authorization: `Bearer ${token}` },
-                signal: AbortSignal.timeout(4000),
-              });
-              if (res.ok) {
-                const data = (await res.json()) as { items?: LocalChatSession[] };
-                if (Array.isArray(data.items)) {
-                  for (const item of data.items) {
-                    const existing = await chatDb.sessions.get(item.id);
-                    if (!existing || new Date(item.updated_at) > new Date(existing.updated_at)) {
-                      await chatDb.sessions.put({
-                        id: item.id,
-                        userId: user?.id ?? null,
-                        title: item.title,
-                        created_at: item.created_at,
-                        updated_at: item.updated_at,
-                        last_message_at: item.last_message_at,
-                        message_count: item.message_count,
-                        synced: true,
-                      });
-                    }
-                  }
-                  const merged = await chatDb.sessions.orderBy('last_message_at').reverse().toArray();
-                  set({ sessions: merged });
+              const remote = await fetchAllPages<LocalChatSession>(
+                '/chat-sessions',
+                { limit: SYNC_PAGE_SIZE },
+                MAX_SESSION_PAGES,
+                syncRequest,
+              );
+              for (const item of remote) {
+                const existing = await chatDb.sessions.get(item.id);
+                if (!existing || new Date(item.updated_at) > new Date(existing.updated_at)) {
+                  await chatDb.sessions.put({
+                    id: item.id,
+                    userId: user?.id ?? null,
+                    title: item.title,
+                    created_at: item.created_at,
+                    updated_at: item.updated_at,
+                    last_message_at: item.last_message_at,
+                    message_count: item.message_count,
+                    synced: true,
+                  });
                 }
               }
+              const merged = await chatDb.sessions.orderBy('last_message_at').reverse().toArray();
+              set({ sessions: merged });
             } catch (err) {
               console.warn('[sessionStore] Remote sync failed, continuing offline:', err);
             }
@@ -166,43 +183,40 @@ export const useSessionStore = create<SessionState>()(
         const token = useAuth.getState().accessToken;
         if (token && !USE_MOCK && !get().isOffline) {
           try {
-            const res = await fetch(`${API_BASE}/chat-sessions/${sessionId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-              signal: AbortSignal.timeout(4000),
-            });
-            if (res.ok) {
-              const remote = await res.json();
-              if (Array.isArray(remote.messages)) {
-                const storeMsgs: ChatMessage[] = [];
-                for (let i = 0; i < remote.messages.length; i++) {
-                  const m = remote.messages[i];
-                  const localMsg: LocalChatMessage = {
-                    id: m.id || uuidv7(),
-                    sessionId,
-                    role: m.role,
-                    content: m.content,
-                    status: 'done',
-                    citationChecks: m.citations?.map((c: string) => ({ marker: c, paper_id: c, status: 'verified' })),
-                    grounded_chunks: m.grounded_chunks,
-                    timings: m.timings,
-                    created_at: m.created_at || new Date().toISOString(),
-                  };
-                  await chatDb.messages.put(localMsg);
-                  storeMsgs.push({
-                    id: localMsg.id,
-                    role: localMsg.role,
-                    content: localMsg.content,
-                    runId: i + 1,
-                    status: 'done',
-                    citationChecks: localMsg.citationChecks,
-                    grounded_chunks: localMsg.grounded_chunks,
-                    timings: localMsg.timings,
-                  });
-                }
-                useRag.getState().loadMessages(storeMsgs);
-                return;
-              }
+            const remote = await fetchAllPages<RemoteMessage>(
+              `/chat-sessions/${sessionId}/messages`,
+              { limit: MESSAGE_PAGE_SIZE },
+              MAX_MESSAGE_PAGES,
+              syncRequest,
+            );
+            const storeMsgs: ChatMessage[] = [];
+            for (let i = 0; i < remote.length; i++) {
+              const m = remote[i];
+              const localMsg: LocalChatMessage = {
+                id: m.id || uuidv7(),
+                sessionId,
+                role: m.role,
+                content: m.content,
+                status: 'done',
+                citationChecks: m.citations?.map((c: string) => ({ marker: c, paper_id: c, status: 'verified' })),
+                grounded_chunks: m.grounded_chunks,
+                timings: m.timings,
+                created_at: m.created_at || new Date().toISOString(),
+              };
+              await chatDb.messages.put(localMsg);
+              storeMsgs.push({
+                id: localMsg.id,
+                role: localMsg.role,
+                content: localMsg.content,
+                runId: i + 1,
+                status: 'done',
+                citationChecks: localMsg.citationChecks,
+                grounded_chunks: localMsg.grounded_chunks,
+                timings: localMsg.timings,
+              });
             }
+            useRag.getState().loadMessages(storeMsgs);
+            return;
           } catch (err) {
             console.warn('[sessionStore] Remote session fetch failed:', err);
           }
@@ -233,10 +247,7 @@ export const useSessionStore = create<SessionState>()(
         // 4. Background delete on backend
         const token = useAuth.getState().accessToken;
         if (token && !USE_MOCK && !get().isOffline) {
-          fetch(`${API_BASE}/chat-sessions/${sessionId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch((err) => console.warn('[sessionStore] Remote delete failed:', err));
+          apiFetch(`/chat-sessions/${sessionId}`, { method: 'DELETE' }).catch((err) => console.warn('[sessionStore] Remote delete failed:', err));
         }
       },
 
@@ -305,12 +316,9 @@ export const useSessionStore = create<SessionState>()(
 
         // 3. Sync prompt title to backend via PATCH /chat-sessions/:id
         if (token && !USE_MOCK && session.title) {
-          fetch(`${API_BASE}/chat-sessions/${backendId}`, {
+          apiFetch(`/chat-sessions/${backendId}`, {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: session.title }),
           }).catch((err) => console.warn('[sessionStore] Remote title sync failed:', err));
         }

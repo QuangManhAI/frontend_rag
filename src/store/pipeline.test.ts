@@ -9,6 +9,12 @@ const chunk = (paper_id: string): GroundedChunk => ({
 const start = (): PipelineState => ({ phase: 'idle', current: emptyRun('q') });
 
 describe('pipeline', () => {
+  it('answer_replaced overwrites what was streamed', () => {
+    let s = reduceEvent(start(), { type: 'token', text: 'an unsupported claim' });
+    s = reduceEvent(s, { type: 'answer_replaced', answer: 'not found' });
+    expect(s.current.answer).toBe('not found');
+  });
+
   it('accepts forward transitions and error from anywhere', () => {
     expect(isValidTransition('idle', 'embedding')).toBe(true);
     expect(isValidTransition('embedding', 'comparing')).toBe(true);

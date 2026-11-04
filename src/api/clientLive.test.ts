@@ -183,3 +183,97 @@ describe('client.ts in live mode (mock fetch)', () => {
     expect(events[0].message).toContain('Không kết nối được backend');
   });
 });
+
+describe('API contract of the live client', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv('VITE_USE_MOCK', 'false');
+    vi.stubEnv('VITE_MOCK_WORLD', 'false');
+    const memory = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => memory.get(k) ?? null,
+      setItem: (k: string, v: string) => memory.set(k, v),
+      removeItem: (k: string) => memory.delete(k),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  const paper = (id: string) => ({ paper_id: id, title: id });
+  const json = (body: unknown, status = 200) => ({ ok: status < 400, status, json: () => Promise.resolve(body) });
+
+  it('papers requested together travel in one batch; unknown ones reject with 404', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json({ items: [paper('a'), paper('b')], not_found: ['c'] }));
+    globalThis.fetch = fetchMock as any;
+    const { getPaper } = await import('./client');
+    const [a, b, c] = await Promise.allSettled([getPaper('a'), getPaper('b'), getPaper('c')]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/v1/papers?ids=a,b,c');
+    expect(a.status).toBe('fulfilled');
+    expect(b.status).toBe('fulfilled');
+    expect(c.status).toBe('rejected');
+  });
+
+  it('a single paper uses the single-resource route', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(paper('openalex:W1')));
+    globalThis.fetch = fetchMock as any;
+    const { getPaper } = await import('./client');
+    await getPaper('openalex:W1');
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/v1/papers/openalex%3AW1');
+  });
+
+  it('streamChat sends the Idempotency-Key header', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json({ message: 'nope' }, 500));
+    globalThis.fetch = fetchMock as any;
+    const { streamChat } = await import('./client');
+    for await (const _ of streamChat({ query: 'q' }, new AbortController().signal, 'key-1')) {
+      /* drain */
+    }
+    expect(fetchMock.mock.calls[0][1].headers['Idempotency-Key']).toBe('key-1');
+  });
+
+  it('fetchAllPages follows next_cursor to the end', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json({ items: [1, 2], next_cursor: 'c1', has_more: true }))
+      .mockResolvedValueOnce(json({ items: [3], next_cursor: null, has_more: false }));
+    globalThis.fetch = fetchMock as any;
+    const { fetchAllPages } = await import('./http');
+    expect(await fetchAllPages('/chat-sessions', { limit: '50' }, 10)).toEqual([1, 2, 3]);
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/v1/chat-sessions?limit=50');
+    expect(String(fetchMock.mock.calls[1][0])).toBe('/api/v1/chat-sessions?limit=50&cursor=c1');
+  });
+
+  it('a 401 rotates the tokens once, for concurrent calls too, and repeats the requests', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/token-rotations')) {
+        return Promise.resolve(json({ user: { id: 'u' }, access_token: 'new', refresh_token: 'r2' }, 201));
+      }
+      const auth = (init?.headers as Record<string, string>)?.Authorization;
+      return Promise.resolve(auth === 'Bearer new' ? json({ fine: true }) : json({}, 401));
+    });
+    globalThis.fetch = fetchMock as any;
+    const { useAuth } = await import('../store/authStore');
+    const { apiFetch } = await import('./http');
+    useAuth.setState({ accessToken: 'old', refreshToken: 'r1', isAuthenticated: true });
+    const [one, two] = await Promise.all([apiFetch('/users/me'), apiFetch('/chat-sessions')]);
+    expect(one.status).toBe(200);
+    expect(two.status).toBe(200);
+    const rotations = fetchMock.mock.calls.filter((c) => String(c[0]).endsWith('/auth/token-rotations'));
+    expect(rotations).toHaveLength(1);
+    expect(useAuth.getState().refreshToken).toBe('r2');
+  });
+
+  it('a refused refresh token ends the session and returns the 401', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(json({}, 401)) as any;
+    const { useAuth } = await import('../store/authStore');
+    const { apiFetch } = await import('./http');
+    useAuth.setState({ accessToken: 'old', refreshToken: 'r1', isAuthenticated: true });
+    expect((await apiFetch('/users/me')).status).toBe(401);
+    expect(useAuth.getState().isAuthenticated).toBe(false);
+  });
+});

@@ -6,9 +6,11 @@
 - **Detailed Plan**: Section 1 details the `Dexie.js` IndexedDB Schema & Cache-First Invariants; Section 2 explains `useSessionStore` Multi-Turn Lifecycle & Offline Resilience; Section 3 covers `useRagStore` SSE Streaming & `30ms` Micro-Batching; Section 4 documents Deferred Markdown, KaTeX & 3D Camera Synchronization.
 - **References**: [../AGENTS.md](../AGENTS.md), [../../AGENTS.md](../../AGENTS.md), [perf-chat-report.md](perf-chat-report.md), [perf-report.md](perf-report.md), [../../docs/AI_chat_log/Vuong_chat_logs.md](../../docs/AI_chat_log/Vuong_chat_logs.md).
 - **Created**: 2026-10-29T19:47:00+07:00
-- **Last Updated**: 2026-10-29T19:47:00+07:00
+- **Last Updated**: 2026-11-04T22:27:54+07:00
 
 [STATUS: ACTIVE]
+
+> **API layer (D-047):** every authenticated call goes through `apiFetch` in `src/api/http.ts`, which rotates the token pair once on a `401` (one rotation per tab, a Web Lock across tabs). Session and message sync follow `next_cursor` through `fetchAllPages`. Each chat send uses its user message id as the `Idempotency-Key`. Papers requested within 10 ms share one `GET /papers?ids=` call.
 
 ---
 

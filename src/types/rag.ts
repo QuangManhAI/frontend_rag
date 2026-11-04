@@ -67,6 +67,8 @@ export type RagStreamEvent =
   | { type: 'compare'; candidates: CompareCandidate[] }
   | { type: 'retrieval'; grounded_chunks: GroundedChunk[]; expanded_terms?: string[] }
   | { type: 'token'; text: string }
+  /** The groundedness check rejected what was streamed: `answer` replaces it. */
+  | { type: 'answer_replaced'; answer: string }
   | { type: 'done'; citations: string[]; timings: PipelineTimings; session_id?: string | null; message_id?: string | null }
   | { type: 'error'; message: string; status?: number };
 

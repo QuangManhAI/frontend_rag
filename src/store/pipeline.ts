@@ -72,6 +72,8 @@ export function reduceEvent(state: PipelineState, event: RagStreamEvent): Pipeli
       return { ...state, current: { ...cur, grounded_chunks: event.grounded_chunks, expanded_terms: event.expanded_terms ?? [] } };
     case 'token':
       return { ...state, current: { ...cur, answer: cur.answer + event.text } };
+    case 'answer_replaced':
+      return { ...state, current: { ...cur, answer: event.answer } };
     case 'done':
       return {
         phase: 'done',

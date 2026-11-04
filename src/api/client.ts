@@ -4,25 +4,12 @@ import { buildChatScript, buildIndex, buildMockPaper, mockPaperDetail, type Mock
 import { generateMockWorld } from './mock/mockWorld';
 import { parseSseBlock, SseBuffer } from './sseParser';
 import { parseVectors } from './vectorParser';
-import { useAuth } from '../store/authStore';
+import { API_BASE, MOCK_WORLD, PIPELINE_BASE, USE_MOCK } from './config';
+import { apiFetch } from './http';
 
-export const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api/v1').replace(/\/$/, '');
-/** World 3D and the crawl stream come from the UTH pipeline, not from RAG_TS. */
-export const PIPELINE_BASE = (import.meta.env.VITE_PIPELINE_BASE ?? '/pipeline').replace(/\/$/, '');
-/** Chat, papers and health: mock unless VITE_USE_MOCK=false (then RAG_TS at API_BASE). */
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
-/**
- * World 3D + crawl: mock unless VITE_MOCK_WORLD=false (then the pipeline at PIPELINE_BASE).
- * Mock by default because the pipeline does not serve `/world/*` yet (see ASSUMPTIONS.md).
- */
-export const MOCK_WORLD = import.meta.env.VITE_MOCK_WORLD !== 'false';
+export { API_BASE, MOCK_WORLD, PIPELINE_BASE, USE_MOCK };
 
 const MOCK_SEED = 7;
-
-function getAuthHeaders(): Record<string, string> {
-  const token = useAuth.getState().accessToken;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function searchParam(name: string): string | null {
   try {
@@ -67,14 +54,16 @@ export function getMockContext(): MockContext {
   return mockCtx;
 }
 
-async function getJson<T>(path: string, signal?: AbortSignal, base = API_BASE): Promise<T> {
-  const res = await fetch(`${base}${path}`, { 
-    signal,
-    headers: {
-      ...getAuthHeaders(),
-      'Content-Type': 'application/json'
-    }
-  });
+/** A read from RAG_TS, with the session's token. */
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await apiFetch(path, { signal });
+  if (!res.ok) throw new HttpError(res.status, `${path} → HTTP ${res.status}`);
+  return (await res.json()) as T;
+}
+
+/** A read from the UTH pipeline: another service, so it never sees the session's token. */
+async function getPipelineJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${PIPELINE_BASE}${path}`, { signal });
   if (!res.ok) throw new HttpError(res.status, `${path} → HTTP ${res.status}`);
   return (await res.json()) as T;
 }
@@ -95,14 +84,14 @@ export async function loadWorld(signal?: AbortSignal): Promise<WorldData> {
     return getMockContext().world;
   }
   const [categories, ground, tree, buffer, vectorIds] = await Promise.all([
-    getJson<Category[]>('/world/categories', signal, PIPELINE_BASE),
-    getJson<GroundLayout>('/world/ground', signal, PIPELINE_BASE),
-    getJson<TreeNode[]>('/world/tree', signal, PIPELINE_BASE),
+    getPipelineJson<Category[]>('/world/categories', signal),
+    getPipelineJson<GroundLayout>('/world/ground', signal),
+    getPipelineJson<TreeNode[]>('/world/tree', signal),
     fetch(`${PIPELINE_BASE}/world/vectors.bin`, { signal }).then((r) => {
       if (!r.ok) throw new HttpError(r.status, `/world/vectors.bin → HTTP ${r.status}`);
       return r.arrayBuffer();
     }),
-    getJson<string[]>('/world/vector-ids', signal, PIPELINE_BASE),
+    getPipelineJson<string[]>('/world/vector-ids', signal),
   ]);
   const vectors = parseVectors(buffer);
   if (vectorIds.length !== vectors.count) {
@@ -112,6 +101,50 @@ export async function loadWorld(signal?: AbortSignal): Promise<WorldData> {
 }
 
 const paperCache = new Map<string, Promise<PaperDetail>>();
+
+/** Papers requested in the same moment (a list of result cards) travel in one batch call. */
+const PAPER_BATCH_WINDOW_MS = 10;
+const PAPER_BATCH_MAX = 20;
+interface PendingPaper {
+  id: string;
+  resolve: (paper: PaperDetail) => void;
+  reject: (err: unknown) => void;
+}
+let pendingPapers: PendingPaper[] = [];
+
+async function fetchPaperBatch(batch: PendingPaper[]): Promise<void> {
+  try {
+    if (batch.length === 1) {
+      batch[0].resolve(await getJson<PaperDetail>(`/papers/${encodeURIComponent(batch[0].id)}`));
+      return;
+    }
+    const ids = batch.map((p) => encodeURIComponent(p.id)).join(',');
+    const { items } = await getJson<{ items: PaperDetail[] }>(`/papers?ids=${ids}`);
+    const byId = new Map(items.map((p) => [p.paper_id, p]));
+    for (const p of batch) {
+      const paper = byId.get(p.id);
+      if (paper) p.resolve(paper);
+      else p.reject(new HttpError(404, `/papers/${p.id} → HTTP 404`));
+    }
+  } catch (err) {
+    for (const p of batch) p.reject(err);
+  }
+}
+
+function loadPaper(id: string): Promise<PaperDetail> {
+  return new Promise((resolve, reject) => {
+    if (!pendingPapers.length) {
+      setTimeout(() => {
+        const queued = pendingPapers;
+        pendingPapers = [];
+        for (let i = 0; i < queued.length; i += PAPER_BATCH_MAX) {
+          void fetchPaperBatch(queued.slice(i, i + PAPER_BATCH_MAX));
+        }
+      }, PAPER_BATCH_WINDOW_MS);
+    }
+    pendingPapers.push({ id, resolve, reject });
+  });
+}
 
 /** Paper metadata + chunks, cached per id (failed requests are not cached). */
 export function getPaper(paperId: string): Promise<PaperDetail> {
@@ -126,7 +159,7 @@ export function getPaper(paperId: string): Promise<PaperDetail> {
       return detail;
     }
     try {
-      return await getJson<PaperDetail>(`/papers/${encodeURIComponent(paperId)}`);
+      return await loadPaper(paperId);
     } catch (err) {
       // Real backend + mock world: hovering a mock vector asks for a mock paper id.
       const mock = MOCK_WORLD && err instanceof HttpError && err.status === 404 ? mockPaperDetail(getMockContext(), paperId) : null;
@@ -155,7 +188,7 @@ function isStreamEvent(v: unknown): v is RagStreamEvent {
 }
 
 /** POST + ReadableStream SSE reader (EventSource cannot POST). Abort ends quietly. */
-export async function* streamChat(req: RagRequest, signal: AbortSignal): AsyncGenerator<RagStreamEvent> {
+export async function* streamChat(req: RagRequest, signal: AbortSignal, idempotencyKey?: string): AsyncGenerator<RagStreamEvent> {
   if (USE_MOCK) {
     try {
       for (const step of buildChatScript(req, getMockContext())) {
@@ -171,9 +204,13 @@ export async function* streamChat(req: RagRequest, signal: AbortSignal): AsyncGe
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/rag/chat/stream`, {
+    res = await apiFetch('/rag/chat/stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream',  ...getAuthHeaders()},
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+      },
       body: JSON.stringify(req),
       signal,
     });
