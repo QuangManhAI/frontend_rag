@@ -30,7 +30,7 @@
   --glass-lowlight: #ffffff0a;
   --glass-stroke-strong: #ffffff38;
 
-  /* semantic aliases (docs/FE_DESIGN_SYSTEM.md §4.3) */
+  /* semantic aliases (docs/design/FE_DESIGN_SYSTEM.md §4.3) */
   --glass-stroke: var(--ui-border);
   --glass-saturate: 1.2;
   --glass-edge: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);

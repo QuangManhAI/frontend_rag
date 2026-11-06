@@ -1,12 +1,12 @@
 # PROGRESS.md — Nhật ký tiến độ Frontend `frontend_rag`
 
-- **Motivation/Background**: Mỗi prompt (P1–P14 trong [`../docs/prompt_fe_3d.md`](../docs/prompt_fe_3d.md), P15+ trong [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md)) phải ghi lại kết quả kiểm chứng để người duyệt dò vết.
+- **Motivation/Background**: Mỗi prompt (P1–P14 trong [`../docs/prompts/prompt_fe_3d.md`](../docs/prompts/prompt_fe_3d.md), P15+ trong [`../docs/prompts/FE3d_prompt_v2.md`](../docs/prompts/FE3d_prompt_v2.md)) phải ghi lại kết quả kiểm chứng để người duyệt dò vết.
 - **Purpose**: Bảng tiến độ theo prompt: module, kiểm chứng, kết quả, vấn đề tồn tại.
 - **Overview Pipeline**: Cập nhật cuối mỗi prompt sau khi chạy mục "Kiểm chứng".
 - **Detailed Plan**: P1–P11 (mock); rà soát lượng giác; tối ưu hiệu năng; P12–P14.1; giao diện gọn; giai đoạn 2026-10-20 → 2026-10-28 (không có spec); P15+ (Design System).
-- **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
+- **References**: [`ASSUMPTIONS.md`](ASSUMPTIONS.md), [`docs/design-migration-report.md`](docs/design-migration-report.md), [`../docs/design/FE_DESIGN_SYSTEM.md`](../docs/design/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T18:30:00+07:00
+- **Last Updated**: 2026-11-06T13:13:54+07:00
 
 [STATUS: ACTIVE]
 
@@ -92,7 +92,7 @@ Tổng: `npx vitest run` **99/99**, `npx playwright test` **6/6**.
 | Hiệu năng 3D/FPS, PerfHUD | `199c14e`, `b368cc5`, `718b049`, `e8cb552`, `20026ee`, `0888b74`, `f6300f8` | Báo cáo: [`docs/perf-chat-report.md`](docs/perf-chat-report.md) |
 | Hiệu năng tải trang (LCP/FCP) | `9457e1c` | [`docs/perf-report.md`](docs/perf-report.md) |
 | TopK badge, mock chat | `181761e`, `86e72c5` | |
-| Auth "Liquid Glass" | `85b3e35` → `3fdb69e` → `5871b26` → `6fb7906` → `26fa96b` → `85962c2` | Sửa 6 lần, không có spec — xem [`../docs/FE_DESIGN_AUDIT.md`](../docs/FE_DESIGN_AUDIT.md) |
+| Auth "Liquid Glass" | `85b3e35` → `3fdb69e` → `5871b26` → `6fb7906` → `26fa96b` → `85962c2` | Sửa 6 lần, không có spec — xem [`../docs/design/FE_DESIGN_AUDIT.md`](../docs/design/FE_DESIGN_AUDIT.md) |
 | FPS_LOCK (thêm rồi gỡ) | `f8a483b`, `20a1c26` | |
 | tsconfig | `bc48609`, `90e5299` | |
 | Intro / loading / WorldError | `050879c`, `1ba3e20`, `538ae7f` | |

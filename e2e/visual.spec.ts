@@ -4,7 +4,7 @@ import { APP, askAndFinish, openWorld, seedAuth, seedReducedMotion, seedSettings
 
 /**
  * UI screenshots used as the visual baseline for the design-system migration
- * (docs/FE3d_prompt_v2.md, P15). Each prompt runs this with its own tolerance:
+ * (docs/prompts/FE3d_prompt_v2.md, P15). Each prompt runs this with its own tolerance:
  *   VISUAL_THRESHOLD=0.015 npm run test:visual
  * Baselines are only refreshed (--update-snapshots) after a human reviewed the diff.
  */
@@ -262,7 +262,7 @@ test.describe('glass backdrop', () => {
       await page.waitForTimeout(450); // 150 ms debounce + idle build
     }
     const { size, max } = await page.evaluate(async () => {
-      const m = await import('/src/components/ui/LiquidFilters.tsx');
+      const m = await import('/src/shared/ui/LiquidFilters.tsx');
       return { size: m.refractionCacheSize(), max: m.refractionCacheMax() };
     });
     expect(size).toBeLessThanOrEqual(max);

@@ -49,7 +49,7 @@ Tiếp nối `docs/trig-audit.md`, vốn chỉ ra lag nằm ở bloom/overdraw, 
 | diffStates (trung bình / tối đa) | Dark | 6.18 / 7.6 ms | **0.22 / 1.6 ms** | ÷28 |
 | diffStates (trung bình / tối đa) | Light | 14.27 / 18.0 ms | **0.53 / 3.2 ms** | ÷27 |
 
-Microbenchmark CPU (Node, `npm run bench` → `src/utils/perf.bench.ts`, 150k vector):
+Microbenchmark CPU (Node, `npm run bench` → `src/test/perf.bench.ts`, 150k vector):
 
 | Đoạn | Cũ | Mới | |
 | :-- | --: | --: | :-- |

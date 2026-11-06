@@ -1,12 +1,12 @@
 # design-migration-report.md — Báo cáo chuyển đổi Design System (P15 → P23)
 
-- **Motivation/Background**: Chuỗi prompt [`../../docs/FE3d_prompt_v2.md`](../../docs/FE3d_prompt_v2.md) sửa mạnh giao diện; mỗi bước phải có số đo trước/sau để người duyệt quyết định Chấp nhận / Sửa / Từ chối.
+- **Motivation/Background**: Chuỗi prompt [`../../docs/prompts/FE3d_prompt_v2.md`](../../docs/prompts/FE3d_prompt_v2.md) sửa mạnh giao diện; mỗi bước phải có số đo trước/sau để người duyệt quyết định Chấp nhận / Sửa / Từ chối.
 - **Purpose**: Một dòng số đo cho mỗi prompt: vi phạm `check:design`, STATS thang giá trị, sai khác ảnh, hiệu năng, quyết định.
 - **Overview Pipeline**: Cuối mỗi prompt chạy `npm run check:design`, `npm run test:visual`, `npm run test:perf` (khi chạm 3D/kính) rồi ghi vào đây.
 - **Detailed Plan**: §1 Bảng tổng; §2 Cách đo; §3 Chi tiết từng prompt.
-- **References**: [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE_DESIGN_AUDIT.md`](../../docs/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
+- **References**: [`../../docs/design/FE_DESIGN_SYSTEM.md`](../../docs/design/FE_DESIGN_SYSTEM.md), [`../../docs/design/FE_DESIGN_AUDIT.md`](../../docs/design/FE_DESIGN_AUDIT.md), [`../scripts/check-design.cjs`](../scripts/check-design.cjs), [`../e2e/visual.spec.ts`](../e2e/visual.spec.ts), [`../scripts/perf-chat-benchmark.cjs`](../scripts/perf-chat-benchmark.cjs), [`../PROGRESS.md`](../PROGRESS.md).
 - **Created**: 2026-10-29T23:55:00+07:00
-- **Last Updated**: 2026-10-30T18:30:00+07:00
+- **Last Updated**: 2026-11-06T13:13:54+07:00
 
 [STATUS: IN_PROGRESS]
 

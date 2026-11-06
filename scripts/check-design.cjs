@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Design-token guard for frontend_rag (docs/FE_DESIGN_SYSTEM.md §11, docs/FE3d_prompt_v2.md P15).
+ * Design-token guard for frontend_rag (docs/design/FE_DESIGN_SYSTEM.md §11, docs/prompts/FE3d_prompt_v2.md P15).
  *
  *   node scripts/check-design.cjs --report                 # list violations + STATS, exit 0
  *   node scripts/check-design.cjs --strict                 # exit 1 on any violation of the selected rules
@@ -19,9 +19,9 @@ const TW_THEME = path.join(ROOT, 'node_modules', 'tailwindcss', 'theme.css');
 const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
 
 /** Dev-only tooling is exempt from the UI rules (FE_DESIGN_SYSTEM.md §2.5). */
-const EXEMPT_UI = new Set(['src/components/world/overlay/PerfHUD.tsx']);
+const EXEMPT_UI = new Set(['src/features/world/scene/overlay/PerfHUD.tsx']);
 /** The one place allowed to call trig to build rotors (FE_DESIGN_SYSTEM.md §9.4). */
-const EXEMPT_TRIG = new Set(['src/utils/rotation.ts']);
+const EXEMPT_TRIG = new Set(['src/shared/lib/rotation.ts']);
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
@@ -258,7 +258,7 @@ function stats() {
     for (const m of text.matchAll(/text-\[([\d.]+)(px|rem)\]/g)) bump(size, `${toPx(m[1] + m[2])}px`, r);
   }
 
-  const alphaSources = [css, fs.readFileSync(path.join(SRC, 'theme', 'tokens.ts'), 'utf8')];
+  const alphaSources = [css, fs.readFileSync(path.join(SRC, 'shared', 'theme', 'tokens.ts'), 'utf8')];
   for (const text of alphaSources) {
     for (const m of text.matchAll(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*([\d.]+)\s*\)/g)) bump(whiteAlpha, Number(m[1]).toFixed(2), 'rgba');
     for (const m of text.matchAll(/#ffffff([0-9a-fA-F]{2})\b/gi)) bump(whiteAlpha, (parseInt(m[1], 16) / 255).toFixed(2), 'hex');
@@ -291,7 +291,7 @@ const byRule = Object.fromEntries(ALL_RULES.map((r) => [r, violations.filter((v)
 const STATS = stats();
 const limit = flag('verbose') ? Infinity : 8;
 
-console.log('\nDesign-token check (docs/FE_DESIGN_SYSTEM.md)\n');
+console.log('\nDesign-token check (docs/design/FE_DESIGN_SYSTEM.md)\n');
 console.log('rule'.padEnd(18) + 'count'.padStart(6) + '  gate');
 for (const r of ALL_RULES) console.log(r.padEnd(18) + String(byRule[r].length).padStart(6) + (gated.includes(r) ? '  ●' : ''));
 for (const r of ALL_RULES) {
