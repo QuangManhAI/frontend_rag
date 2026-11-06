@@ -2,11 +2,11 @@
 
 - **Motivation/Background**: Spec không thể nói hết mọi chi tiết; mọi giả định AI agent tự đặt ra phải được ghi lại để người duyệt kiểm tra.
 - **Purpose**: Danh sách giả định theo prompt, dạng `[P<số>] <giả định> — <lý do>`.
-- **Overview Pipeline**: Ghi trong lúc thực thi từng prompt của [`../docs/prompt_fe_3d.md`](../docs/prompt_fe_3d.md) và [`../docs/FE3d_prompt_v2.md`](../docs/FE3d_prompt_v2.md).
+- **Overview Pipeline**: Ghi trong lúc thực thi từng prompt của [`../docs/prompts/prompt_fe_3d.md`](../docs/prompts/prompt_fe_3d.md) và [`../docs/prompts/FE3d_prompt_v2.md`](../docs/prompts/FE3d_prompt_v2.md).
 - **Detailed Plan**: P1–P11, Trig, P15+.
-- **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/FE_DESIGN_SYSTEM.md`](../docs/FE_DESIGN_SYSTEM.md).
+- **References**: [`PROGRESS.md`](PROGRESS.md), [`../docs/design/FE_DESIGN_SYSTEM.md`](../docs/design/FE_DESIGN_SYSTEM.md).
 - **Created**: 2026-10-19T18:48:02+07:00
-- **Last Updated**: 2026-10-30T18:30:00+07:00
+- **Last Updated**: 2026-11-06T13:13:54+07:00
 
 [STATUS: ACTIVE]
 

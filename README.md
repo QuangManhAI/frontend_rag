@@ -23,7 +23,7 @@ npm run dev:live       # chat / paper / health gọi backend RAG_TS thật (:300
 | `VITE_PIPELINE_BASE` | `/pipeline` | Tiền tố pipeline (proxy `/pipeline/*` ➔ `VITE_PIPELINE_URL/api/*`) |
 | `VITE_PIPELINE_URL` | `http://localhost:8000` | Đích proxy của pipeline |
 
-**Backend thật + world mock** (trạng thái hiện tại, pipeline chưa phục vụ `/world/*`): mỗi paper thật được đặt lên một vector cố định của world mock (đổi id vector thành id thật, nên rê chuột / bấm trích dẫn mở paper thật), và khi backend trả `route` rỗng thì đường bay được dựng lại từ các paper `compare` — điểm trên cành là similarity thật của paper đặt ở đó, không phải điểm centroid (`src/api/worldBridge.ts`). Khi pipeline xuất world thật, đặt `VITE_MOCK_WORLD=false`, bridge tự tắt.
+**Backend thật + world mock** (trạng thái hiện tại, pipeline chưa phục vụ `/world/*`): mỗi paper thật được đặt lên một vector cố định của world mock (đổi id vector thành id thật, nên rê chuột / bấm trích dẫn mở paper thật), và khi backend trả `route` rỗng thì đường bay được dựng lại từ các paper `compare` — điểm trên cành là similarity thật của paper đặt ở đó, không phải điểm centroid (`src/features/world/api/worldBridge.ts`). Khi pipeline xuất world thật, đặt `VITE_MOCK_WORLD=false`, bridge tự tắt.
 
 Query string hữu ích:
 
@@ -61,21 +61,25 @@ npm run build
 
 ```text
 src/
-├── types/           world.ts, rag.ts — đúng Mục 3 (snake_case)
-├── theme/           tokens.ts (chỉ giao diện tối, 12 màu category), applyCssVars.ts, useTheme.ts
-├── api/             client.ts, vectorParser.ts (vectors.bin), sseParser.ts, mock/ (rng, mockWorld, mockChat)
-├── store/           pipeline.ts (reducer thuần), ragStore, worldStore, uiStore, fxStore
-├── utils/           hàm thuần có test: flight, canopy, groundLayout, treeGeometry, cameraPresets, citations, arxiv, resultCase…
-└── components/
-    ├── chat/        ChatPanel, MessageList, MessageBubble, ChatInput, CitationChip, PipelineStatus, Markdown
-    ├── world/       WorldCanvas, SkyBackground, Lighting, PostFX, CameraDirector
-    │   ├── ground/  GroundGrid, BookCrates
-    │   ├── tree/    AncientTree, Roots, Trunk, Branches, SapFlow, BranchLabels
-    │   ├── canopy/  VectorCanopy (+ picker), canopyShader, VectorTooltip
-    │   ├── fx/      QueryFlight (điều phối), QueryOrb, QueryText, VectorDigits, RouteScores, CompareThreads, TopKThreads, EssenceFlow, Fireflies
-    │   └── overlay/ anchors (DOM overlay + projector), WorldOverlay, CompareScoreLabel
-    ├── result/      ResultCard, PaperPanel, ChunkList, ScoreBars, TopKBadges
-    └── layout/      AppShell, TopBar, ThemeToggle, SettingsPanel, HealthBanner, WorldError, CategoryLegend, YearSlider
+├── main.tsx, index.css   Điểm vào và stylesheet toàn cục
+├── app/                  App, AppShell, layout/ (TopBar, ChatDock, BottomSheet, SettingsPanel, HealthBanner…)
+├── features/
+│   ├── auth/             AuthOverlay, authStore
+│   ├── chat/             components/, store/ (ragStore, sessionStore, pipeline), db/chatDb, lib/, types
+│   ├── crawl/            CrawlSettings, crawlStore, crawlFx, crawlClient, crawlFlow, types
+│   ├── result/           ResultCard, PaperPanel, ChunkList, ScoreBars, TopKBadges, lib/
+│   └── world/
+│       ├── api/          vectorParser, worldBridge
+│       ├── lib/          hàm thuần có test: flight, canopy, groundLayout, treeGeometry, cameraPresets…
+│       ├── store/        worldStore, fxStore
+│       └── scene/        WorldCanvas + ground/, tree/, canopy/, fx/, overlay/
+├── shared/
+│   ├── api/              client, config, http, sseParser, mock/
+│   ├── hooks/, lib/      useIsMobile; rotation, rng, uuid, storage, perfProbe
+│   ├── store/uiStore     Cài đặt và trạng thái UI dùng khắp nơi
+│   ├── theme/, ui/       tokens, liquidGlass…; Glass, LiquidShell, LiquidFilters
+│   └── types/            world.ts, rag.ts — đúng Mục 3 (snake_case)
+└── test/                 setup, test và bench chạy qua nhiều feature
 e2e/knowledge-tree.spec.ts
 ```
 

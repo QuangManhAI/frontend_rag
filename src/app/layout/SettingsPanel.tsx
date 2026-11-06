@@ -1,0 +1,170 @@
+import { RotateCcw, X } from 'lucide-react';
+import { useState } from 'react';
+import { useUi, type QualityMode, type Settings } from '../../shared/store/uiStore';
+import type { GlassSetting } from '../../shared/theme/liquidGlass';
+import { useGlassLevelValue } from '../../shared/theme/useLiquidLight';
+import { useWorld } from '../../features/world/store/worldStore';
+import { CrawlSettings } from '../../features/crawl/CrawlSettings';
+import { YearSlider } from './YearSlider';
+import { Glass } from '../../shared/ui/Glass';
+import { LIQUID_OPTICS_SETTINGS, LiquidShell } from '../../shared/ui/LiquidShell';
+
+type NumKey = 'top_k' | 'nprobe';
+
+const QUALITY: ReadonlyArray<readonly [QualityMode, string]> = [
+  ['auto', 'Tự động'],
+  ['high', 'Cao'],
+  ['low', 'Thấp'],
+];
+const TIER_LABEL = ['đầy đủ', 'tắt MSAA', 'dpr 1.5 · bloom nhẹ', 'dpr 1 · tắt bloom'] as const;
+const GLASS: ReadonlyArray<readonly [GlassSetting, string]> = [
+  ['auto', 'Tự động'],
+  ['off', 'Đục'],
+  ['frosted', 'Mờ'],
+  ['liquid', 'Liquid'],
+];
+const LEVEL_LABEL = ['đục', 'kính mờ', 'phản chiếu', 'khúc xạ', 'WebGL'] as const;
+
+/** Retrieval, display and crawl settings; invalid numbers are rejected (shown inline, never applied). */
+export function SettingsPanel() {
+  const open = useUi((s) => s.settingsOpen);
+  const settings = useUi((s) => s.settings);
+  const categories = useWorld((s) => s.categories);
+  const tier = useUi((s) => s.qualityTier);
+  const level = useGlassLevelValue();
+  const [draft, setDraft] = useState<Record<NumKey, string>>({ top_k: String(settings.top_k), nprobe: String(settings.nprobe) });
+  const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>({});
+  if (!open) return null;
+
+  const setNum = (key: NumKey, raw: string) => {
+    setDraft((d) => ({ ...d, [key]: raw }));
+    const n = Number(raw);
+    const errs = raw.trim() === '' ? { [key]: `${key} không được để trống` } : useUi.getState().updateSettings({ [key]: n });
+    setErrors((e) => ({ ...e, [key]: errs[key] }));
+  };
+  const setFlag = (patch: Partial<Settings>) => useUi.getState().updateSettings(patch);
+
+  return (
+    <LiquidShell optics={LIQUID_OPTICS_SETTINGS}>
+    <Glass material="strong" refract="settings" className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
+      <div className="flex items-center mb-3">
+        <h2 className="font-semibold">Cài đặt</h2>
+        <button type="button" className="btn btn-icon ml-auto" aria-label="Đóng cài đặt" onClick={() => useUi.getState().setSettingsOpen(false)}>
+          <X size={16} />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {(
+          [
+            ['top_k', 'top_k (1–20)', 1, 20],
+            ['nprobe', 'nprobe (1–6)', 1, 6],
+          ] as const
+        ).map(([key, label, min, max]) => (
+          <label key={key} className="flex flex-col gap-1 text-xs">
+            <span className="text-[var(--ink-muted)] mono">{label}</span>
+            <input
+              type="number"
+              min={min}
+              max={max}
+              step={1}
+              className="field mono"
+              value={draft[key]}
+              aria-invalid={errors[key] ? true : undefined}
+              aria-describedby={errors[key] ? `${key}-err` : undefined}
+              data-testid={`setting-${key}`}
+              onChange={(e) => setNum(key, e.target.value)}
+            />
+            {errors[key] && (
+              <span id={`${key}-err`} role="alert" className="text-[var(--danger)] text-caption">
+                {errors[key]}
+              </span>
+            )}
+          </label>
+        ))}
+      </div>
+      <label className="flex flex-col gap-1 text-xs mt-3">
+        <span className="text-[var(--ink-muted)]">Lọc loại bài báo</span>
+        <select className="field" value={settings.category} onChange={(e) => setFlag({ category: e.target.value })}>
+          <option value="">Tất cả</option>
+          {categories.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code} — {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <fieldset className="mt-3 text-xs">
+        <legend className="text-[var(--ink-muted)] mb-1">
+          Chất lượng <span className="mono">· đang dùng: {TIER_LABEL[tier]}</span>
+        </legend>
+        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Chất lượng hiển thị">
+          {QUALITY.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={settings.quality === value}
+              aria-pressed={settings.quality === value}
+              className="btn justify-center !py-1"
+              data-testid={`quality-${value}`}
+              onClick={() => setFlag({ quality: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="mt-3 text-xs">
+        <legend className="text-[var(--ink-muted)] mb-1">
+          Hiệu ứng kính <span className="mono">· cấp {level}: {LEVEL_LABEL[level] ?? '—'}</span>
+        </legend>
+        <div className="grid grid-cols-4 gap-1" role="radiogroup" aria-label="Hiệu ứng kính">
+          {GLASS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={settings.glass === value}
+              aria-pressed={settings.glass === value}
+              className="btn justify-center !py-1 !px-1 whitespace-nowrap"
+              data-testid={`glass-${value}`}
+              onClick={() => setFlag({ glass: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <div className="flex flex-col gap-2 mt-3 text-xs">
+        {(
+          [
+            ['use_authority_boost', 'Tăng điểm theo authority (PageRank)'],
+            ['expand_query', 'Mở rộng câu hỏi (query expansion)'],
+            ['reduceMotion', 'Giảm chuyển động'],
+            ['showBranchLabels', 'Hiện nhãn chủ đề trên nhánh'],
+          ] as const
+        ).map(([key, label]) => (
+          <label key={key} className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={settings[key]} onChange={(e) => setFlag({ [key]: e.target.checked })} className="accent-[var(--accent)]" />
+            {label}
+          </label>
+        ))}
+      </div>
+      <YearSlider />
+      <CrawlSettings />
+      <button
+        type="button"
+        className="btn mt-4"
+        onClick={() => {
+          useUi.getState().resetSettings();
+          const s = useUi.getState().settings;
+          setDraft({ top_k: String(s.top_k), nprobe: String(s.nprobe) });
+          setErrors({});
+        }}
+      >
+        <RotateCcw size={14} /> Đặt lại
+      </button>
+    </Glass>
+    </LiquidShell>
+  );
+}

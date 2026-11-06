@@ -4,9 +4,9 @@
 - **Purpose**: Bảng rà soát mọi chỗ gọi lượng giác, số đo trước/sau và quyết định giữ/đổi cho từng chỗ.
 - **Overview Pipeline**: Rà soát code → microbenchmark (`npm run bench`) + frame time 600 frame → giữ/đổi theo ngưỡng (§1–§6, 2026-10-19); chuyển sang rotor theo `FE_DESIGN_SYSTEM.md` §9 (§7, P20, 2026-10-30).
 - **Detailed Plan**: §1 Phương pháp; §2 Bảng rà soát; §3 Thử thay thế; §4 Nguồn lag; §5 Kết luận; §6 Tái hiện; §7 Chuyển sang rotor (P20).
-- **References**: [`../src/utils/rotation.ts`](../src/utils/rotation.ts), [`../src/utils/trig.bench.ts`](../src/utils/trig.bench.ts), [`../../docs/FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md), [`../../docs/FE3d_prompt_v2.md`](../../docs/FE3d_prompt_v2.md).
+- **References**: [`../src/shared/lib/rotation.ts`](../src/shared/lib/rotation.ts), [`../src/test/trig.bench.ts`](../src/test/trig.bench.ts), [`../../docs/design/FE_DESIGN_SYSTEM.md`](../../docs/design/FE_DESIGN_SYSTEM.md), [`../../docs/prompts/FE3d_prompt_v2.md`](../../docs/prompts/FE3d_prompt_v2.md).
 - **Created**: 2026-10-19T20:49:26+07:00
-- **Last Updated**: 2026-10-30T12:10:00+07:00
+- **Last Updated**: 2026-11-06T13:13:54+07:00
 
 [STATUS: ACTIVE]
 
@@ -21,7 +21,7 @@ Ngày đo: 2026-10-19 · Máy: Apple M4, Chromium headless (ANGLE Metal), 1440×
 
 | Loại | Cách đo | Công cụ |
 | :-- | :-- | :-- |
-| Chi phí của **đúng đoạn code** (mỗi frame) | Mỗi vòng lặp benchmark = 1 frame mô phỏng (dt = 1/60 s), trung bình hàng triệu frame | `npm run bench` → `src/utils/trig.bench.ts` (vitest bench / tinybench) |
+| Chi phí của **đúng đoạn code** (mỗi frame) | Mỗi vòng lặp benchmark = 1 frame mô phỏng (dt = 1/60 s), trung bình hàng triệu frame | `npm run bench` → `src/test/trig.bench.ts` (vitest bench / tinybench) |
 | **Thời gian frame** toàn scene | Trung bình khoảng thời gian `requestAnimationFrame` của 600 frame (bỏ 20 frame khởi động), median của 3–5 lần chạy. Kịch bản giống nhau mọi lần: `?vectors=150000`, gửi câu hỏi → bỏ qua animation → `done` (quả cầu đang "thở", ô đất đang nhấp sáng), camera `overview` | Playwright + `performance.now()` |
 | Draw call / số điểm | `renderer.info.render` qua dev hook `globalThis.__rktGl` (chỉ DEV) | three.js |
 
@@ -35,17 +35,17 @@ Nhóm: **A** = tính một lần lúc dựng scene · **B** = CPU mỗi frame ch
 
 | Vị trí | Nhóm | Dùng để | Quyết định | Lý do |
 | :-- | :-: | :-- | :-: | :-- |
-| `src/components/world/fx/QueryFlight.tsx:317` | B | Quả cầu "thở" (dao động scale), 1 `Math.sin`/frame | **Giữ** (đã thử, hoàn tác) | Rotor nhanh hơn 1.35× tại chỗ (43 → 32 ns) nhưng chỉ tiết kiệm 11 ns trên frame ~6.9 ms (0.0002%), frame time không đổi (§3). Bước thời gian cố định 1/120 s làm lệch pha tới 1 bước → scale lệch tới 0.09·ω·Δt = **3.4e-3**, vượt ngân sách 1e-3. Muốn < 1e-3 cần Δt ≤ 1/400 s ⇒ ≥ 7 phép nhân phức/frame, chậm hơn 1 `sin`. |
-| `src/components/world/ground/GroundGrid.tsx:135` | C | Độ sáng nhấp nháy của ô đất chứa bài top-k (≤ top_k thùng, thường 2–5) | **Giữ** (đã thử, hoàn tác) | Rotor **chậm hơn**: 1.08× (5 thùng) và 1.31× (20 thùng) cho cả đoạn. Ở 60 fps mỗi frame phải chạy 2 bước cố định, cộng chi phí đọc state; `Math.sin` của V8 vốn đã rẻ (~10 ns). Lệch pha cũng làm độ sáng sai tới 0.029. |
-| `src/components/world/materials.ts:15` (`pointScale`, gọi trong `useFrame` của 5 vật liệu điểm) | B | `Math.tan(fov/2)` để đổi kích thước điểm sang pixel | Giữ | Không phải phép quay; 5 phép `tan`/frame (~50 ns). |
-| `src/utils/cameraPresets.ts:29, 57–58` | A | Preset camera `overview` (pitch 30°) và `focus` (xoay 35° quanh trục y) | Giữ | Chỉ chạy khi đổi mode / focus, không chạy mỗi frame. Nhánh `follow` (gọi mỗi frame ở `CameraDirector.tsx:48`) **không có lượng giác**. |
-| `src/utils/treeGeometry.ts:67–68, 104–106, 141–146` | A | Dựng vòng tiết diện ống (rễ, cành), vỏ cây xù xì, thân thuôn | Giữ | Dựng geometry một lần lúc load. Có thể dùng rotor để sinh vòng tròn, nhưng đây là thời gian load, không phải lag lúc chạy. |
-| `src/components/world/fx/Fireflies.tsx:44` | A | Vị trí gốc của đom đóm (toạ độ cực) | Giữ | Một lần lúc mount. |
-| `src/api/mock/mockWorld.ts:76, 89, 94–95, 158–159` | A | Bố cục cây và lưới trong world mock | Giữ | Sinh dữ liệu một lần; khi có backend thật thì dữ liệu này do pipeline Python sinh. |
-| `src/components/world/canopy/canopyShader.ts:28–29` | D | Nhấp nháy 150k điểm, nhịp đập điểm focus | Giữ | GPU tính `sin` gần như miễn phí (1 lệnh SFU). Frame time không phụ thuộc số điểm khi tắt bloom (§4), nên shader không phải nút thắt. |
-| `src/components/world/fx/Fireflies.tsx:21, 23` | D | Đom đóm bay và lập loè | Giữ | Như trên. Chuyển động **đã nằm trong shader** (ví dụ "500 đom đóm CPU" trong đề tương ứng với chỗ này, nhưng ở đây vốn không chạy trên CPU). |
-| `src/components/world/fx/QueryText.tsx:23` | D | Hạt chữ xoáy vào quả cầu | Giữ | Như trên; chỉ ~400 hạt trong 2.2 s. |
-| `src/components/world/tree/Branches.tsx:112–117` | D | Gân sáng chạy dọc thân/cành, cành được chọn nhấp nháy | Giữ | Như trên. |
+| `src/features/world/scene/fx/QueryFlight.tsx:317` | B | Quả cầu "thở" (dao động scale), 1 `Math.sin`/frame | **Giữ** (đã thử, hoàn tác) | Rotor nhanh hơn 1.35× tại chỗ (43 → 32 ns) nhưng chỉ tiết kiệm 11 ns trên frame ~6.9 ms (0.0002%), frame time không đổi (§3). Bước thời gian cố định 1/120 s làm lệch pha tới 1 bước → scale lệch tới 0.09·ω·Δt = **3.4e-3**, vượt ngân sách 1e-3. Muốn < 1e-3 cần Δt ≤ 1/400 s ⇒ ≥ 7 phép nhân phức/frame, chậm hơn 1 `sin`. |
+| `src/features/world/scene/ground/GroundGrid.tsx:135` | C | Độ sáng nhấp nháy của ô đất chứa bài top-k (≤ top_k thùng, thường 2–5) | **Giữ** (đã thử, hoàn tác) | Rotor **chậm hơn**: 1.08× (5 thùng) và 1.31× (20 thùng) cho cả đoạn. Ở 60 fps mỗi frame phải chạy 2 bước cố định, cộng chi phí đọc state; `Math.sin` của V8 vốn đã rẻ (~10 ns). Lệch pha cũng làm độ sáng sai tới 0.029. |
+| `src/features/world/scene/materials.ts:15` (`pointScale`, gọi trong `useFrame` của 5 vật liệu điểm) | B | `Math.tan(fov/2)` để đổi kích thước điểm sang pixel | Giữ | Không phải phép quay; 5 phép `tan`/frame (~50 ns). |
+| `src/features/world/lib/cameraPresets.ts:29, 57–58` | A | Preset camera `overview` (pitch 30°) và `focus` (xoay 35° quanh trục y) | Giữ | Chỉ chạy khi đổi mode / focus, không chạy mỗi frame. Nhánh `follow` (gọi mỗi frame ở `CameraDirector.tsx:48`) **không có lượng giác**. |
+| `src/features/world/lib/treeGeometry.ts:67–68, 104–106, 141–146` | A | Dựng vòng tiết diện ống (rễ, cành), vỏ cây xù xì, thân thuôn | Giữ | Dựng geometry một lần lúc load. Có thể dùng rotor để sinh vòng tròn, nhưng đây là thời gian load, không phải lag lúc chạy. |
+| `src/features/world/scene/fx/Fireflies.tsx:44` | A | Vị trí gốc của đom đóm (toạ độ cực) | Giữ | Một lần lúc mount. |
+| `src/shared/api/mock/mockWorld.ts:76, 89, 94–95, 158–159` | A | Bố cục cây và lưới trong world mock | Giữ | Sinh dữ liệu một lần; khi có backend thật thì dữ liệu này do pipeline Python sinh. |
+| `src/features/world/scene/canopy/canopyShader.ts:28–29` | D | Nhấp nháy 150k điểm, nhịp đập điểm focus | Giữ | GPU tính `sin` gần như miễn phí (1 lệnh SFU). Frame time không phụ thuộc số điểm khi tắt bloom (§4), nên shader không phải nút thắt. |
+| `src/features/world/scene/fx/Fireflies.tsx:21, 23` | D | Đom đóm bay và lập loè | Giữ | Như trên. Chuyển động **đã nằm trong shader** (ví dụ "500 đom đóm CPU" trong đề tương ứng với chỗ này, nhưng ở đây vốn không chạy trên CPU). |
+| `src/features/world/scene/fx/QueryText.tsx:23` | D | Hạt chữ xoáy vào quả cầu | Giữ | Như trên; chỉ ~400 hạt trong 2.2 s. |
+| `src/features/world/scene/tree/Branches.tsx:112–117` | D | Gân sáng chạy dọc thân/cành, cành được chọn nhấp nháy | Giữ | Như trên. |
 
 **Góc Euler / `rotation.x|y|z`:** không có chỗ nào trong code dự án. Không có vật nào cần hướng: quả cầu là hình cầu, nhãn là DOM overlay, camera do `CameraControls` lo. Vì vậy không có rủi ro gimbal lock và không có chuyển động quay nào cần `slerp`. `slerpQuat` có sẵn trong `rotation.ts` để dùng khi cần (ví dụ thêm vật có hướng).
 
@@ -59,7 +59,7 @@ Nhóm: **A** = tính một lần lúc dựng scene · **B** = CPU mỗi frame ch
 
 ## 3. Thử thay thế và kết quả đo
 
-Đã cài `src/utils/rotation.ts` (rotor phức, `stepRotation` chuẩn hoá lại mỗi 64 bước, bộ chạy bước thời gian cố định, `slerpQuat`) và **tạm** áp vào hai chỗ B và C ở trên.
+Đã cài `src/shared/lib/rotation.ts` (rotor phức, `stepRotation` chuẩn hoá lại mỗi 64 bước, bộ chạy bước thời gian cố định, `slerpQuat`) và **tạm** áp vào hai chỗ B và C ở trên.
 
 **Microbenchmark** (`npm run bench`, mỗi lần lặp = 1 frame):
 
@@ -123,13 +123,13 @@ CPU, mỗi lần xảy ra (microbenchmark, 150k vector):
 
 ```bash
 npm run bench                                   # microbenchmark §3 + §4 (CPU)
-npm test -- src/utils/rotation.test.ts          # 7 test rotor / slerp
+npm test -- src/shared/lib/rotation.test.ts          # 7 test rotor / slerp
 npm run dev -- --port 5199                       # rồi chạy script đo frame time bằng Playwright (mô tả ở §1)
 ```
 
 ## 7. Chuyển sang rotor (P20, 2026-10-30)
 
-Theo [`FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md) §9: phép quay viết bằng rotor; `sin/cos` chỉ còn trong `makeRotor` và các ngoại lệ đã đo ở §3 (gắn `// trig-ok:`). `npm run lint` chặn mọi `Math.sin/cos/atan2` không có chú thích (`check-design`, rule `trig-in-frame`, `trig-any`).
+Theo [`FE_DESIGN_SYSTEM.md`](../../docs/design/FE_DESIGN_SYSTEM.md) §9: phép quay viết bằng rotor; `sin/cos` chỉ còn trong `makeRotor` và các ngoại lệ đã đo ở §3 (gắn `// trig-ok:`). `npm run lint` chặn mọi `Math.sin/cos/atan2` không có chú thích (`check-design`, rule `trig-in-frame`, `trig-any`).
 
 ### 7.1 Chỗ đã đổi
 
@@ -145,7 +145,7 @@ Theo [`FE_DESIGN_SYSTEM.md`](../../docs/FE_DESIGN_SYSTEM.md) §9: phép quay vi�
 
 Giữ (`// trig-ok:`): `QueryFlight.tsx` (thở), `GroundGrid.tsx` (nhấp sáng) — dao động vô hướng, §3; `treeGeometry.ts` `bark()` và `flare` — sóng làm nhiễu, không phải phép quay. `materials.ts` `Math.tan(fov/2)` không thuộc rule.
 
-### 7.2 Microbenchmark (`npx vitest bench --run src/utils/trig.bench.ts`, Apple M4)
+### 7.2 Microbenchmark (`npx vitest bench --run src/test/trig.bench.ts`, Apple M4)
 
 | Case | Trước → Sau |
 | :-- | :-- |
