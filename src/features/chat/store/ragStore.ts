@@ -30,6 +30,14 @@ interface RagState {
 
 let controller: AbortController | null = null;
 
+/** Cancels the run in flight, saying why: a cancelled stream ends quietly, so this is its only trace. */
+function cancelRun(why: string): void {
+  if (!controller) return;
+  if (!controller.signal.aborted) console.info(`[rag] stream cancelled: ${why}`);
+  controller.abort();
+  controller = null;
+}
+
 /** Real backend on the mock world: one bridge for the session so a paper keeps its vector. */
 let bridge: WorldBridge | null = null;
 function chatEvents(req: RagRequest, signal: AbortSignal, idempotencyKey: string): AsyncIterable<RagStreamEvent> {
@@ -119,8 +127,7 @@ export const useRag = create<RagState>((set, get) => {
     skipToken: 0,
 
     clearMessages: () => {
-      controller?.abort();
-      controller = null;
+      cancelRun('clearMessages (new chat / session reset)');
       set({
         messages: [],
         phase: 'idle',
@@ -131,8 +138,7 @@ export const useRag = create<RagState>((set, get) => {
     },
 
     loadMessages: (messages: ChatMessage[]) => {
-      controller?.abort();
-      controller = null;
+      cancelRun('loadMessages (session switch)');
       const maxRunId = messages.reduce((max, m) => Math.max(max, m.runId), 0);
       set({
         messages,
@@ -146,7 +152,7 @@ export const useRag = create<RagState>((set, get) => {
     send: async (text) => {
       const query = text.trim();
       if (!query) return;
-      controller?.abort();
+      cancelRun('a new question was sent');
       const ctrl = new AbortController();
       controller = ctrl;
       const runId = get().runId + 1;
@@ -214,8 +220,7 @@ export const useRag = create<RagState>((set, get) => {
     stop: () => {
       const s = get();
       if (s.phase === 'done' || s.phase === 'error' || s.phase === 'idle') return;
-      controller?.abort();
-      controller = null;
+      cancelRun('stop button');
       set({ phase: 'error', visualPhase: 'error', current: { ...s.current, error: 'Đã dừng.' } });
       patchAssistant(s.runId, { status: 'stopped' });
 
