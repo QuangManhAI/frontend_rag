@@ -2,6 +2,7 @@ import { RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import { useUi, type QualityMode, type Settings } from '../../shared/store/uiStore';
 import type { GlassSetting } from '../../shared/theme/liquidGlass';
+import type { ThemeMode } from '../../shared/theme/tokens';
 import { useGlassLevelValue } from '../../shared/theme/useLiquidLight';
 import { useWorld } from '../../features/world/store/worldStore';
 import { CrawlSettings } from '../../features/crawl/CrawlSettings';
@@ -23,6 +24,11 @@ const GLASS: ReadonlyArray<readonly [GlassSetting, string]> = [
   ['frosted', 'Mờ'],
   ['liquid', 'Liquid'],
 ];
+const THEME: ReadonlyArray<readonly [ThemeMode, string]> = [
+  ['system', 'Hệ thống'],
+  ['light', 'Sáng'],
+  ['dark', 'Tối'],
+];
 const LEVEL_LABEL = ['đục', 'kính mờ', 'phản chiếu', 'khúc xạ', 'WebGL'] as const;
 
 /** Retrieval, display and crawl settings; invalid numbers are rejected (shown inline, never applied). */
@@ -32,6 +38,7 @@ export function SettingsPanel() {
   const categories = useWorld((s) => s.categories);
   const tier = useUi((s) => s.qualityTier);
   const level = useGlassLevelValue();
+  const systemTheme = useUi((s) => s.systemTheme);
   const [draft, setDraft] = useState<Record<NumKey, string>>({ top_k: String(settings.top_k), nprobe: String(settings.nprobe) });
   const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>({});
   if (!open) return null;
@@ -93,6 +100,27 @@ export function SettingsPanel() {
           ))}
         </select>
       </label>
+      <fieldset className="mt-3 text-xs">
+        <legend className="text-[var(--ink-muted)] mb-1">
+          Giao diện{settings.themeMode === 'system' && <span className="mono"> · hệ thống: {systemTheme === 'light' ? 'sáng' : 'tối'}</span>}
+        </legend>
+        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Giao diện">
+          {THEME.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={settings.themeMode === value}
+              aria-pressed={settings.themeMode === value}
+              className="btn justify-center !py-1"
+              data-testid={`theme-${value}`}
+              onClick={() => setFlag({ themeMode: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <fieldset className="mt-3 text-xs">
         <legend className="text-[var(--ink-muted)] mb-1">
           Chất lượng <span className="mono">· đang dùng: {TIER_LABEL[tier]}</span>

@@ -41,6 +41,7 @@ export function Branches() {
       uVeinIntensity: { value: 1 },
       uSelfGlow: { value: 0.2 },
       uChosenColor: { value: new THREE.Color() },
+      uBarkGrain: { value: 0 },
       uIntro: sceneIntro,
     }),
     [markTex, maxId],
@@ -99,6 +100,7 @@ export function Branches() {
           uniform float uVeinIntensity;
           uniform float uSelfGlow;
           uniform vec3 uChosenColor;
+          uniform float uBarkGrain;
           uniform float uIntro;
           varying float vMark;
           varying vec2 vBarkUv;`,
@@ -106,6 +108,11 @@ export function Branches() {
         .replace(
           '#include <color_fragment>',
           `#include <color_fragment>
+          // Wood grain (light theme): wavy dark furrows running along the branch + finer streaks.
+          float bend = sin(vBarkUv.y * 23.0 + sin(vBarkUv.x * 31.4) * 1.3) * 0.035;
+          float furrow = pow(abs(sin((vBarkUv.x + bend) * 6.2831 * 7.0)), 5.0);
+          float streak = 0.5 + 0.5 * sin((vBarkUv.x + bend * 2.0) * 6.2831 * 23.0 + vBarkUv.y * 9.0);
+          diffuseColor.rgb *= 1.0 - uBarkGrain * (0.4 * furrow + 0.1 * streak);
           float rejected = step(1.5, vMark);
           diffuseColor.rgb *= 1.0 - rejected * 0.6;`,
         )
@@ -122,7 +129,7 @@ export function Branches() {
           totalEmissiveRadiance *= uIntro;`,
         );
     };
-    m.customProgramCacheKey = () => 'ancient-tree';
+    m.customProgramCacheKey = () => 'ancient-tree-v2';
     return m;
   }, [uniforms]);
 
@@ -135,13 +142,14 @@ export function Branches() {
       const cat = r.category >= 0 ? hexToRgb(categoryColor(r.category, theme)) : trunk;
       for (let v = r.start; v < r.start + r.count; v++) {
         const t = uv.getY(v);
-        const k = r.depth === 0 ? 0 : r.depth === 1 ? 0.18 + 0.25 * t : 0.4 + 0.4 * t;
+        const k = (r.depth === 0 ? 0 : r.depth === 1 ? 0.18 + 0.25 * t : 0.4 + 0.4 * t) * theme.branchTint;
         color.setXYZ(v, trunk[0] + (cat[0] - trunk[0]) * k, trunk[1] + (cat[1] - trunk[1]) * k, trunk[2] + (cat[2] - trunk[2]) * k);
       }
     }
     color.needsUpdate = true;
     uniforms.uVeinColor.value.copy(toColor(theme.trunkVein));
     uniforms.uVeinIntensity.value = theme.veinIntensity;
+    uniforms.uBarkGrain.value = theme.barkGrain;
     uniforms.uSelfGlow.value = theme.additiveGlow ? 0.22 : 0.04;
     uniforms.uChosenColor.value.copy(toColor(theme.thread)).multiplyScalar(theme.additiveGlow ? 0.8 : 0.5);
   }, [theme, geometry, ranges, uniforms]);

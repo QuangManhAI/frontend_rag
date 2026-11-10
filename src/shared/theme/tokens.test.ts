@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryColor, darkTheme } from './tokens';
+import { categoryColor, darkTheme, lightTheme, resolveTheme, themes } from './tokens';
 
 describe('theme tokens', () => {
   it('has 12 distinct category colors, all hex', () => {
@@ -59,5 +59,67 @@ describe('theme tokens', () => {
     expect(result.current).toBe(darkTheme);
     expect(document.documentElement.dataset.theme).toBe('dark');
     unmount();
+  });
+
+  it('light theme mirrors the dark token set (same keys, 12 distinct petal colors)', () => {
+    expect(Object.keys(lightTheme).sort()).toEqual(Object.keys(darkTheme).sort());
+    expect(new Set(lightTheme.categoryPalette).size).toBe(12);
+    expect(themes.light).toBe(lightTheme);
+    expect(lightTheme.vectorFlowers).toBe(true);
+    expect(lightTheme.stars).toBe(false);
+    expect(darkTheme.vectorFlowers).toBe(false);
+  });
+
+  it('resolveTheme follows the OS only in system mode', () => {
+    expect(resolveTheme('system', 'light')).toBe('light');
+    expect(resolveTheme('system', 'dark')).toBe('dark');
+    expect(resolveTheme('dark', 'light')).toBe('dark');
+    expect(resolveTheme('light', 'dark')).toBe('light');
+  });
+
+  it('useThemeSync follows prefers-color-scheme while the mode is system, and an explicit pick wins', async () => {
+    const { renderHook, act } = await import('@testing-library/react');
+    const { useThemeSync, useTheme } = await import('./useTheme');
+    const { useUi } = await import('../store/uiStore');
+    let light = true;
+    const listeners = new Set<() => void>();
+    const original = globalThis.matchMedia;
+    globalThis.matchMedia = ((query: string) => ({
+      get matches() {
+        return query.includes('light') ? light : false;
+      },
+      media: query,
+      addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+      removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+    })) as unknown as typeof globalThis.matchMedia;
+    try {
+      useUi.getState().updateSettings({ themeMode: 'system' });
+      const { result, unmount } = renderHook(() => {
+        useThemeSync();
+        return useTheme();
+      });
+      expect(result.current).toBe(lightTheme);
+      expect(document.documentElement.dataset.theme).toBe('light');
+      light = false;
+      act(() => listeners.forEach((fn) => fn()));
+      expect(result.current).toBe(darkTheme);
+      act(() => {
+        useUi.getState().updateSettings({ themeMode: 'light' });
+      });
+      expect(result.current).toBe(lightTheme);
+      expect(document.documentElement.style.getPropertyValue('--bg')).toBe(lightTheme.bg);
+      unmount();
+      expect(listeners.size).toBe(0);
+    } finally {
+      globalThis.matchMedia = original;
+      useUi.getState().resetSettings();
+      useUi.getState().setSystemTheme('dark');
+    }
+  });
+
+  it('rejects an unknown theme mode', async () => {
+    const { validateSettings } = await import('../store/uiStore');
+    expect(validateSettings({ themeMode: 'sepia' as never }).themeMode).toBeTruthy();
+    expect(validateSettings({ themeMode: 'light' })).toEqual({});
   });
 });

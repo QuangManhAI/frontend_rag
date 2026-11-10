@@ -12,6 +12,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     viewport: { width: 1440, height: 900 },
+    // The theme follows the OS by default; pin dark so screenshot baselines stay stable (light has its own test).
+    colorScheme: 'dark',
     trace: 'retain-on-failure',
   },
   projects: [
@@ -20,6 +22,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1440, height: 900 },
+        colorScheme: 'dark',
         // Hardware GL where available (macOS Metal); falls back to SwiftShader in CI.
         launchOptions: { args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] },
       },

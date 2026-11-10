@@ -378,6 +378,18 @@ body {
     0 1px 2px color-mix(in srgb, var(--bg) 60%, transparent),
     0 0 10px color-mix(in srgb, var(--bg) 55%, transparent);
 }
+/* Light theme: the lens shows a blue day sky, so white type would wash out — keep the theme's dark ink
+   (inherited from :root) and let the --bg halo above (now a pale sky tone) lift it off bright petals. */
+:root[data-theme="light"][data-lg-level="3"] .glass[data-lgr="true"] {
+  --ink: inherit;
+  --ink-muted: inherit;
+  --ink-faint: inherit;
+}
+/* Light glass is milky, not water-clear: a pale-sky tint keeps dark type readable over the saturated blue. */
+:root[data-theme="light"][data-lg-level="3"] {
+  --lg-tint-regular: 38%;
+  --lg-tint-strong: 52%;
+}
 /* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
 :root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {
   color: var(--ink);

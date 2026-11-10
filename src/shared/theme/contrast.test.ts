@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { composite, contrastRatio, luminance, srgbToLinear } from './contrast';
-import { darkTheme } from './tokens';
+import { darkTheme, lightTheme } from './tokens';
 
 const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
@@ -67,5 +67,32 @@ describe('P21 clear glass stays legible (FE_DESIGN_SYSTEM §10.6)', () => {
     expect(contrastRatio(darkTheme.uiInk, clearControl)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(darkTheme.uiInk, clearHover)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(darkTheme.uiInkMuted, clearControl)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('light theme stays legible (daytime tree)', () => {
+  const t = lightTheme;
+  const panel = composite(t.uiSurfaceStrong, t.bg);
+  const regularPanel = composite(t.glassTint, t.bg);
+  const mix = (c: string, pct: number, base: string) => composite(`${c}${Math.round((pct / 100) * 255).toString(16).padStart(2, '0')}`, base);
+
+  it('ink tiers on the page background', () => {
+    expect(contrastRatio(t.uiInk, t.bg)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(t.uiInkMuted, t.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.uiInkFaint, t.bg)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('dark ink on the milky lens over the blue sky (Liquid Glass level 3: theme ink, --lg-tint-regular 38%)', () => {
+    const lens = mix(t.bg, 38, t.bgHorizon);
+    expect(contrastRatio(t.uiInk, lens)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(t.uiInkMuted, lens)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('accent, danger and warn on panels', () => {
+    expect(contrastRatio(t.uiAccentInk, t.uiAccent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.uiDanger, mix(t.uiDanger, 16, panel))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.uiWarn, mix(t.uiWarn, 16, panel))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.uiInkMuted, composite(t.glassFillHover, panel))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.uiInkMuted, composite(t.glassFill, regularPanel))).toBeGreaterThanOrEqual(4.5);
   });
 });
