@@ -182,6 +182,38 @@ describe('client.ts in live mode (mock fetch)', () => {
     expect(events[0].type).toBe('error');
     expect(events[0].message).toContain('Không kết nối được backend');
   });
+
+  it('streamChat gracefully synthesizes done if tunnel drops after tokens were streamed', async () => {
+    const encoder = new TextEncoder();
+    let step = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        step++;
+        if (step === 1) {
+          controller.enqueue(encoder.encode('data: {"type":"token","text":"Here is the answer [Paper: 1706.03762]."}\n\n'));
+        } else {
+          controller.error(new TypeError('network error'));
+        }
+      },
+    });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+    }) as any;
+
+    const { streamChat } = await import('./client');
+    const ctrl = new AbortController();
+    const events: any[] = [];
+    for await (const ev of streamChat({ query: 'test' }, ctrl.signal)) {
+      events.push(ev);
+    }
+
+    expect(events.length).toBe(2);
+    expect(events[0].type).toBe('token');
+    expect(events[1].type).toBe('done');
+    expect(events[1].citations).toEqual(['1706.03762']);
+  });
 });
 
 describe('API contract of the live client', () => {

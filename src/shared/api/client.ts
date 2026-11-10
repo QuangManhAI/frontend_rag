@@ -6,6 +6,7 @@ import { parseSseBlock, SseBuffer } from './sseParser';
 import { parseVectors } from '../../features/world/api/vectorParser';
 import { API_BASE, MOCK_WORLD, PIPELINE_BASE, USE_MOCK } from './config';
 import { apiFetch } from './http';
+import { useAuth } from '../../features/auth/authStore';
 
 export { API_BASE, MOCK_WORLD, PIPELINE_BASE, USE_MOCK };
 
@@ -187,7 +188,7 @@ function isStreamEvent(v: unknown): v is RagStreamEvent {
   return typeof v === 'object' && v !== null && typeof (v as { type?: unknown }).type === 'string';
 }
 
-/** POST + ReadableStream SSE reader (EventSource cannot POST). Abort ends quietly. */
+/** POST + ReadableStream SSE reader (EventSource cannot POST). Aborting `signal` ends quietly. */
 export async function* streamChat(req: RagRequest, signal: AbortSignal, idempotencyKey?: string): AsyncGenerator<RagStreamEvent> {
   if (USE_MOCK) {
     try {
@@ -202,53 +203,143 @@ export async function* streamChat(req: RagRequest, signal: AbortSignal, idempote
     return;
   }
 
-  let res: Response;
-  try {
-    res = await apiFetch('/rag/chat/stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-      },
-      body: JSON.stringify(req),
-      signal,
-    });
-  } catch (err) {
-    if (isAbort(err)) return;
-    yield { type: 'error', message: `Không kết nối được backend: ${(err as Error).message}` };
-    return;
-  }
-  if (!res.ok || !res.body) {
-    let message = `HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as { message?: unknown };
-      if (typeof body.message === 'string') message = body.message;
-    } catch {
-      /* non-JSON error body */
-    }
-    yield { type: 'error', status: res.status, message };
-    return;
-  }
+  // Signed in + Idempotency-Key: the backend keeps generating when the connection drops and stores
+  // the answer under that key, so a lost stream is resumed by repeating the same POST (it answers
+  // 409 while the first run is still going, then replays the stored answer). Anonymous requests have
+  // no stored answer: repeating them would run the whole pipeline again.
+  const resumable = Boolean(idempotencyKey) && Boolean(useAuth.getState().accessToken);
+  const deadline = Date.now() + RESUME_WINDOW_MS;
+  let streamedText = '';
+  let resuming = false;
+  let lost = '';
 
-  const reader = res.body.getReader();
+  for (;;) {
+    let res: Response;
+    try {
+      res = await apiFetch('/rag/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+        },
+        body: JSON.stringify(req),
+        signal,
+      });
+    } catch (err) {
+      // Only our own signal means "cancelled": the browser can raise an AbortError on its own.
+      if (signal.aborted) return;
+      if (resuming && Date.now() < deadline) {
+        if (!(await pause(RESUME_DELAY_MS, signal))) return;
+        continue;
+      }
+      yield* giveUp(resuming ? lost : `Không kết nối được backend: ${(err as Error).message}`, streamedText);
+      return;
+    }
+    if (!res.ok || !res.body) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = (await res.json()) as { message?: unknown };
+        if (typeof body.message === 'string') message = body.message;
+      } catch {
+        /* non-JSON error body */
+      }
+      // 409: the first run still holds the key. 429: it still holds this user's in-flight slot.
+      const busy = res.status === 429 || (res.status === 409 && message === REQUEST_IN_PROGRESS);
+      if (resuming && busy && Date.now() < deadline) {
+        const retryAfter = Number(res.headers.get('Retry-After')) * 1000;
+        if (!(await pause(Math.max(RESUME_DELAY_MS, retryAfter || 0), signal))) return;
+        continue;
+      }
+      if (resuming) {
+        yield* giveUp(lost, streamedText);
+        return;
+      }
+      yield { type: 'error', status: res.status, message };
+      return;
+    }
+
+    // A resumed stream starts the answer over: drop what the lost one had shown.
+    let restartAnswer = resuming && streamedText.length > 0;
+    try {
+      for await (const ev of readSse(res.body)) {
+        if (!isStreamEvent(ev)) continue;
+        if (ev.type === 'token' || ev.type === 'answer_replaced') {
+          if (restartAnswer) {
+            restartAnswer = false;
+            streamedText = '';
+            yield { type: 'answer_replaced', answer: '' };
+          }
+          if (ev.type === 'token' && typeof ev.text === 'string') streamedText += ev.text;
+          else if (ev.type === 'answer_replaced' && typeof ev.answer === 'string') streamedText = ev.answer;
+        }
+        yield ev;
+        if (ev.type === 'done' || ev.type === 'error') return;
+      }
+      // A proxy can close the response cleanly when its upstream drops: that is a lost stream too.
+      throw new Error('stream closed before done');
+    } catch (err) {
+      if (signal.aborted) return;
+      lost = `Mất kết nối stream: ${(err as Error).message}`;
+      if (resumable && Date.now() < deadline) {
+        console.warn(`[stream] ${lost}: resuming with the same Idempotency-Key`);
+        resuming = true;
+        if (!(await pause(RESUME_DELAY_MS, signal))) return;
+        continue;
+      }
+      yield* giveUp(lost, streamedText);
+      return;
+    }
+  }
+}
+
+/** How long a lost stream is retried: the LLM queue can hold a turn for a few minutes. */
+export const RESUME_WINDOW_MS = 180_000;
+export const RESUME_DELAY_MS = 3_000;
+const REQUEST_IN_PROGRESS = 'request already in progress';
+
+/** Keeps a partly streamed answer (closed with a local `done`), or reports the error. */
+function* giveUp(message: string, streamedText: string): Generator<RagStreamEvent> {
+  if (streamedText.trim().length === 0) {
+    yield { type: 'error', message };
+    return;
+  }
+  const citations = Array.from(
+    new Set(Array.from(streamedText.matchAll(/\[Paper:\s*([^\]]+)\]/g), (m) => m[1].trim())),
+  );
+  yield {
+    type: 'done',
+    citations,
+    timings: { embed_ms: 0, route_ms: 0, search_ms: 0, rerank_ms: 0, llm_ms: 0, total_ms: 0 },
+    session_id: null,
+    message_id: null,
+  };
+}
+
+/** Parsed SSE `data:` payloads of one response body; throws when the connection drops. */
+async function* readSse(body: ReadableStream<Uint8Array>): AsyncGenerator<unknown> {
+  const reader = body.getReader();
   const decoder = new TextDecoder();
   const sse = new SseBuffer();
   try {
     for (;;) {
       const { done, value } = await reader.read();
       const blocks = done ? sse.flush() : sse.push(decoder.decode(value, { stream: true }));
-      for (const block of blocks) {
-        const ev = parseSseBlock<unknown>(block);
-        if (isStreamEvent(ev)) yield ev;
-      }
+      for (const block of blocks) yield parseSseBlock<unknown>(block);
       if (done) return;
     }
-  } catch (err) {
-    if (isAbort(err)) return;
-    yield { type: 'error', message: `Mất kết nối stream: ${(err as Error).message}` };
   } finally {
     reader.releaseLock();
+  }
+}
+
+/** Waits `ms`; false when the signal aborts first. */
+async function pause(ms: number, signal: AbortSignal): Promise<boolean> {
+  try {
+    await sleep(ms, signal);
+    return true;
+  } catch {
+    return false;
   }
 }
 

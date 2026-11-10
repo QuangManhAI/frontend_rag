@@ -16,6 +16,16 @@ const MAX_SESSION_PAGES = 10;
 const MAX_MESSAGE_PAGES = 20;
 const SYNC_REQUEST_TIMEOUT_MS = 4000;
 
+/**
+ * Who the last init() ran for. ChatPanel mounts again whenever the layout swaps the desktop dock for
+ * the mobile sheet (e.g. a docked DevTools narrows the viewport); re-running init() then would reload
+ * the conversation and cancel the answer being streamed.
+ */
+let initializedFor: string | null = null;
+
+/** The chat run in flight (from send() until done/error/stop). */
+const isStreaming = () => !['idle', 'done', 'error'].includes(useRag.getState().phase);
+
 const syncRequest = () => ({ signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS) });
 
 /** Remote sessions into Dexie: only those new or changed since the local copy. */
@@ -100,6 +110,10 @@ export const useSessionStore = create<SessionState>()(
       },
 
       init: async () => {
+        const auth = useAuth.getState();
+        const identity = auth.accessToken ? (auth.user?.id ?? 'signed-in') : 'anonymous';
+        if (initializedFor === identity) return;
+        initializedFor = identity;
         set({ isLoading: true });
         try {
           // 1. Load local sessions from Dexie first (instant cache)
@@ -150,6 +164,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       switchSession: async (sessionId: string) => {
+        // Already showing this session while its answer streams: the live state is newer than Dexie.
+        if (sessionId === get().currentSessionId && isStreaming()) {
+          set({ isHistoryOpen: false });
+          return;
+        }
         set({ currentSessionId: sessionId, isHistoryOpen: false });
 
         // Load messages from Dexie

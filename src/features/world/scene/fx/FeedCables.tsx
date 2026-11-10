@@ -77,6 +77,7 @@ export function FeedCables() {
     u.uConverge.value = 0;
     u.uFadeIn.value = CABLE_FADE;
     u.uMinPx.value = 2.2;
+    u.uSparkle.value = theme.sparkle;
     stream.material.blending = glowBlending(theme);
     stream.material.needsUpdate = true;
   }, [stream, theme]);

@@ -62,12 +62,24 @@ const FRAG = /* glsl */ `
   uniform vec2 uPlug[${MAX_ZONES}];
   uniform float uBody;
   uniform float uRim;
+  uniform float uSparkle;
   varying vec3 vN;
   varying vec3 vV;
   varying vec3 vW;
   varying float vDepth;
   varying float vZone;
   varying float vFace;
+  // Glitter: the glass is cut into ~0.9-unit cells; about one cell in five holds a tiny speck that
+  // flashes on its own rhythm (white-hot, so the bloom turns it into a star).
+  float glitter(vec3 w) {
+    vec3 cell = floor(w * 1.1);
+    vec3 h = fract(sin(vec3(dot(cell, vec3(127.1, 311.7, 74.7)), dot(cell, vec3(269.5, 183.3, 246.1)), dot(cell, vec3(113.5, 271.9, 124.6)))) * 43758.5453);
+    if (h.x < 0.8) return 0.0;
+    vec3 speck = (cell + 0.2 + 0.6 * h) / 1.1;
+    float d = length(w - speck) * 1.1;
+    float flash = pow(max(sin(uTime * (1.5 + h.y * 3.0) + h.z * 40.0), 0.0), 12.0);
+    return exp(-d * d * 90.0) * flash;
+  }
   void main() {
     int z = int(vZone + 0.5);
     vec3 c = uColors[z];
@@ -92,6 +104,11 @@ const FRAG = /* glsl */ `
     if (uLight > 0.5) {
       cover = (uBody * grad + fres * uRim * 0.6 + haze) * (1.0 + glow * 0.5) + rise * 0.25 + plugGlow * 0.25;
       rgb = c * cover + mix(c, vec3(1.0), 0.5) * (rise + plugGlow) * 0.35;
+      // Sparkle: glitter specks plus a moving glint sweeping across the faces.
+      float sweep = pow(max(sin(vW.x * 0.35 + vW.y * 0.5 - vW.z * 0.25 - uTime * 1.3), 0.0), 40.0) * fres;
+      float spark = uSparkle * (glitter(vW) * 3.0 + sweep * 0.9);
+      rgb += vec3(1.0, 0.98, 0.94) * spark;
+      cover += spark * 0.6;
     } else {
       // Several glass faces overlap on screen: keep each one faint so the stack doesn't blow out.
       rgb = c * (uBody * grad * (1.0 + glow) + fres * uRim * grad + haze * 0.4) + mix(c, vec3(1.0), 0.35) * (rise * 0.25 + plugGlow * 0.4);
@@ -189,7 +206,7 @@ export function KnowledgeBlocks() {
       transparent: true,
       depthWrite: false,
       side: THREE.DoubleSide,
-      uniforms: { ...shared, uPlug: { value: Array.from({ length: MAX_ZONES }, () => new THREE.Vector2()) }, uBody: { value: 0.2 }, uRim: { value: 1 } },
+      uniforms: { ...shared, uPlug: { value: Array.from({ length: MAX_ZONES }, () => new THREE.Vector2()) }, uBody: { value: 0.2 }, uRim: { value: 1 }, uSparkle: { value: 0 } },
     });
     const edges = new THREE.ShaderMaterial({ vertexShader: EDGE_VERT, fragmentShader: EDGE_FRAG, transparent: true, depthWrite: false, uniforms: { ...shared, uEdge: { value: 1 } } });
     premultiplied(withSceneIntro(body));
@@ -207,7 +224,9 @@ export function KnowledgeBlocks() {
     materials.body.uniforms.uBody.value = dark ? 0.07 : 0.16;
     materials.body.uniforms.uRim.value = dark ? 0.45 : 0.55;
     materials.edges.uniforms.uEdge.value = dark ? 0.95 : 0.85;
-  }, [theme, zones, shared, materials]);
+    // Reduce motion freezes uTime, which would leave glints stuck on: no sparkle then.
+    materials.body.uniforms.uSparkle.value = reduce ? 0 : theme.sparkle;
+  }, [theme, zones, shared, materials, reduce]);
 
   useEffect(
     () => () => {

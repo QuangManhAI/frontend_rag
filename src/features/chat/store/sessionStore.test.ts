@@ -108,4 +108,35 @@ describe('useSessionStore & Offline-First Dexie persistence', () => {
     expect(useSessionStore.getState().sessions.length).toBe(0);
     expect(useSessionStore.getState().currentSessionId).toBeNull();
   });
+  it('switchSession to the session whose answer is streaming keeps the live run (no reload, no cancel)', async () => {
+    const sessionId = await useSessionStore.getState().createOrGetSession('Câu hỏi đang chạy');
+    await useSessionStore.getState().saveExchangeToDb(
+      sessionId,
+      { id: 'u0', content: 'cũ', created_at: new Date().toISOString() },
+      { id: 'a0', content: 'cũ', status: 'done', created_at: new Date().toISOString() },
+    );
+    const live = [
+      { id: 'u1', role: 'user' as const, content: 'Câu hỏi đang chạy', runId: 1, status: 'done' as const },
+      { id: 'a1', role: 'assistant' as const, content: '', runId: 1, status: 'streaming' as const },
+    ];
+    useRag.setState({ messages: live, runId: 1, phase: 'found' });
+
+    await useSessionStore.getState().switchSession(sessionId);
+
+    expect(useRag.getState().messages).toBe(live);
+    expect(useRag.getState().phase).toBe('found');
+  });
+
+  it('init() runs once per signed-in identity, so a remounted ChatPanel does not reset the chat', async () => {
+    await useSessionStore.getState().init();
+    const sessionId = await useSessionStore.getState().createOrGetSession('Sau init');
+    useSessionStore.setState({ currentSessionId: sessionId });
+    const shown = [{ id: 'u1', role: 'user' as const, content: 'Sau init', runId: 1, status: 'done' as const }];
+    useRag.setState({ messages: shown, runId: 1, phase: 'done' });
+
+    await useSessionStore.getState().init();
+
+    expect(useSessionStore.getState().currentSessionId).toBe(sessionId);
+    expect(useRag.getState().messages).toBe(shown);
+  });
 });

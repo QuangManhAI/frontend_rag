@@ -35,6 +35,7 @@ export function RootRiseParticles() {
     stream.material.uniforms.uSpread.value = 0.4;
     stream.material.uniforms.uTail.value.copy(toColor(theme.sap));
     stream.material.uniforms.uTailMix.value = 0.6;
+    stream.material.uniforms.uSparkle.value = theme.sparkle;
     stream.material.needsUpdate = true;
   }, [theme, stream]);
 

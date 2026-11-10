@@ -13,6 +13,7 @@ import { buildPointGrid, pickNearest, raycastGrid, raycastRange, type PointGrid,
 import { glowBlending, pointScale, toColor } from '../materials';
 import { withSceneIntro } from '../sceneIntro';
 import { CANOPY_FRAG, CANOPY_VERT } from './canopyShader';
+import { SUN_DIR } from '../../lib/sun';
 import { LEGACY_FX, timed } from '../../../../shared/lib/perfProbe';
 
 const PICK_INTERVAL_MS = 30;
@@ -96,6 +97,11 @@ export function VectorCanopy() {
           uMinPx: { value: 1.6 },
           uMaxPx: { value: 16 },
           uTwinkle: { value: 1 },
+          uSizeMul: { value: 1 },
+          uFlower: { value: 0 },
+          uPistil: { value: new THREE.Color() },
+          uSunDir: { value: new THREE.Vector3(...SUN_DIR).normalize() },
+          uSunGlow: { value: 0 },
           uGlow: { value: 1 },
           uOutlineColor: { value: new THREE.Color() },
           uOutline: { value: 0 },
@@ -120,6 +126,10 @@ export function VectorCanopy() {
     material.uniforms.uGlow.value = theme.vectorGlow;
     material.uniforms.uOutline.value = theme.vectorOutlineStrength;
     material.uniforms.uOutlineColor.value.copy(toColor(theme.vectorOutline));
+    material.uniforms.uFlower.value = theme.vectorFlowers ? 1 : 0;
+    material.uniforms.uSizeMul.value = theme.vectorSize;
+    material.uniforms.uPistil.value.copy(toColor(theme.sap));
+    material.uniforms.uSunGlow.value = theme.sunGlow;
     material.blending = glowBlending(theme);
     material.needsUpdate = true;
   }, [theme, geometry, material]);

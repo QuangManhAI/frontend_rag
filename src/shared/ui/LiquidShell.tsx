@@ -1,100 +1,26 @@
 import { Glass as LiquidGlass, type GlassOptics, type GlassProps } from '@samasante/liquid-glass';
 import { cloneElement, type CSSProperties, type ReactElement } from 'react';
 import { useGlassLevel } from '../theme/useLiquidLight';
+import { useTheme } from '../theme/useTheme';
+import type { ThemeName } from '../theme/tokens';
+import { DARK_OPTICS } from './LiquidShell.dark';
+import { LIGHT_OPTICS } from './LiquidShell.light';
 
-/*
- * Optics of the @samasante/liquid-glass lens, one set per floating panel, tuned by hand in the library's
- * settings panel. The library scales them with the panel: `strength` by its diagonal, `curvature` by its short
- * side, so the same numbers bend a 49 px top bar far less than the chat column.
- */
+/** The floating panels that carry a liquid-glass lens. */
+export type LiquidPanel = 'chat' | 'topbar' | 'legend' | 'settings';
 
-/** Chat dock (layout/AppShell.tsx ChatDock), ~410 × 774 px. */
-export const LIQUID_OPTICS_CHAT: Partial<GlassOptics> = {
-  // Refraction
-  strength: 0.2,
-  depth: 0.02,
-  curvature: 0.7,
-  dispersion: 1,
-  // Edge
-  bend: 0,
-  bendWidth: 0.26,
-  // Sheen
-  sheen: 0.5,
-  sheenWidth: 1,
-  specular: 0.6,
-  sheenAngle: 55,
-  // Background
-  glow: 0.3,
-  frost: 7,
-  brightness: 0,
-};
+/** One optics file per theme: LiquidShell.dark.ts (night sky) and LiquidShell.light.ts (clear day sky). */
+const OPTICS: Record<ThemeName, Record<LiquidPanel, Partial<GlassOptics>>> = { dark: DARK_OPTICS, light: LIGHT_OPTICS };
 
-/** Top bar (layout/TopBar.tsx), full width × ~49 px. */
-export const LIQUID_OPTICS_TOPBAR: Partial<GlassOptics> = {
-  // Refraction
-  strength: 0.2,
-  depth: 0.1,
-  curvature: 0.7,
-  dispersion: 1,
-  // Edge
-  bend: 0,
-  bendWidth: 0.26,
-  // Sheen
-  sheen: 0.5,
-  sheenWidth: 1,
-  specular: 0.6,
-  sheenAngle: 55,
-  // Background
-  glow: 0.3,
-  frost: 7,
-  brightness: 0,
-};
+/** A panel's optics for a theme. */
+export function liquidOptics(panel: LiquidPanel, theme: ThemeName): Partial<GlassOptics> {
+  return OPTICS[theme][panel];
+}
 
-/** "Loại bài báo" (layout/CategoryLegend.tsx), ~256 × 280 px. */
-export const LIQUID_OPTICS_LEGEND: Partial<GlassOptics> = {
-  // Refraction
-  strength: 0.2,
-  depth: 0.02,
-  curvature: 0.7,
-  dispersion: 1,
-  // Edge
-  bend: 0,
-  bendWidth: 0.26,
-  // Sheen
-  sheen: 0.5,
-  sheenWidth: 1,
-  specular: 0.6,
-  sheenAngle: 55,
-  // Background
-  glow: 0.3,
-  frost: 7,
-  brightness: 0,
-};
-
-/** Settings (layout/SettingsPanel.tsx), ~320 × 764 px. */
-export const LIQUID_OPTICS_SETTINGS: Partial<GlassOptics> = {
-  // Refraction
-  strength: 0.2,
-  depth: 0.02,
-  curvature: 0.7,
-  dispersion: 1,
-  // Edge
-  bend: 0,
-  bendWidth: 0.26,
-  // Sheen
-  sheen: 0.5,
-  sheenWidth: 1,
-  specular: 0.6,
-  sheenAngle: 55,
-  // Background
-  glow: 0.3,
-  frost: 7,
-  brightness: 0,
-};
-
-/** The library's wrapper with one panel's optics. */
-export function LiquidLens(props: GlassProps & { optics: Partial<GlassOptics> }) {
-  return <LiquidGlass {...props} />;
+/** The library's wrapper with one panel's optics for the active theme. */
+export function LiquidLens({ panel, ...props }: Omit<GlassProps, 'optics'> & { panel: LiquidPanel }) {
+  const theme = useTheme().name;
+  return <LiquidGlass {...props} optics={liquidOptics(panel, theme)} />;
 }
 
 /**
@@ -104,12 +30,12 @@ export function LiquidLens(props: GlassProps & { optics: Partial<GlassOptics> })
  * world. Layout that must move with the glass (width, entry animation) goes on the wrapper via `className`.
  */
 export function LiquidShell({
-  optics,
+  panel,
   className,
   style,
   children,
 }: {
-  optics: Partial<GlassOptics>;
+  panel: LiquidPanel;
   className?: string;
   style?: CSSProperties;
   children: ReactElement<{ 'data-lgr'?: boolean }>;
@@ -117,7 +43,7 @@ export function LiquidShell({
   const liquid = useGlassLevel() === 3;
   if (!liquid) return children;
   return (
-    <LiquidLens optics={optics} className={className} style={style}>
+    <LiquidLens panel={panel} className={className} style={style}>
       {cloneElement(children, { 'data-lgr': true })}
     </LiquidLens>
   );

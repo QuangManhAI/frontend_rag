@@ -66,6 +66,13 @@
   color-scheme: dark;
 }
 
+/* Light theme: no black drop shadows under the panels — over a bright sky they read as a dirty dark halo
+   around the glass. The pane is set off by its own rim light and sheen instead. */
+:root[data-theme="light"] {
+  --shadow-panel: 0 0 0 0 transparent;
+  --shadow-panel-lifted: 0 0 0 0 transparent;
+}
+
 @theme {
   --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -377,6 +384,18 @@ body {
     0 0 1px color-mix(in srgb, var(--bg) 70%, transparent),
     0 1px 2px color-mix(in srgb, var(--bg) 60%, transparent),
     0 0 10px color-mix(in srgb, var(--bg) 55%, transparent);
+}
+/* Light theme: the lens shows a blue day sky, so white type would wash out — keep the theme's dark ink
+   (inherited from :root) and let the --bg halo above (now a pale sky tone) lift it off bright petals. */
+:root[data-theme="light"][data-lg-level="3"] .glass[data-lgr="true"] {
+  --ink: inherit;
+  --ink-muted: inherit;
+  --ink-faint: inherit;
+}
+/* Light glass: clear, with only a thin pale-sky tint (most of the clarity comes from ui/LiquidShell.light.ts); the tint is just enough to keep the dark ink at AA over the saturated blue. */
+:root[data-theme="light"][data-lg-level="3"] {
+  --lg-tint-regular: 20%;
+  --lg-tint-strong: 30%;
 }
 /* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
 :root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {

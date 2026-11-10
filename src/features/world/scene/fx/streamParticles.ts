@@ -24,9 +24,11 @@ const VERT = /* glsl */ `
   uniform float uFadeIn;
   uniform vec3 uTail;
   uniform float uTailMix;
+  uniform float uSparkle;
   varying vec3 vColor;
   varying float vAlpha;
   varying vec2 vUv;
+  varying float vGlint;
 
   vec3 pathAt(float t) {
     float f = clamp(t, 0.0, 1.0) * (uSamples - 1.0);
@@ -40,10 +42,15 @@ const VERT = /* glsl */ `
   void main() {
     float t = (uNow - aStart) / aDur;
     vUv = corner;
+    // Sparkle (light theme): each streak's head flashes on its own rhythm, seeded by its start time
+    // and jitter, ~8% of the time.
+    float seed = fract(aStart * 7.13 + aJit.x * 3.7 + aJit.y * 5.3);
+    vGlint = uSparkle * pow(max(sin(uNow * (4.0 + seed * 6.0) + seed * 80.0), 0.0), 18.0);
     if (t < 0.0 || t > 1.0) {
       gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
       vAlpha = 0.0;
       vColor = vec3(0.0);
+      vGlint = 0.0;
       return;
     }
     // uConverge 1: wide at the start, converging onto the path end; 0: constant width.
@@ -74,6 +81,7 @@ const FRAG = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
   varying vec2 vUv;
+  varying float vGlint;
   uniform float uGain;
   void main() {
     // x: 0 head → 1 tail; y: -1..1 across.
@@ -82,7 +90,11 @@ const FRAG = /* glsl */ `
     float head = pow(clamp(1.0 - vUv.x, 0.0, 1.0), 6.0);
     float a = across * tail * vAlpha;
     if (a < 0.004) discard;
-    gl_FragColor = vec4(vColor * (0.8 + 1.4 * head * across) * uGain, a);
+    vec3 col = vColor * (0.8 + 1.4 * head * across) * uGain;
+    // Glint: the head turns white-hot (above 1.0, so the bloom pass gives it a star-like glare).
+    float g = vGlint * head * across * vAlpha;
+    col += vec3(1.0, 0.98, 0.92) * g * 3.0;
+    gl_FragColor = vec4(col, max(a, min(g, 1.0)));
   }
 `;
 
@@ -155,6 +167,7 @@ export class StreamParticles {
         uTail: { value: new THREE.Color() },
         uTailMix: { value: 0 },
         uGain: { value: 1 },
+        uSparkle: { value: 0 },
       },
     }));
     this.object = new THREE.Mesh(this.geometry, this.material);

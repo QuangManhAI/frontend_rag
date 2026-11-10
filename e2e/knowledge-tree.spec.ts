@@ -11,10 +11,9 @@ test('a. world loads and the legend lists every category', async ({ page }) => {
   await expect(page.locator('canvas')).toBeVisible();
 });
 
-test('b. dark-only layout: year slider, labels and crawl live in the settings', async ({ page }) => {
+test('b. layout: year slider, labels and crawl live in the settings', async ({ page }) => {
   await openWorld(page);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.getByTestId('theme-toggle')).toHaveCount(0);
   await expect(page.getByTestId('nav-overview')).toHaveCount(0);
   // Branch labels are off until enabled in the settings; the year slider and crawl panel live there.
   await expect(page.locator('.label3d')).toHaveCount(0);
@@ -26,6 +25,25 @@ test('b. dark-only layout: year slider, labels and crawl live in the settings', 
   await expect(settings.getByTestId('crawl-hud')).toBeVisible();
   await page.getByLabel('Hiện nhãn chủ đề trên nhánh').check();
   await expect(page.locator('.label3d').first()).toBeAttached();
+});
+
+test('b2. theme follows the OS scheme until the user picks one in the settings', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await openWorld(page);
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  await page.getByTestId('settings-toggle').click();
+  await page.getByTestId('theme-light').click();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByTestId('theme-light')).toHaveAttribute('aria-checked', 'true');
+  // The pick survives a reload and wins over the (dark) OS scheme from the first paint.
+  await page.reload();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.getByTestId('settings-toggle').click();
+  await page.getByTestId('theme-system').click();
+  await expect(html).toHaveAttribute('data-theme', 'dark');
 });
 
 test('c. a question streams an answer, frames the best result, then pulls back and spotlights the ranks', async ({ page }) => {

@@ -3,7 +3,7 @@ import { ChatPanel, ChatReopenButton } from '../../features/chat/components/Chat
 import { useUi } from '../../shared/store/uiStore';
 import { useGlassLevel } from '../../shared/theme/useLiquidLight';
 import { Glass } from '../../shared/ui/Glass';
-import { LIQUID_OPTICS_CHAT, LiquidLens } from '../../shared/ui/LiquidShell';
+import { LiquidLens } from '../../shared/ui/LiquidShell';
 import { introDelay } from './introDelay';
 
 /**
@@ -39,11 +39,11 @@ export function ChatDock() {
 
   if (liquid) {
     // The library's material wrapper carries the backdrop lens, so it is the box that slides; the dock inside
-    // keeps its markup, tokens and rim light but drops its own backdrop filter (index.css [data-lgr]; optics in ui/LiquidShell.tsx): a
+    // keeps its markup, tokens and rim light but drops its own backdrop filter (index.css [data-lgr]; optics in ui/LiquidShell.dark.ts / .light.ts): a
     // backdrop-filtered child of a backdrop-filtered box would only see the box, not the world.
     return (
       <LiquidLens
-        optics={LIQUID_OPTICS_CHAT}
+        panel="chat"
         className={`w-[32vw] min-w-[340px] max-w-[520px] h-full ${slide}`}
         style={slideStyle}
         aria-hidden={closing || undefined}

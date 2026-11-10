@@ -12,6 +12,7 @@ import { tubeAlongPath } from '../../lib/treeGeometry';
 import { toColor } from '../materials';
 import { introBrightness, sceneIntro } from '../sceneIntro';
 import { buildTrunk, TRUNK_TOP_RADIUS } from './Trunk';
+import { SUN_DIR } from '../../lib/sun';
 
 /**
  * Trunk + every branch/twig in ONE mesh. Glowing sap veins and router highlights are done in
@@ -41,6 +42,10 @@ export function Branches() {
       uVeinIntensity: { value: 1 },
       uSelfGlow: { value: 0.2 },
       uChosenColor: { value: new THREE.Color() },
+      uBarkGrain: { value: 0 },
+      uSunView: { value: new THREE.Vector3(0, 0, 1) },
+      uSunColor: { value: new THREE.Color() },
+      uSunGlow: { value: 0 },
       uIntro: sceneIntro,
     }),
     [markTex, maxId],
@@ -99,6 +104,10 @@ export function Branches() {
           uniform float uVeinIntensity;
           uniform float uSelfGlow;
           uniform vec3 uChosenColor;
+          uniform float uBarkGrain;
+          uniform vec3 uSunView;
+          uniform vec3 uSunColor;
+          uniform float uSunGlow;
           uniform float uIntro;
           varying float vMark;
           varying vec2 vBarkUv;`,
@@ -106,6 +115,11 @@ export function Branches() {
         .replace(
           '#include <color_fragment>',
           `#include <color_fragment>
+          // Wood grain (light theme): wavy dark furrows running along the branch + finer streaks.
+          float bend = sin(vBarkUv.y * 23.0 + sin(vBarkUv.x * 31.4) * 1.3) * 0.035;
+          float furrow = pow(abs(sin((vBarkUv.x + bend) * 6.2831 * 7.0)), 5.0);
+          float streak = 0.5 + 0.5 * sin((vBarkUv.x + bend * 2.0) * 6.2831 * 23.0 + vBarkUv.y * 9.0);
+          diffuseColor.rgb *= 1.0 - uBarkGrain * (0.4 * furrow + 0.1 * streak);
           float rejected = step(1.5, vMark);
           diffuseColor.rgb *= 1.0 - rejected * 0.6;`,
         )
@@ -119,10 +133,17 @@ export function Branches() {
           totalEmissiveRadiance += uVeinColor * uVeinIntensity * vein * flow * (1.0 + chosen * 1.2) * (1.0 - rejected * 0.85);
           totalEmissiveRadiance += vColor.rgb * uSelfGlow * (1.0 - rejected * 0.8);
           totalEmissiveRadiance += uChosenColor * chosen * (0.3 + 0.15 * sin(uTime * 5.0));
+          // Day sunlight that depends on the view: a rim of light along the silhouette, much stronger when
+          // the tree stands between the camera and the sun, plus a soft sheen on bark facing the sun.
+          vec3 eyeV = normalize(vViewPosition);
+          float rimL = pow(1.0 - clamp(dot(normal, eyeV), 0.0, 1.0), 3.0);
+          float backL = pow(max(dot(-eyeV, uSunView), 0.0), 3.0);
+          float faceL = pow(max(dot(normal, uSunView), 0.0), 2.0);
+          totalEmissiveRadiance += uSunColor * uSunGlow * (rimL * (0.18 + 1.2 * backL) + faceL * 0.12) * (1.0 - rejected * 0.7);
           totalEmissiveRadiance *= uIntro;`,
         );
     };
-    m.customProgramCacheKey = () => 'ancient-tree';
+    m.customProgramCacheKey = () => 'ancient-tree-v3';
     return m;
   }, [uniforms]);
 
@@ -135,13 +156,16 @@ export function Branches() {
       const cat = r.category >= 0 ? hexToRgb(categoryColor(r.category, theme)) : trunk;
       for (let v = r.start; v < r.start + r.count; v++) {
         const t = uv.getY(v);
-        const k = r.depth === 0 ? 0 : r.depth === 1 ? 0.18 + 0.25 * t : 0.4 + 0.4 * t;
+        const k = (r.depth === 0 ? 0 : r.depth === 1 ? 0.18 + 0.25 * t : 0.4 + 0.4 * t) * theme.branchTint;
         color.setXYZ(v, trunk[0] + (cat[0] - trunk[0]) * k, trunk[1] + (cat[1] - trunk[1]) * k, trunk[2] + (cat[2] - trunk[2]) * k);
       }
     }
     color.needsUpdate = true;
     uniforms.uVeinColor.value.copy(toColor(theme.trunkVein));
     uniforms.uVeinIntensity.value = theme.veinIntensity;
+    uniforms.uBarkGrain.value = theme.barkGrain;
+    uniforms.uSunColor.value.copy(toColor(theme.sunColor));
+    uniforms.uSunGlow.value = theme.sunGlow;
     uniforms.uSelfGlow.value = theme.additiveGlow ? 0.22 : 0.04;
     uniforms.uChosenColor.value.copy(toColor(theme.thread)).multiplyScalar(theme.additiveGlow ? 0.8 : 0.5);
   }, [theme, geometry, ranges, uniforms]);
@@ -160,8 +184,9 @@ export function Branches() {
     markTex.dispose();
   }, [geometry, material, markTex]);
 
-  useFrame((_, dt) => {
+  useFrame(({ camera }, dt) => {
     if (!reduce) uniforms.uTime.value += dt;
+    if (uniforms.uSunGlow.value > 0) uniforms.uSunView.value.set(...SUN_DIR).transformDirection(camera.matrixWorldInverse);
     // Intro: dark silhouette → full color (the glow above is scaled by uIntro in the shader).
     if (material.color.r !== 1 || sceneIntro.value < 1) material.color.setScalar(introBrightness(sceneIntro.value));
   });

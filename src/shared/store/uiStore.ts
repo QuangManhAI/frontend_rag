@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { GLASS_SETTINGS, type GlassSetting } from '../theme/liquidGlass';
+import { THEME_MODES, type ThemeMode, type ThemeName } from '../theme/tokens';
 import type { CitationCheck, GroundedChunk } from '../types/rag';
 import type { Vec3 } from '../types/world';
 import type { CameraMode } from '../../features/world/lib/cameraPresets';
@@ -24,6 +25,8 @@ export interface Settings {
   showBranchLabels: boolean;
   /** Glass effect: auto picks the Liquid Glass level from the device (FE_DESIGN_SYSTEM §10.5). */
   glass: GlassSetting;
+  /** Light / dark, or follow the OS (`prefers-color-scheme`). */
+  themeMode: ThemeMode;
 }
 
 /** Which answer a focused paper is judged against (its own message's context). */
@@ -56,6 +59,15 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+/** The OS color scheme; dark when it cannot be read. */
+export function systemTheme(): ThemeName {
+  try {
+    return globalThis.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   quality: 'auto',
   top_k: 5,
@@ -66,6 +78,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reduceMotion: false,
   showBranchLabels: false,
   glass: 'auto',
+  themeMode: 'system',
 };
 
 export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Settings, string>> {
@@ -74,6 +87,7 @@ export function validateSettings(s: Partial<Settings>): Partial<Record<keyof Set
   if (s.nprobe !== undefined && (!Number.isInteger(s.nprobe) || s.nprobe < 1 || s.nprobe > 6)) errors.nprobe = 'nprobe phải là số nguyên từ 1 đến 6';
   if (s.quality !== undefined && !['auto', 'high', 'low'].includes(s.quality)) errors.quality = 'Chất lượng không hợp lệ';
   if (s.glass !== undefined && !GLASS_SETTINGS.includes(s.glass)) errors.glass = 'Hiệu ứng kính không hợp lệ';
+  if (s.themeMode !== undefined && !THEME_MODES.includes(s.themeMode)) errors.themeMode = 'Giao diện không hợp lệ';
   return errors;
 }
 
@@ -102,6 +116,8 @@ interface UiState {
   highlightLabel: HighlightLabel | null;
   maxYear: number | null;
   settings: Settings;
+  /** OS color scheme, kept live by useThemeSync (used when themeMode is 'system'). */
+  systemTheme: ThemeName;
   /** Current render tier (driven by the quality mode / PerformanceMonitor). */
   qualityTier: QualityTier;
   chatOpen: boolean;
@@ -120,6 +136,7 @@ interface UiState {
   setChatOpen: (open: boolean) => void;
   setQualityTier: (tier: QualityTier) => void;
   setSettingsOpen: (open: boolean) => void;
+  setSystemTheme: (theme: ThemeName) => void;
 }
 
 export const useUi = create<UiState>((set, get) => ({
@@ -135,6 +152,7 @@ export const useUi = create<UiState>((set, get) => ({
   highlightLabel: null,
   maxYear: null,
   settings: initialSettings(),
+  systemTheme: systemTheme(),
   qualityTier: 0,
   chatOpen: true,
   settingsOpen: false,
@@ -197,4 +215,7 @@ export const useUi = create<UiState>((set, get) => ({
     if (get().qualityTier !== qualityTier) set({ qualityTier });
   },
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  setSystemTheme: (systemTheme) => {
+    if (get().systemTheme !== systemTheme) set({ systemTheme });
+  },
 }));

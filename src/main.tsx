@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './app/App';
 import { applyCssVars } from './shared/theme/applyCssVars';
-import { darkTheme } from './shared/theme/tokens';
+import { themes } from './shared/theme/tokens';
+import { currentThemeName } from './shared/theme/useTheme';
 import { useUi } from './shared/store/uiStore';
 import { PERF_ENABLED, perfStats } from './shared/lib/perfProbe';
 import './index.css';
@@ -14,8 +15,8 @@ if (PERF_ENABLED) {
   });
 }
 
-// Paint the theme before React mounts.
-applyCssVars(darkTheme);
+// Paint the resolved theme (saved mode or OS preference) before React mounts: no dark→light flash.
+applyCssVars(themes[currentThemeName()]);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
