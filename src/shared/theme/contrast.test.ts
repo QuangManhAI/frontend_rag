@@ -82,8 +82,8 @@ describe('light theme stays legible (daytime tree)', () => {
     expect(contrastRatio(t.uiInkFaint, t.bg)).toBeGreaterThanOrEqual(3);
   });
 
-  it('dark ink on the milky lens over the blue sky (Liquid Glass level 3: theme ink, --lg-tint-regular 38%)', () => {
-    const lens = mix(t.bg, 38, t.bgHorizon);
+  it('dark ink on the milky lens over the blue sky (Liquid Glass level 3: theme ink, --lg-tint-regular 20%)', () => {
+    const lens = mix(t.bg, 20, t.bgHorizon);
     expect(contrastRatio(t.uiInk, lens)).toBeGreaterThanOrEqual(7);
     expect(contrastRatio(t.uiInkMuted, lens)).toBeGreaterThanOrEqual(4.5);
   });

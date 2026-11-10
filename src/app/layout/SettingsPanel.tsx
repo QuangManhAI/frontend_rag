@@ -8,7 +8,7 @@ import { useWorld } from '../../features/world/store/worldStore';
 import { CrawlSettings } from '../../features/crawl/CrawlSettings';
 import { YearSlider } from './YearSlider';
 import { Glass } from '../../shared/ui/Glass';
-import { LIQUID_OPTICS_SETTINGS, LiquidShell } from '../../shared/ui/LiquidShell';
+import { LiquidShell } from '../../shared/ui/LiquidShell';
 
 type NumKey = 'top_k' | 'nprobe';
 
@@ -52,7 +52,7 @@ export function SettingsPanel() {
   const setFlag = (patch: Partial<Settings>) => useUi.getState().updateSettings(patch);
 
   return (
-    <LiquidShell optics={LIQUID_OPTICS_SETTINGS}>
+    <LiquidShell panel="settings">
     <Glass material="strong" refract="settings" className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden p-4 text-sm fade-in" role="dialog" aria-label="Cài đặt" data-testid="settings-panel">
       <div className="flex items-center mb-3">
         <h2 className="font-semibold">Cài đặt</h2>

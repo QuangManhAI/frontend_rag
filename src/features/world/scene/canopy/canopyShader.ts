@@ -24,16 +24,22 @@ export const CANOPY_VERT = /* glsl */ `
   uniform float uTwinkle;
   uniform float uSizeMul;
   uniform float uFlower;
+  uniform vec3 uSunDir;
+  uniform float uSunGlow;
   varying vec3 vColor;
   varying float vAlpha;
   varying float vState;
   varying float vFoot;
   varying float vPhase;
   varying float vGlint;
+  varying vec3 vSunV;
+  varying float vBack;
 
   void main() {
     vPhase = phase;
     vGlint = 0.0;
+    vSunV = vec3(0.0, 0.0, 1.0);
+    vBack = 0.0;
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     // Frustum & near-plane culling: prune points behind camera plane
     if (mv.z >= -0.1) {
@@ -93,6 +99,13 @@ export const CANOPY_VERT = /* glsl */ `
     if (st < 1.5 && uFlower < 0.5) alpha *= clamp(10.0 / max(px / uPixelRatio, 1.0), 0.4, 1.0);
     // Halo footprint: the faint tail beyond 80% of the radius is not rasterised (fewer blended
     // fragments into the bloom target); the focused point keeps its full outer ring.
+    // Sunlight (flowers): the sun's direction in view space drives the petal highlight, and looking
+    // toward the sun lights the petals from behind (translucency), so the crown brightens as it is orbited.
+    if (uFlower > 0.5) {
+      vSunV = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
+      vec3 toPoint = normalize((modelMatrix * vec4(position, 1.0)).xyz - cameraPosition);
+      vBack = pow(max(dot(toPoint, uSunDir), 0.0), 5.0) * uSunGlow;
+    }
     vFoot = st > 3.5 ? 1.0 : uFootprint;
     gl_PointSize = min(px * vFoot, 48.0 * uPixelRatio);
     gl_Position = clip;
@@ -117,6 +130,8 @@ export const CANOPY_FRAG = /* glsl */ `
   varying float vFoot;
   varying float vPhase;
   varying float vGlint;
+  varying vec3 vSunV;
+  varying float vBack;
 
   void main() {
     vec2 c = gl_PointCoord - 0.5;
@@ -137,10 +152,15 @@ export const CANOPY_FRAG = /* glsl */ `
       vec2 q = c * 2.0;
       float rr = clamp(r / edge, 0.0, 1.0);
       vec3 n = normalize(vec3(q * 0.85, sqrt(1.0 - rr * rr) + 0.3));
-      vec3 sunL = normalize(vec3(-0.42, -0.55, 0.72));
-      float spec = pow(max(dot(n, normalize(sunL + vec3(0.0, 0.0, 1.0))), 0.0), 26.0);
-      col *= 0.82 + 0.3 * max(dot(n, sunL), 0.0);
+      // Light comes from the real sun (view space; gl_PointCoord's y points down). When the sun is behind
+      // the flower it still grazes the dome from its side, weaker.
+      float front = clamp(vSunV.z, 0.0, 1.0);
+      vec3 sunL = normalize(vec3(vSunV.x, -vSunV.y, max(vSunV.z, 0.2)));
+      float spec = pow(max(dot(n, normalize(sunL + vec3(0.0, 0.0, 1.0))), 0.0), 26.0) * (0.45 + 0.75 * front);
+      col *= 0.8 + 0.32 * max(dot(n, sunL), 0.0);
       col += vec3(1.0) * spec * 0.6;
+      // Back-lit petals: light passing through them glows warm, strongest on the thin edges.
+      col += (vColor * 0.7 + vec3(0.32, 0.28, 0.18)) * vBack * (0.55 + 0.8 * smoothstep(0.55, 1.0, rr));
       float pistil = 1.0 - smoothstep(0.14, 0.14 + aa, r);
       col = mix(col, uPistil * (1.0 + 0.5 * spec), pistil);
       // Sparkle: a four-point star (plus a soft core) when this flower catches the sun.

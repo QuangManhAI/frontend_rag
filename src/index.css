@@ -66,6 +66,13 @@
   color-scheme: dark;
 }
 
+/* Light theme: no black drop shadows under the panels — over a bright sky they read as a dirty dark halo
+   around the glass. The pane is set off by its own rim light and sheen instead. */
+:root[data-theme="light"] {
+  --shadow-panel: 0 0 0 0 transparent;
+  --shadow-panel-lifted: 0 0 0 0 transparent;
+}
+
 @theme {
   --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -385,10 +392,10 @@ body {
   --ink-muted: inherit;
   --ink-faint: inherit;
 }
-/* Light glass is milky, not water-clear: a pale-sky tint keeps dark type readable over the saturated blue. */
+/* Light glass: clear, with only a thin pale-sky tint (most of the clarity comes from ui/LiquidShell.light.ts); the tint is just enough to keep the dark ink at AA over the saturated blue. */
 :root[data-theme="light"][data-lg-level="3"] {
-  --lg-tint-regular: 38%;
-  --lg-tint-strong: 52%;
+  --lg-tint-regular: 20%;
+  --lg-tint-strong: 30%;
 }
 /* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
 :root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {

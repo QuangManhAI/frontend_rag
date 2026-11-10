@@ -14,6 +14,12 @@ export interface ThemeTokens {
   /** Daylight sky only: whitish haze hugging the horizon (aerial perspective) and the sun's glow. */
   daySky: boolean;
   skyHaze: string;
+  /** Sunlight color (day: the visible sun, its key light and the rim/back-light glow on the tree). */
+  sunColor: string;
+  /** Strength of the view-dependent sunlight on bark and petals (0 = none, night). */
+  sunGlow: number;
+  /** Glints on the rising particle streams and glitter in the knowledge blocks (0 = off). */
+  sparkle: number;
   fog: string;
   fogNear: number;
   fogFar: number;
@@ -90,6 +96,9 @@ export const darkTheme: ThemeTokens = {
   bgHorizon: '#24123f',
   daySky: false,
   skyHaze: '#24123f',
+  sunColor: '#ffffff',
+  sunGlow: 0,
+  sparkle: 0,
   fog: '#1a1033',
   fogNear: 220,
   fogFar: 620,
@@ -161,21 +170,26 @@ export const darkTheme: ThemeTokens = {
 export const lightTheme: ThemeTokens = {
   name: 'light',
   bg: '#d6eafb',
-  bgTop: '#1a5cc2',
-  bgHorizon: '#7fb8ec',
+  bgTop: '#2a72d6',
+  bgHorizon: '#8cc5f2',
   daySky: true,
-  skyHaze: '#e3f0fb',
+  skyHaze: '#e6f3fc',
+  sunColor: '#fff1d6',
+  sunGlow: 1,
+  sparkle: 1,
   fog: '#a9cff2',
   fogNear: 260,
   fogFar: 720,
-  groundBase: '#dbe8cf',
-  groundLine: '#8fae7c',
-  tileSaturation: 0.85,
-  groundOpacity: 0.96,
-  groundSeeThrough: 0.3,
+  // Glass platform: a pale aqua pane the sky shows through, with white seams.
+  groundBase: '#e8f6fd',
+  groundLine: '#ffffff',
+  tileSaturation: 0.95,
+  groundOpacity: 0.55,
+  groundSeeThrough: 0.25,
   trunk: '#6b4a2e',
-  trunkVein: '#e8b86a',
-  veinIntensity: 0.18,
+  // Same flowing sap veins as the night tree, a deeper aqua so they read on brown bark in daylight.
+  trunkVein: '#3fe0f0',
+  veinIntensity: 1.15,
   barkGrain: 1,
   branchTint: 0.22,
   vectorFlowers: true,

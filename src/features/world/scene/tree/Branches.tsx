@@ -12,6 +12,7 @@ import { tubeAlongPath } from '../../lib/treeGeometry';
 import { toColor } from '../materials';
 import { introBrightness, sceneIntro } from '../sceneIntro';
 import { buildTrunk, TRUNK_TOP_RADIUS } from './Trunk';
+import { SUN_DIR } from '../../lib/sun';
 
 /**
  * Trunk + every branch/twig in ONE mesh. Glowing sap veins and router highlights are done in
@@ -42,6 +43,9 @@ export function Branches() {
       uSelfGlow: { value: 0.2 },
       uChosenColor: { value: new THREE.Color() },
       uBarkGrain: { value: 0 },
+      uSunView: { value: new THREE.Vector3(0, 0, 1) },
+      uSunColor: { value: new THREE.Color() },
+      uSunGlow: { value: 0 },
       uIntro: sceneIntro,
     }),
     [markTex, maxId],
@@ -101,6 +105,9 @@ export function Branches() {
           uniform float uSelfGlow;
           uniform vec3 uChosenColor;
           uniform float uBarkGrain;
+          uniform vec3 uSunView;
+          uniform vec3 uSunColor;
+          uniform float uSunGlow;
           uniform float uIntro;
           varying float vMark;
           varying vec2 vBarkUv;`,
@@ -126,10 +133,17 @@ export function Branches() {
           totalEmissiveRadiance += uVeinColor * uVeinIntensity * vein * flow * (1.0 + chosen * 1.2) * (1.0 - rejected * 0.85);
           totalEmissiveRadiance += vColor.rgb * uSelfGlow * (1.0 - rejected * 0.8);
           totalEmissiveRadiance += uChosenColor * chosen * (0.3 + 0.15 * sin(uTime * 5.0));
+          // Day sunlight that depends on the view: a rim of light along the silhouette, much stronger when
+          // the tree stands between the camera and the sun, plus a soft sheen on bark facing the sun.
+          vec3 eyeV = normalize(vViewPosition);
+          float rimL = pow(1.0 - clamp(dot(normal, eyeV), 0.0, 1.0), 3.0);
+          float backL = pow(max(dot(-eyeV, uSunView), 0.0), 3.0);
+          float faceL = pow(max(dot(normal, uSunView), 0.0), 2.0);
+          totalEmissiveRadiance += uSunColor * uSunGlow * (rimL * (0.18 + 1.2 * backL) + faceL * 0.12) * (1.0 - rejected * 0.7);
           totalEmissiveRadiance *= uIntro;`,
         );
     };
-    m.customProgramCacheKey = () => 'ancient-tree-v2';
+    m.customProgramCacheKey = () => 'ancient-tree-v3';
     return m;
   }, [uniforms]);
 
@@ -150,6 +164,8 @@ export function Branches() {
     uniforms.uVeinColor.value.copy(toColor(theme.trunkVein));
     uniforms.uVeinIntensity.value = theme.veinIntensity;
     uniforms.uBarkGrain.value = theme.barkGrain;
+    uniforms.uSunColor.value.copy(toColor(theme.sunColor));
+    uniforms.uSunGlow.value = theme.sunGlow;
     uniforms.uSelfGlow.value = theme.additiveGlow ? 0.22 : 0.04;
     uniforms.uChosenColor.value.copy(toColor(theme.thread)).multiplyScalar(theme.additiveGlow ? 0.8 : 0.5);
   }, [theme, geometry, ranges, uniforms]);
@@ -168,8 +184,9 @@ export function Branches() {
     markTex.dispose();
   }, [geometry, material, markTex]);
 
-  useFrame((_, dt) => {
+  useFrame(({ camera }, dt) => {
     if (!reduce) uniforms.uTime.value += dt;
+    if (uniforms.uSunGlow.value > 0) uniforms.uSunView.value.set(...SUN_DIR).transformDirection(camera.matrixWorldInverse);
     // Intro: dark silhouette → full color (the glow above is scaled by uIntro in the shader).
     if (material.color.r !== 1 || sceneIntro.value < 1) material.color.setScalar(introBrightness(sceneIntro.value));
   });
