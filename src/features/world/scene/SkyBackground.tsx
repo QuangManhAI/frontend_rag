@@ -1,8 +1,9 @@
 import { Stars } from '@react-three/drei';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useTheme } from '../../../shared/theme/useTheme';
+import { useUi } from '../../../shared/store/uiStore';
 import { SUN_DIR } from '../lib/sun';
 import { toColor } from './materials';
 
@@ -24,43 +25,120 @@ const SKY_FRAG = /* glsl */ `
   uniform vec3 uHaze;
   uniform vec3 uSunDir;
   uniform vec3 uSunColor;
+  uniform float uTime;
   varying vec3 vDir;
   varying vec3 vView;
+
+  // Fast branchless 2D value noise (ALU only, 0 VRAM bandwidth)
+  float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+
+  float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash21(i + vec2(0.0, 0.0)), hash21(i + vec2(1.0, 0.0)), u.x),
+      mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x),
+      u.y
+    );
+  }
+
+  const mat2 ROT = mat2(0.80, 0.60, -0.60, 0.80);
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    v += 0.5000 * vnoise(p); p = ROT * p * 2.02;
+    v += 0.2500 * vnoise(p); p = ROT * p * 2.03;
+    v += 0.1250 * vnoise(p);
+    return v;
+  }
+
   void main() {
     vec3 d = uDay > 0.5 ? normalize(vView) : normalize(vDir);
     float h = d.y;
     if (uDay < 0.5) {
       vec3 c = h > 0.0 ? mix(uHorizon, uTop, pow(clamp(h, 0.0, 1.0), 0.55)) : mix(uHorizon, uBottom, pow(clamp(-h, 0.0, 1.0), 0.4));
+      // Dither away 8-bit banding in the smooth gradient.
+      c += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
       gl_FragColor = vec4(c, 1.0);
       return;
     }
-    // Clear daytime sky. Rayleigh scattering: the air path shrinks fast above the horizon, so the blue
-    // deepens within a few degrees and saturates toward the zenith.
+
+    // --- DAYTIME SKY ---
+    // Rayleigh scattering: blue deepens toward the zenith.
     float up = max(h, 0.0);
-    vec3 c = mix(uHorizon, uTop, 1.0 - exp(-up * 5.5));
-    // The world floats in the sky: below the horizon the same clear blue returns, a little lighter.
+    vec3 c = mix(uHorizon, uTop, 1.0 - exp(-up * 5.0));
+
+    // Below the horizon: soft blue-haze gradient.
     float down = max(-h, 0.0);
-    c = h < 0.0 ? mix(uHorizon, mix(uTop, uHorizon, 0.35), 1.0 - exp(-down * 4.0)) : c;
-    // Aerial perspective: a thin, almost white haze line right at the horizon.
-    c = mix(c, uHaze, exp(-abs(h) * 28.0) * 0.7);
-    // The sun lifts the whole sky: a broad, bright blue-white bloom over a large part of the dome …
+    c = h < 0.0 ? mix(uHorizon, mix(uTop, uHorizon, 0.35), 1.0 - exp(-down * 3.8)) : c;
+
+    // Aerial perspective: warm, golden-white haze line along the horizon.
+    c = mix(c, uHaze, exp(-abs(h) * 24.0) * 0.75);
+
+    // Sun forward scattering (Mie aureole & corona) + warm golden horizon bloom
     float mu = max(dot(d, uSunDir), 0.0);
-    c = mix(c, mix(uHorizon, vec3(1.0), 0.45), pow(mu, 3.0) * 0.55);
-    // … Mie forward scattering (aureole + corona) …
-    c += uSunColor * (pow(mu, 24.0) * 0.35 + pow(mu, 260.0) * 0.9);
-    // … and the disc itself, far above 1.0 so the bloom pass turns it into a glare.
+    vec3 warmSunGlow = mix(uHorizon, vec3(1.0, 0.92, 0.78), 0.6);
+    c = mix(c, warmSunGlow, pow(mu, 3.2) * 0.65);
+    c += uSunColor * (pow(mu, 20.0) * 0.4 + pow(mu, 240.0) * 1.1);
+
+    // Sun disc glare for bloom pass
     float disc = smoothstep(0.99955, 0.99975, mu);
-    c = mix(c, uSunColor * 4.0, disc);
+    c = mix(c, uSunColor * 4.5, disc);
+
+    // --- PROCEDURAL CLOUD LAYER (Analytical Planar Projection) ---
+    float denom = max(abs(h), 0.04);
+    vec2 wind = vec2(uTime * 0.012, uTime * 0.006);
+    vec2 skyUV = (d.xz / denom) * 0.28 + wind;
+
+    float n = fbm(skyUV);
+    // Billowy cumulus cloud density
+    float density = smoothstep(0.42, 0.80, n);
+
+    if (density > 0.001) {
+      // Pseudo-3D sunlight scattering & self-shadowing
+      vec2 sunOffset = normalize(uSunDir.xz + vec2(0.0001)) * 0.09;
+      float nSun = fbm(skyUV + sunOffset);
+      float selfShadow = clamp((n - nSun) * 2.4, -0.25, 0.75);
+
+      // Silver lining facing the sun
+      float silverLining = pow(mu, 3.5) * 1.35;
+
+      vec3 cloudSun = mix(vec3(1.0, 0.99, 0.97), uSunColor, 0.5) * (1.0 + silverLining);
+      vec3 cloudShade = mix(uHorizon * 0.7, vec3(0.60, 0.70, 0.85), 0.55);
+      vec3 cloudColor = mix(cloudShade, cloudSun, clamp(0.52 + selfShadow + silverLining * 0.45, 0.0, 1.0));
+
+      if (h > 0.0) {
+        // Upper hemisphere clouds: smooth horizon fade & distance fade
+        float cloudFade = smoothstep(0.015, 0.22, h);
+        float distFade = exp(-length(d.xz / denom) * 0.07);
+        float cloudAlpha = density * cloudFade * distFade * 0.88;
+        c = mix(c, cloudColor, cloudAlpha);
+      } else {
+        // Lower hemisphere soft misty water/ground reflection
+        float refFade = smoothstep(0.02, 0.25, down);
+        float distFade = exp(-length(d.xz / denom) * 0.10);
+        float refAlpha = density * refFade * distFade * 0.22;
+        c = mix(c, cloudColor * 0.75, refAlpha);
+      }
+    }
+
     // Dither away 8-bit banding in the smooth gradient.
     c += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
     gl_FragColor = vec4(c, 1.0);
   }
 `;
 
-/** Gradient sky dome + scene fog, both updated in place when the theme changes. */
+/** Gradient sky dome + scene fog + procedural clouds, both updated in place when the theme changes. */
 export function SkyBackground() {
   const theme = useTheme();
   const scene = useThree((s) => s.scene);
+  const reduceMotion = useUi((s) => s.settings.reduceMotion);
+
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -77,10 +155,17 @@ export function SkyBackground() {
           uHaze: { value: new THREE.Color() },
           uSunDir: { value: new THREE.Vector3(...SUN_DIR).normalize() },
           uSunColor: { value: new THREE.Color() },
+          uTime: { value: 0 },
         },
       }),
     [],
   );
+
+  useFrame((_, dt) => {
+    if (!reduceMotion && theme.daySky) {
+      material.uniforms.uTime.value += dt;
+    }
+  });
 
   useEffect(() => {
     material.uniforms.uTop.value.copy(toColor(theme.bgTop));
@@ -89,6 +174,7 @@ export function SkyBackground() {
     material.uniforms.uDay.value = theme.daySky ? 1 : 0;
     material.uniforms.uHaze.value.copy(toColor(theme.skyHaze));
     material.uniforms.uSunColor.value.copy(toColor(theme.sunColor));
+    material.uniforms.uSunDir.value.copy(new THREE.Vector3(...SUN_DIR).normalize());
     if (scene.fog instanceof THREE.Fog) {
       scene.fog.color.copy(toColor(theme.fog));
       scene.fog.near = theme.fogNear;
