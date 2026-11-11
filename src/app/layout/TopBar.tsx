@@ -1,6 +1,7 @@
 import { Settings2 } from 'lucide-react';
 import { useUi } from '../../shared/store/uiStore';
 import { HealthDots } from './HealthBanner';
+import { ThemeToggle } from './ThemeToggle';
 import type { HealthStatus } from '../../shared/types/world';
 import { Glass } from '../../shared/ui/Glass';
 import { LiquidShell } from '../../shared/ui/LiquidShell';
@@ -26,6 +27,7 @@ export function TopBar({ health }: { health: HealthStatus | 'unreachable' | null
       </div>
       <span className="ml-auto" />
       <HealthDots health={health} />
+      <ThemeToggle />
       <button type="button" className="btn btn-icon" aria-label="Cài đặt" aria-pressed={settingsOpen} data-testid="settings-toggle" onClick={() => useUi.getState().setSettingsOpen(!settingsOpen)}>
         <Settings2 size={16} />
       </button>

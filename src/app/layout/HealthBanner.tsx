@@ -50,7 +50,7 @@ export function HealthBanner({ health }: { health: HealthStatus | 'unreachable' 
   if (down.length === 0) return null;
   return (
     <div data-testid="health-banner" className="fixed top-2 left-1/2 -translate-x-1/2 z-50">
-      <Glass tier="medium" className="px-3 py-1.5 flex items-center gap-2 text-micro text-[var(--danger)]">
+      <Glass material="regular" className="px-3 py-1.5 flex items-center gap-2 text-micro text-[var(--danger)]">
         <AlertTriangle className="w-4 h-4" />
         <span>{down.join(', ')} không phản hồi</span>
       </Glass>
