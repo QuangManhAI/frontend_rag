@@ -394,8 +394,8 @@ body {
 }
 /* Light glass: clear, with only a thin pale-sky tint (most of the clarity comes from ui/LiquidShell.light.ts); the tint is just enough to keep the dark ink at AA over the saturated blue. */
 :root[data-theme="light"][data-lg-level="3"] {
-  --lg-tint-regular: 20%;
-  --lg-tint-strong: 30%;
+  --lg-tint-regular: 8%;
+  --lg-tint-strong: 14%;
 }
 /* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
 :root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {

@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useTheme } from '../../../shared/theme/useTheme';
 import { useUi } from '../../../shared/store/uiStore';
-import { SUN_DIR } from '../lib/sun';
+import { MOON_DIR, SUN_DIR } from '../lib/sun';
 import { toColor } from './materials';
 
 const SKY_VERT = /* glsl */ `
@@ -25,6 +25,8 @@ const SKY_FRAG = /* glsl */ `
   uniform vec3 uHaze;
   uniform vec3 uSunDir;
   uniform vec3 uSunColor;
+  uniform vec3 uMoonDir;
+  uniform vec3 uMoonColor;
   uniform float uTime;
   varying vec3 vDir;
   varying vec3 vView;
@@ -58,10 +60,46 @@ const SKY_FRAG = /* glsl */ `
   }
 
   void main() {
-    vec3 d = uDay > 0.5 ? normalize(vView) : normalize(vDir);
+    vec3 d = normalize(vView);
     float h = d.y;
     if (uDay < 0.5) {
       vec3 c = h > 0.0 ? mix(uHorizon, uTop, pow(clamp(h, 0.0, 1.0), 0.55)) : mix(uHorizon, uBottom, pow(clamp(-h, 0.0, 1.0), 0.4));
+
+      // --- NIGHT SKY: ELEGANT MOON & LUMINOUS HALO ---
+      float moonDot = max(dot(d, uMoonDir), 0.0);
+
+      // Atmospheric lunar corona & soft aura
+      c += vec3(0.06, 0.10, 0.22) * pow(moonDot, 8.0) * 0.35;
+      c += vec3(0.25, 0.45, 0.75) * pow(moonDot, 45.0) * 0.5;
+      c += vec3(0.65, 0.82, 1.00) * pow(moonDot, 220.0) * 0.85;
+
+      // Refined Moon Disc: ~2.1° crisp celestial scale
+      float moonRad = 0.99935;
+      if (moonDot > moonRad - 0.0015) {
+        vec3 mUp = abs(uMoonDir.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+        vec3 mRight = normalize(cross(mUp, uMoonDir));
+        vec3 mTrueUp = cross(uMoonDir, mRight);
+        vec2 mUV = vec2(dot(d, mRight), dot(d, mTrueUp)) / sqrt(2.0 * (1.0 - moonRad));
+        float dMoon = length(mUV);
+        if (dMoon <= 1.0) {
+          float mask = smoothstep(1.0, 0.94, dMoon);
+          float z = sqrt(max(0.0, 1.0 - dMoon * dMoon));
+
+          // Soft organic lunar maria (subtle contrast, elegant texture)
+          float maria = fbm(mUV * 2.6 + vec2(1.8, 3.4));
+          vec3 mBase = uMoonColor;
+          vec3 mMaria = mix(uMoonColor * 0.75, vec3(0.62, 0.70, 0.82), 0.45);
+          vec3 mSurface = mix(mMaria, mBase, smoothstep(0.35, 0.65, maria));
+
+          // 3D spherical limb & gentle phase lighting
+          float limb = pow(z, 0.30);
+          float phase = clamp(mUV.x * 0.25 + z * 0.92, 0.25, 1.15);
+          vec3 moonColor = mSurface * limb * phase * 2.1; // Gentle HDR bloom
+
+          c = mix(c, moonColor, mask);
+        }
+      }
+
       // Dither away 8-bit banding in the smooth gradient.
       c += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
       gl_FragColor = vec4(c, 1.0);
@@ -133,7 +171,7 @@ const SKY_FRAG = /* glsl */ `
   }
 `;
 
-/** Gradient sky dome + scene fog + procedural clouds, both updated in place when the theme changes. */
+/** Gradient sky dome + scene fog + procedural clouds + moon, both updated in place when the theme changes. */
 export function SkyBackground() {
   const theme = useTheme();
   const scene = useThree((s) => s.scene);
@@ -155,6 +193,8 @@ export function SkyBackground() {
           uHaze: { value: new THREE.Color() },
           uSunDir: { value: new THREE.Vector3(...SUN_DIR).normalize() },
           uSunColor: { value: new THREE.Color() },
+          uMoonDir: { value: new THREE.Vector3(...MOON_DIR).normalize() },
+          uMoonColor: { value: new THREE.Color() },
           uTime: { value: 0 },
         },
       }),
@@ -175,6 +215,8 @@ export function SkyBackground() {
     material.uniforms.uHaze.value.copy(toColor(theme.skyHaze));
     material.uniforms.uSunColor.value.copy(toColor(theme.sunColor));
     material.uniforms.uSunDir.value.copy(new THREE.Vector3(...SUN_DIR).normalize());
+    material.uniforms.uMoonDir.value.copy(new THREE.Vector3(...MOON_DIR).normalize());
+    material.uniforms.uMoonColor.value.copy(toColor(theme.moonColor));
     if (scene.fog instanceof THREE.Fog) {
       scene.fog.color.copy(toColor(theme.fog));
       scene.fog.near = theme.fogNear;

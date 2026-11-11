@@ -16,6 +16,8 @@ export interface ThemeTokens {
   skyHaze: string;
   /** Sunlight color (day: the visible sun, its key light and the rim/back-light glow on the tree). */
   sunColor: string;
+  /** Moonlight color (night: the visible moon and its celestial moonlight key on the tree). */
+  moonColor: string;
   /** Strength of the view-dependent sunlight on bark and petals (0 = none, night). */
   sunGlow: number;
   /** Glints on the rising particle streams and glitter in the knowledge blocks (0 = off). */
@@ -97,6 +99,7 @@ export const darkTheme: ThemeTokens = {
   daySky: false,
   skyHaze: '#24123f',
   sunColor: '#ffffff',
+  moonColor: '#dce8ff',
   sunGlow: 0,
   sparkle: 0,
   fog: '#1a1033',
@@ -175,6 +178,7 @@ export const lightTheme: ThemeTokens = {
   daySky: true,
   skyHaze: '#e6f3fc',
   sunColor: '#fff1d6',
+  moonColor: '#dce8ff',
   sunGlow: 1,
   sparkle: 1,
   fog: '#a9cff2',
@@ -220,7 +224,7 @@ export const lightTheme: ThemeTokens = {
   uiDanger: '#b3243b',
   uiSuccess: '#16794b',
   uiInkFaint: '#7d7896',
-  glassTint: '#ffffff73',
+  glassTint: '#ffffff3d',
   glassFill: '#1a17300a',
   glassFillHover: '#1a173014',
   glassHighlight: '#ffffffb3',

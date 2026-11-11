@@ -22,21 +22,20 @@ const BASE: Partial<GlassOptics> = {
   sheenWidth: 1,
   specular: 0.85,
   sheenAngle: 55,
-  // Background: clear glass.
+  // Background: crystal-clear liquid glass.
   glow: 0,
-  frost: 1.5,
-  brightness: 0,
-  saturate: 1.15,
+  frost: 0,
+  brightness: 0.02,
+  saturate: 1.05,
 };
 
 export const LIGHT_OPTICS: Record<LiquidPanel, Partial<GlassOptics>> = {
   /** Chat dock (layout/ChatDock.tsx), ~410 × 774 px. */
   chat: { ...BASE },
   /** Top bar (layout/TopBar.tsx), full width × ~49 px. */
-  topbar: { ...BASE, depth: 0.1 },
+  topbar: { ...BASE, depth: 0.08 },
   /** "Loại bài báo" (layout/CategoryLegend.tsx), ~256 × 280 px. */
   legend: { ...BASE },
-  /** Settings (layout/SettingsPanel.tsx), ~320 × 764 px. It opens over the legend, so it keeps some frost:
-   *  with clear glass the legend's text showed through and tangled with the settings. */
-  settings: { ...BASE, frost: 6 },
+  /** Settings (layout/SettingsPanel.tsx), ~320 × 764 px. Clear with minimal frost. */
+  settings: { ...BASE, frost: 1.5 },
 };
