@@ -71,6 +71,7 @@
 :root[data-theme="light"] {
   --shadow-panel: 0 0 0 0 transparent;
   --shadow-panel-lifted: 0 0 0 0 transparent;
+  --glass-stroke: var(--glass-highlight);
 }
 
 @theme {
@@ -392,10 +393,20 @@ body {
   --ink-muted: inherit;
   --ink-faint: inherit;
 }
-/* Light glass: clear, with only a thin pale-sky tint (most of the clarity comes from ui/LiquidShell.light.ts); the tint is just enough to keep the dark ink at AA over the saturated blue. */
+/* Light glass: crystal-clear, clean transparency without dark border shades or muddy opacity. */
+:root[data-theme="light"]:is([data-lg-level="2"], [data-lg-level="3"]) {
+  --lg-veil: 0%;
+  --lg-tint-regular: 0%;
+  --lg-tint-strong: 0%;
+  --shadow-panel: 0 0 0 0 transparent;
+  --shadow-panel-lifted: 0 0 0 0 transparent;
+}
 :root[data-theme="light"][data-lg-level="3"] {
-  --lg-tint-regular: 8%;
-  --lg-tint-strong: 14%;
+  --lg-body-light: 0;
+  --lg-tint-regular: 0%;
+  --lg-tint-strong: 0%;
+  --shadow-panel: 0 0 0 0 transparent;
+  --shadow-panel-lifted: 0 0 0 0 transparent;
 }
 /* Selected segment: white type on a solid accent fill (accent type on a bright backdrop washed out). */
 :root[data-lg-level="3"] .glass[data-lgr="true"] .btn[aria-pressed="true"] {

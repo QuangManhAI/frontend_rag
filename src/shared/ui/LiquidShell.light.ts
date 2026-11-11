@@ -9,33 +9,33 @@ import type { LiquidPanel } from './LiquidShell';
  */
 
 const BASE: Partial<GlassOptics> = {
-  // Refraction (same lens shape as the dark set)
-  strength: 0.2,
-  depth: 0.02,
-  curvature: 0.7,
-  dispersion: 1,
-  // Edge
+  // Refraction: ultra-gentle edge refraction without grabbing outside pixels or casting dark edge shades
+  strength: 0.02,
+  depth: 0.05,
+  curvature: 0,
+  dispersion: 0,
+  // Edge: clean, minimal meniscus without muddy chromatic fringing
   bend: 0,
-  bendWidth: 0.26,
-  // Sheen: brighter, so the clear pane still shows its edge against the sky.
-  sheen: 0.75,
+  bendWidth: 0.05,
+  // Sheen & specular: subtle pearl-white highlight on the lit edge
+  sheen: 0.04,
   sheenWidth: 1,
-  specular: 0.85,
+  specular: 0.2,
   sheenAngle: 55,
-  // Background: crystal-clear liquid glass.
+  // Background: 100% crystal-clear, transparent glass without milky veil, frost, or center opacity
   glow: 0,
   frost: 0,
-  brightness: 0.02,
-  saturate: 1.05,
+  brightness: 0,
+  saturate: 1.0,
 };
 
 export const LIGHT_OPTICS: Record<LiquidPanel, Partial<GlassOptics>> = {
   /** Chat dock (layout/ChatDock.tsx), ~410 × 774 px. */
   chat: { ...BASE },
   /** Top bar (layout/TopBar.tsx), full width × ~49 px. */
-  topbar: { ...BASE, depth: 0.08 },
+  topbar: { ...BASE, depth: 0.04 },
   /** "Loại bài báo" (layout/CategoryLegend.tsx), ~256 × 280 px. */
   legend: { ...BASE },
-  /** Settings (layout/SettingsPanel.tsx), ~320 × 764 px. Clear with minimal frost. */
-  settings: { ...BASE, frost: 1.5 },
+  /** Settings (layout/SettingsPanel.tsx), ~320 × 764 px. Clean transparent glass. */
+  settings: { ...BASE },
 };

@@ -224,12 +224,12 @@ export const lightTheme: ThemeTokens = {
   uiDanger: '#b3243b',
   uiSuccess: '#16794b',
   uiInkFaint: '#7d7896',
-  glassTint: '#ffffff3d',
+  glassTint: '#ffffff14',
   glassFill: '#1a17300a',
   glassFillHover: '#1a173014',
   glassHighlight: '#ffffffb3',
   glassHighlightStrong: '#ffffffe6',
-  glassLowlight: '#1a17300f',
+  glassLowlight: '#ffffff14',
   glassStrokeStrong: '#2a234040',
   // Same hues as the neon palette, a touch deeper so petals stay readable against the blue sky.
   categoryPalette: [
